@@ -2,9 +2,22 @@ import { motion } from "framer-motion";
 import { Sparkles, FolderOpen, MessageCircle, Bell, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: "Signed out",
+      description: "You have been signed out successfully.",
+    });
+    navigate("/auth");
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -20,12 +33,14 @@ const Dashboard = () => {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted">
                 <User className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-foreground">Student</span>
+                <span className="text-sm text-foreground truncate max-w-[150px]">
+                  {user?.email || "Student"}
+                </span>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate("/auth")}
+                onClick={handleSignOut}
                 className="gap-2"
               >
                 <LogOut className="w-4 h-4" />

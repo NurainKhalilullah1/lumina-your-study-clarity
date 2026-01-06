@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -16,6 +17,14 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { signIn, signUp, user } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,21 +51,37 @@ const Auth = () => {
       return;
     }
 
-    // TODO: Connect to Supabase Auth when Cloud is enabled
-    // For now, simulate auth flow
-    setTimeout(() => {
-      toast({
-        title: isLogin ? "Welcome back!" : "Account created!",
-        description: isLogin 
-          ? "Redirecting to your dashboard..." 
-          : "Please check your email to verify your account.",
-      });
-      setIsLoading(false);
-      
-      if (isLogin) {
+    if (isLogin) {
+      const { error } = await signIn(email, password);
+      if (error) {
+        toast({
+          title: "Sign in failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Welcome back!",
+          description: "Redirecting to your dashboard...",
+        });
         navigate("/dashboard");
       }
-    }, 1500);
+    } else {
+      const { error } = await signUp(email, password);
+      if (error) {
+        toast({
+          title: "Sign up failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Account created!",
+          description: "Please check your email to verify your account.",
+        });
+      }
+    }
+    setIsLoading(false);
   };
 
   return (
