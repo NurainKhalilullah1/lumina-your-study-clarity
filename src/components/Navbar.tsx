@@ -32,11 +32,11 @@ export const Navbar = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            <Button variant="ghost" size="sm">
-              Login
+            <Button variant="ghost" size="sm" asChild>
+              <a href="/auth">Login</a>
             </Button>
-            <Button variant="glow" size="sm">
-              Get Started
+            <Button variant="glow" size="sm" asChild>
+              <a href="/auth">Get Started</a>
             </Button>
           </motion.div>
 
