@@ -29,19 +29,19 @@ const Settings = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  // State for the form
+  // State variables
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Load current name when page opens
+  // 1. Load current name when page opens
   useEffect(() => {
     if (user?.user_metadata?.full_name) {
       setName(user.user_metadata.full_name);
     }
   }, [user]);
 
-  // Function to Save Name
+  // 2. Function to Save Name
   const handleUpdateProfile = async () => {
     if (!user) return;
     setLoading(true);
@@ -69,17 +69,28 @@ const Settings = () => {
     }
   };
 
+  // 3. Function to COMPLETELY Delete Account
   const handleDeleteAccount = async () => {
     if (!user) return;
     setIsDeleting(true);
     try {
-      // 1. Delete DB Profile (if exists)
-      await supabase.from("profiles").delete().eq("id", user.id);
-      // 2. Sign Out
+      // Call the secure database function we created in Step 1
+      const { error } = await supabase.rpc('delete_own_account');
+      
+      if (error) throw error;
+
+      // If successful, sign out and redirect
       await signOut();
+      toast({ title: "Account Deleted", description: "All your data has been erased. Goodbye!" });
       navigate("/", { replace: true });
+      
     } catch (error: any) {
-      toast({ title: "Error", description: "Failed to delete account.", variant: "destructive" });
+      console.error(error);
+      toast({ 
+        title: "Error", 
+        description: "Could not delete account. Please try again.", 
+        variant: "destructive" 
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -90,7 +101,7 @@ const Settings = () => {
       <div className="p-6 lg:p-8 space-y-6 max-w-3xl">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Settings</h1>
-          <p className="text-muted-foreground mt-1">Manage your preferences.</p>
+          <p className="text-muted-foreground mt-1">Manage your preferences and privacy.</p>
         </motion.div>
 
         {/* Profile Section */}
@@ -165,12 +176,14 @@ const Settings = () => {
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete your account, courses, assignments, and chat history.
+                  </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive hover:bg-destructive/90">
-                    {isDeleting ? "Deleting..." : "Yes, Delete"}
+                    {isDeleting ? "Deleting..." : "Yes, Delete Everything"}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
