@@ -146,7 +146,8 @@ const Tutor = () => {
       await sendMessage.mutateAsync({ conversationId, role: "user", content });
       setIsThinking(true);
 
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      // Fallback to the standard stable model
+const model = genAI.getGenerativeModel({ model: "gemini-pro" });
       
       let finalPrompt = content;
       if (extractedContext) {
