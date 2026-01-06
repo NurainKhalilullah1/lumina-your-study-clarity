@@ -1,123 +1,143 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { useProfile, createProfile } from "@/hooks/useProfile";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { Sparkles, UserPlus } from "lucide-react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { UserPlus, Sparkles, Loader2, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const Onboarding = () => {
-  const { user, loading: authLoading } = useAuth();
-  const { data: profile, isLoading: profileLoading, refetch } = useProfile(user?.id);
-  const [isCreating, setIsCreating] = useState(false);
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  const [fullName, setFullName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirect if not authenticated
+  // 1. Check Auth & Pre-fill Name (if Google)
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth", { replace: true });
+    if (!loading && !user) {
+      navigate("/auth");
+    } else if (user?.user_metadata?.full_name) {
+      setFullName(user.user_metadata.full_name);
     }
-  }, [authLoading, user, navigate]);
+  }, [user, loading, navigate]);
 
-  // Redirect if profile already exists
-  useEffect(() => {
-    if (!profileLoading && profile) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [profileLoading, profile, navigate]);
-
-  const handleCompleteSignup = async () => {
+  // 2. Create Profile in Database
+  const handleCompleteSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!user) return;
     
-    setIsCreating(true);
+    setIsSubmitting(true);
+
     try {
-      await createProfile(
-        user.id,
-        user.email,
-        user.user_metadata?.full_name || user.user_metadata?.name,
-        user.user_metadata?.avatar_url
-      );
-      
-      toast({
-        title: "Welcome to Lumina!",
-        description: "Your account has been created successfully.",
+      // Force create/update the profile row
+      const { error } = await supabase.from("profiles").upsert({
+        id: user.id,
+        full_name: fullName,
+        username: user.email?.split("@")[0],
+        avatar_url: user.user_metadata?.avatar_url || "",
       });
-      
-      await refetch();
+
+      if (error) throw error;
+
+      toast({
+        title: "Account Created!",
+        description: "Welcome to Lumina.",
+      });
+
+      // Send to Dashboard
       navigate("/dashboard", { replace: true });
+
     } catch (error: any) {
-      console.error("Error creating profile:", error);
+      console.error(error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create your account. Please try again.",
+        description: "Could not create profile. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsCreating(false);
+      setIsSubmitting(false);
     }
   };
 
-  // Show loading while checking auth or profile
-  if (authLoading || profileLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Sparkles className="w-10 h-10 text-primary animate-pulse" />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <motion.div
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md text-center"
+        className="max-w-md w-full"
       >
-        <div className="bg-card border border-border rounded-2xl p-8 shadow-lg">
-          <div className="mb-6">
+        <div className="bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
+          {/* Header */}
+          <div className="bg-primary/5 p-8 text-center border-b border-border/50">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <UserPlus className="w-8 h-8 text-primary" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground mb-2">
-              Complete Your Signup
-            </h1>
-            <p className="text-muted-foreground">
-              We couldn't find an existing Lumina account for this login. 
-              Click below to create your account and get started.
+            <h1 className="text-2xl font-bold text-foreground">Complete Signup</h1>
+            <p className="text-muted-foreground mt-2 text-sm">
+              We just need to set up your profile to get started.
             </p>
           </div>
 
-          {user && (
-            <div className="mb-6 p-4 bg-muted/50 rounded-lg">
-              <p className="text-sm text-muted-foreground">Signing up as</p>
-              <p className="font-medium text-foreground">{user.email}</p>
-            </div>
-          )}
+          {/* Form */}
+          <div className="p-8">
+            <form onSubmit={handleCompleteSignup} className="space-y-6">
+              
+              {/* Email Display */}
+              <div className="p-3 bg-muted/50 rounded-lg border border-border flex items-center gap-3">
+                 <div className="w-8 h-8 rounded-full bg-background flex items-center justify-center border border-border">
+                    <User className="w-4 h-4 text-muted-foreground" />
+                 </div>
+                 <div className="overflow-hidden">
+                   <p className="text-xs text-muted-foreground font-medium uppercase">Signing up as</p>
+                   <p className="text-sm font-medium text-foreground truncate">{user?.email}</p>
+                 </div>
+              </div>
 
-          <Button
-            onClick={handleCompleteSignup}
-            disabled={isCreating}
-            className="w-full"
-            size="lg"
-          >
-            {isCreating ? (
-              <>
-                <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-                Creating Account...
-              </>
-            ) : (
-              <>
-                <UserPlus className="w-4 h-4 mr-2" />
-                Complete Signup
-              </>
-            )}
-          </Button>
+              {/* Name Input */}
+              <div className="space-y-2">
+                <Label htmlFor="name">Display Name</Label>
+                <Input
+                  id="name"
+                  placeholder="e.g. Alex Student"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="h-11 bg-background"
+                  required
+                />
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full h-11 text-base" 
+                disabled={isSubmitting || !fullName.trim()}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    Setting up...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    Complete Setup
+                  </>
+                )}
+              </Button>
+            </form>
+          </div>
         </div>
       </motion.div>
     </div>
