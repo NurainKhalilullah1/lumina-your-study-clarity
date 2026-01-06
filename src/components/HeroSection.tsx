@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { ArrowRight, AlertCircle, MessageSquare, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom"; // <--- Added Import
 
 export const HeroSection = () => {
   return (
@@ -40,9 +41,12 @@ export const HeroSection = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.5 }}
             >
-              <Button variant="hero" size="xl" className="group">
-                Try Lumina for Free
-                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+              {/* FIXED BUTTON: Uses asChild and Link to work on mobile */}
+              <Button variant="hero" size="xl" className="group" asChild>
+                <Link to="/auth">
+                  Try Lumina for Free
+                  <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                </Link>
               </Button>
             </motion.div>
           </motion.div>
