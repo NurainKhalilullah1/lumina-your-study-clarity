@@ -1,12 +1,21 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ClipboardList, Calendar, Clock, AlertCircle, Upload, Plus, Sparkles, ArrowRight } from "lucide-react";
+import { 
+  ClipboardList, 
+  Calendar, 
+  Clock, 
+  AlertCircle, 
+  Upload, 
+  Sparkles,
+  ArrowRight
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { AddAssignmentDialog } from "@/components/AddAssignmentDialog"; // Import the Dialog
 
-// Helper to get greeting based on time
 const getGreeting = () => {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
@@ -19,34 +28,71 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Student";
 
-  // State for real data (Currently set to empty/zero)
   const [stats, setStats] = useState([
     { label: "Assignments Pending", value: 0, icon: ClipboardList, color: "text-primary" },
     { label: "Upcoming Exams", value: 0, icon: Calendar, color: "text-accent" },
     { label: "Study Hours", value: "0h", icon: Clock, color: "text-emerald-500" },
   ]);
 
-  const [urgentAssignments, setUrgentAssignments] = useState<any[]>([]); // Empty array = No assignments
+  const [urgentAssignments, setUrgentAssignments] = useState<any[]>([]);
+
+  // Function to fetch fresh data
+  const fetchData = async () => {
+    if (!user) return;
+
+    // 1. Get Pending Assignments Count
+    const { count: pendingCount } = await supabase
+      .from("assignments")
+      .select("*", { count: 'exact', head: true })
+      .eq("user_id", user.id)
+      .eq("status", "pending");
+
+    // 2. Get Urgent Assignments (Due in next 3 days)
+    const threeDaysFromNow = new Date();
+    threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+    
+    const { data: urgent } = await supabase
+      .from("assignments")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("status", "pending")
+      .lte("due_date", threeDaysFromNow.toISOString())
+      .order("due_date", { ascending: true })
+      .limit(3);
+
+    // Update State
+    setStats(prev => [
+      { ...prev[0], value: pendingCount || 0 }, // Update pending count
+      { ...prev[1], value: 0 }, // Exams placeholder
+      { ...prev[2], value: "12h" } // Study hours placeholder
+    ]);
+
+    if (urgent) {
+      setUrgentAssignments(urgent.map(a => ({
+        ...a,
+        dueIn: new Date(a.due_date).toLocaleDateString() // Simple date formatting
+      })));
+    }
+  };
+
+  // Fetch on load
+  useEffect(() => {
+    fetchData();
+  }, [user]);
 
   return (
     <DashboardLayout>
       <div className="p-6 lg:p-8 space-y-6">
-        {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-2xl lg:text-3xl font-bold text-foreground">
             {getGreeting()}, {userName} 👋
           </h1>
-          <p className="text-muted-foreground mt-1">Ready to start your productive day?</p>
+          <p className="text-muted-foreground mt-1">Here is your academic overview.</p>
         </motion.div>
 
-        {/* Stats Cards (Now showing 0) */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="grid grid-cols-1 sm:grid-cols-3 gap-4"
-        >
-          {stats.map((stat, index) => (
+        {/* Stats Cards */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {stats.map((stat) => (
             <div key={stat.label} className="bg-card rounded-xl p-5 shadow-sm border border-border">
               <div className="flex items-center justify-between">
                 <div>
@@ -61,29 +107,20 @@ const Dashboard = () => {
           ))}
         </motion.div>
 
-        {/* Due Soon Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-          className="bg-card rounded-xl p-6 shadow-sm border border-border"
-        >
+        {/* Urgent Assignments */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-card rounded-xl p-6 shadow-sm border border-border">
           <div className="flex items-center gap-2 mb-4">
-            <AlertCircle className="w-5 h-5 text-muted-foreground" />
+            <AlertCircle className="w-5 h-5 text-destructive" />
             <h2 className="text-lg font-semibold text-foreground">Due Soon</h2>
           </div>
-
-          {/* EMPTY STATE LOGIC */}
+          
           {urgentAssignments.length > 0 ? (
             <div className="space-y-3">
               {urgentAssignments.map((assignment) => (
-                <div
-                  key={assignment.id}
-                  className="flex items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                >
+                <div key={assignment.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                   <div>
                     <p className="font-medium text-foreground">{assignment.title}</p>
-                    <p className="text-sm text-muted-foreground">{assignment.course}</p>
+                    <p className="text-sm text-muted-foreground">{assignment.course_name}</p>
                   </div>
                   <span className="text-sm font-medium text-destructive bg-destructive/10 px-3 py-1 rounded-full">
                     {assignment.dueIn}
@@ -92,42 +129,30 @@ const Dashboard = () => {
               ))}
             </div>
           ) : (
-            // This is what shows when there are no assignments
-            <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-muted rounded-lg">
-              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3">
-                <Sparkles className="w-6 h-6 text-primary" />
+            <div className="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed border-muted rounded-lg">
+              <Sparkles className="w-8 h-8 text-primary/50 mb-2" />
+              <p className="text-muted-foreground">No urgent deadlines!</p>
+              {/* Insert the Add Modal here so they can add one right away */}
+              <div className="mt-4">
+                <AddAssignmentDialog onAssignmentAdded={fetchData} />
               </div>
-              <h3 className="font-medium text-foreground">You're all caught up!</h3>
-              <p className="text-sm text-muted-foreground max-w-xs mt-1 mb-4">
-                No upcoming deadlines. This is a great time to start a new assignment or upload a lecture slide.
-              </p>
-              <Button variant="outline" onClick={() => navigate("/assignments")}>
-                Add Assignment
-              </Button>
             </div>
           )}
         </motion.div>
 
         {/* Quick Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.3 }}
-          className="bg-card rounded-xl p-6 shadow-sm border border-border"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-card rounded-xl p-6 shadow-sm border border-border">
           <h2 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h2>
           <div className="flex flex-wrap gap-3">
-            <Button className="gap-2" onClick={() => navigate("/tutor")}>
-              <Upload className="w-4 h-4" />
-              Upload New PDF
+            <Button className="gap-2" onClick={() => navigate('/tutor')}>
+              <Upload className="w-4 h-4" /> Upload PDF
             </Button>
-            <Button variant="outline" className="gap-2" onClick={() => navigate("/assignments")}>
-              <Plus className="w-4 h-4" />
-              Add Assignment
-            </Button>
-            <Button variant="secondary" className="gap-2" onClick={() => navigate("/tutor")}>
-              <Sparkles className="w-4 h-4" />
-              Ask AI
+            
+            {/* The Magic: Add Assignment Dialog is here now */}
+            <AddAssignmentDialog onAssignmentAdded={fetchData} />
+            
+            <Button variant="secondary" className="gap-2" onClick={() => navigate('/tutor')}>
+              <Sparkles className="w-4 h-4" /> Ask AI
             </Button>
           </div>
         </motion.div>
