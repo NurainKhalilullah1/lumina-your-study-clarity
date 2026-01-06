@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Bell, Shield, Palette, Loader2, Moon, Sun } from "lucide-react";
+import { User, Shield, Palette, Loader2, Moon, Sun, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { useTheme } from "next-themes"; // Import Theme Hook
+import { useTheme } from "next-themes";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,16 +25,57 @@ import DashboardLayout from "@/components/DashboardLayout";
 
 const Settings = () => {
   const { user, signOut } = useAuth();
-  const { theme, setTheme } = useTheme(); // Hook into the theme provider
+  const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   const navigate = useNavigate();
+  
+  // State for the form
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Load current name when page opens
+  useEffect(() => {
+    if (user?.user_metadata?.full_name) {
+      setName(user.user_metadata.full_name);
+    }
+  }, [user]);
+
+  // Function to Save Name
+  const handleUpdateProfile = async () => {
+    if (!user) return;
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: { full_name: name }
+      });
+
+      if (error) throw error;
+
+      toast({ 
+        title: "Profile Updated", 
+        description: "Your display name has been changed." 
+      });
+      
+    } catch (error: any) {
+      toast({ 
+        title: "Error", 
+        description: error.message, 
+        variant: "destructive" 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDeleteAccount = async () => {
     if (!user) return;
     setIsDeleting(true);
     try {
+      // 1. Delete DB Profile (if exists)
       await supabase.from("profiles").delete().eq("id", user.id);
+      // 2. Sign Out
       await signOut();
       navigate("/", { replace: true });
     } catch (error: any) {
@@ -52,21 +93,40 @@ const Settings = () => {
           <p className="text-muted-foreground mt-1">Manage your preferences.</p>
         </motion.div>
 
-        {/* Profile (Read Only for now) */}
+        {/* Profile Section */}
         <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
           <div className="flex items-center gap-2 mb-6">
             <User className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-semibold text-foreground">Profile</h2>
           </div>
+          
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Display Name</Label>
+              <Input 
+                id="name" 
+                value={name} 
+                onChange={(e) => setName(e.target.value)} 
+                placeholder="Enter your name"
+              />
+            </div>
+            
+            <div className="grid gap-2">
               <Label>Email</Label>
-              <Input value={user?.email || ""} disabled className="bg-muted" />
+              <Input value={user?.email || ""} disabled className="bg-muted text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">Email cannot be changed.</p>
+            </div>
+
+            <div className="pt-2">
+              <Button onClick={handleUpdateProfile} disabled={loading}>
+                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Save Changes
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* Appearance (REAL DARK MODE) */}
+        {/* Appearance Section */}
         <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
           <div className="flex items-center gap-2 mb-6">
             <Palette className="w-5 h-5 text-primary" />
@@ -80,7 +140,6 @@ const Settings = () => {
                 <p className="text-sm text-muted-foreground">Switch between light and dark themes</p>
               </div>
             </div>
-            {/* The Switch now actually toggles the theme */}
             <Switch 
               checked={theme === 'dark'}
               onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
