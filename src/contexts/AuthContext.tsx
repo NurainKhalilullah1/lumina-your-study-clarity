@@ -20,26 +20,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let initialValidationDone = false;
+
     // Validate session with server, not just local token
-    supabase.auth.getUser().then(({ data: { user }, error }) => {
+    supabase.auth.getUser().then(async ({ data: { user }, error }) => {
       if (error || !user) {
         // Token is invalid or user was deleted - clear local session
         setSession(null);
         setUser(null);
-        supabase.auth.signOut();
+        // Use local scope to ensure localStorage is cleared even if server rejects
+        await supabase.auth.signOut({ scope: "local" });
       } else {
         // Valid user, now get the full session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          setSession(session);
-          setUser(session?.user ?? null);
-        });
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+        setUser(session?.user ?? null);
       }
+      initialValidationDone = true;
       setLoading(false);
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        // Ignore INITIAL_SESSION during startup to prevent stale cached sessions
+        if (event === "INITIAL_SESSION" && !initialValidationDone) {
+          return;
+        }
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
