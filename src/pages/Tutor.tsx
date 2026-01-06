@@ -34,7 +34,7 @@ const Tutor = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [contextFile, setContextFile] = useState<UserFile | null>(null);
   const [chatSidebarOpen, setChatSidebarOpen] = useState(false);
-  
+
   const { data: conversations = [] } = useConversations(user?.id);
   const { data: messages = [] } = useMessages(activeConversationId ?? undefined);
   const { data: userFiles = [] } = useUserFiles(user?.id);
@@ -42,17 +42,17 @@ const Tutor = () => {
   const sendMessage = useSendMessage();
   const updateTitle = useUpdateConversationTitle();
   const uploadFile = useUploadFile();
-  
+
   // Select first conversation on load
   useEffect(() => {
     if (conversations.length > 0 && !activeConversationId) {
       setActiveConversationId(conversations[0].id);
     }
   }, [conversations, activeConversationId]);
-  
+
   const handleNewChat = async () => {
     if (!user) return;
-    
+
     try {
       const newConv = await createConversation.mutateAsync({ userId: user.id });
       setActiveConversationId(newConv.id);
@@ -66,21 +66,21 @@ const Tutor = () => {
       });
     }
   };
-  
+
   const handleSelectConversation = (id: string) => {
     setActiveConversationId(id);
     setChatSidebarOpen(false);
   };
-  
+
   const handleSend = async (content: string) => {
     if (!user) return;
-    
+
     let conversationId = activeConversationId;
-    
+
     // Create conversation if none exists
     if (!conversationId) {
       try {
-        const newConv = await createConversation.mutateAsync({ 
+        const newConv = await createConversation.mutateAsync({
           userId: user.id,
           title: content.slice(0, 50) + (content.length > 50 ? "..." : ""),
         });
@@ -95,7 +95,7 @@ const Tutor = () => {
         return;
       }
     }
-    
+
     // Update title if this is the first message
     if (messages.length === 0) {
       updateTitle.mutate({
@@ -103,7 +103,7 @@ const Tutor = () => {
         title: content.slice(0, 50) + (content.length > 50 ? "..." : ""),
       });
     }
-    
+
     // Send user message
     try {
       await sendMessage.mutateAsync({
@@ -111,11 +111,11 @@ const Tutor = () => {
         role: "user",
         content,
       });
-      
+
       // Simulate AI thinking
       setIsThinking(true);
       await new Promise((resolve) => setTimeout(resolve, 1500));
-      
+
       // Mock AI response
       const aiResponse = generateMockResponse(content, contextFile?.file_name);
       await sendMessage.mutateAsync({
@@ -123,7 +123,7 @@ const Tutor = () => {
         role: "assistant",
         content: aiResponse,
       });
-      
+
       setIsThinking(false);
     } catch (error) {
       setIsThinking(false);
@@ -134,11 +134,11 @@ const Tutor = () => {
       });
     }
   };
-  
+
   const handleFileSelect = async (file: File) => {
     if (!user) return;
     setSelectedFile(file);
-    
+
     try {
       const uploadedFile = await uploadFile.mutateAsync({ userId: user.id, file });
       setContextFile(uploadedFile);
@@ -156,13 +156,13 @@ const Tutor = () => {
       });
     }
   };
-  
+
   const handleStarterSelect = (prompt: string) => {
     handleSend(prompt);
   };
-  
+
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
-  
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -190,12 +190,12 @@ const Tutor = () => {
               </SheetContent>
             </Sheet>
           </header>
-          
+
           {/* Desktop Header */}
           <div className="hidden md:flex items-center h-14 px-4 border-b border-border bg-card">
             <SidebarTrigger />
           </div>
-          
+
           {/* Main Content */}
           <div className="flex-1 flex overflow-hidden">
             {/* Chat History Sidebar (Desktop) */}
@@ -207,7 +207,7 @@ const Tutor = () => {
                 onNewChat={handleNewChat}
               />
             </div>
-            
+
             {/* Chat Area */}
             <div className="flex-1 flex flex-col bg-background min-w-0">
               {/* Context Header */}
@@ -221,20 +221,15 @@ const Tutor = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
-                    <DropdownMenuItem onClick={() => setContextFile(null)}>
-                      General Knowledge
-                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setContextFile(null)}>General Knowledge</DropdownMenuItem>
                     {userFiles.map((file) => (
-                      <DropdownMenuItem
-                        key={file.id}
-                        onClick={() => setContextFile(file)}
-                      >
+                      <DropdownMenuItem key={file.id} onClick={() => setContextFile(file)}>
                         {file.file_name}
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                
+
                 {contextFile && (
                   <Button
                     variant="ghost"
@@ -247,7 +242,7 @@ const Tutor = () => {
                   </Button>
                 )}
               </div>
-              
+
               {/* Messages or Empty State */}
               {messages.length === 0 && !isThinking ? (
                 <div className="flex-1 flex flex-col items-center justify-center p-8">
@@ -259,11 +254,10 @@ const Tutor = () => {
                     <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                       <Sparkles className="w-8 h-8 text-primary" />
                     </div>
-                    <h2 className="text-2xl font-bold text-foreground mb-2">
-                      How can I help you today?
-                    </h2>
+                    <h2 className="text-2xl font-bold text-foreground mb-2">How can I help you today?</h2>
                     <p className="text-muted-foreground max-w-md">
-                      Upload your course materials and ask me anything. I can explain concepts, summarize chapters, and help you study.
+                      Upload your course materials and ask me anything. I can explain concepts, summarize chapters, and
+                      help you study.
                     </p>
                   </motion.div>
                   <StarterCards onSelect={handleStarterSelect} />
@@ -271,7 +265,7 @@ const Tutor = () => {
               ) : (
                 <ChatMessages messages={messages} isThinking={isThinking} />
               )}
-              
+
               {/* Input Area */}
               <ChatInput
                 onSend={handleSend}
@@ -292,7 +286,7 @@ const Tutor = () => {
 // Mock response generator
 const generateMockResponse = (query: string, fileName?: string): string => {
   const lowerQuery = query.toLowerCase();
-  
+
   if (lowerQuery.includes("summarize") || lowerQuery.includes("summary")) {
     return `## Summary${fileName ? ` of ${fileName}` : ""}
 
@@ -306,7 +300,7 @@ Here are the key points I found:
 
 Would you like me to elaborate on any of these points?`;
   }
-  
+
   if (lowerQuery.includes("quiz") || lowerQuery.includes("test")) {
     return `## Practice Quiz
 
@@ -324,7 +318,7 @@ Here are some questions to test your understanding:
 
 Would you like me to provide the answers or create more questions?`;
   }
-  
+
   if (lowerQuery.includes("explain") || lowerQuery.includes("what is")) {
     return `## Explanation
 
@@ -338,7 +332,7 @@ Let me break this down for you:
 
 Does this explanation help? Would you like me to provide more examples?`;
   }
-  
+
   return `I understand you're asking about "${query.slice(0, 50)}${query.length > 50 ? "..." : ""}". 
 
 Based on my analysis, here are some insights:
