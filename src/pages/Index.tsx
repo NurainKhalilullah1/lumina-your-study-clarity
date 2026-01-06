@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpen, Brain, Calendar, Shield } from "lucide-react";
+import { ArrowRight, BookOpen, Brain, Calendar, CheckCircle, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,23 +20,23 @@ const Index = () => {
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       {/* Navbar */}
       <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="container mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
+        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           
-          {/* Logo */}
+          {/* Logo - Restored to Lumina */}
           <div className="flex items-center gap-2 font-bold text-xl text-primary">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-white text-lg">S</span>
+              <span className="text-white text-lg">L</span>
             </div>
-            <span className="hidden md:inline">Student Planner</span>
-            <span className="md:hidden">Planner</span>
+            Lumina
           </div>
 
-          {/* Buttons - FIXED FOR MOBILE with asChild */}
+          {/* Buttons - FIXED FOR MOBILE */}
           <div className="flex items-center gap-2 md:gap-4">
+            {/* The 'asChild' prop fixes the mobile click issue */}
             <Button variant="ghost" asChild className="hidden md:flex">
               <Link to="/auth">Sign In</Link>
             </Button>
-
+            
             <Button asChild>
               <Link to="/auth">Get Started</Link>
             </Button>
@@ -107,7 +107,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="py-10 border-t border-border">
         <div className="container mx-auto px-6 text-center text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} Student Planner. Built for success.</p>
+          <p>&copy; {new Date().getFullYear()} Lumina Student Planner. Built for success.</p>
         </div>
       </footer>
     </div>
