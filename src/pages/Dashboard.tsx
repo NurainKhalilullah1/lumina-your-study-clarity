@@ -1,113 +1,143 @@
 import { motion } from "framer-motion";
-import { Sparkles, FolderOpen, MessageCircle, Bell, LogOut, User } from "lucide-react";
+import { 
+  ClipboardList, 
+  Calendar, 
+  Clock, 
+  AlertCircle, 
+  Upload, 
+  Plus, 
+  Sparkles 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
+import DashboardLayout from "@/components/DashboardLayout";
+
+// Helper to get greeting based on time
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+};
+
+// Mock data
+const stats = [
+  { label: "Assignments Pending", value: 5, icon: ClipboardList, color: "text-primary" },
+  { label: "Upcoming Exams", value: 2, icon: Calendar, color: "text-accent" },
+  { label: "Study Hours", value: "12h", icon: Clock, color: "text-emerald-500" },
+];
+
+const urgentAssignments = [
+  { id: 1, title: "Physics Lab Report", course: "PHY 201", dueIn: "6 hours" },
+  { id: 2, title: "Calculus Problem Set", course: "MAT 301", dueIn: "23 hours" },
+  { id: 3, title: "Essay Draft", course: "ENG 102", dueIn: "36 hours" },
+];
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const { user, signOut } = useAuth();
-  const { toast } = useToast();
-
-  const handleSignOut = async () => {
-    await signOut();
-    toast({
-      title: "Signed out",
-      description: "You have been signed out successfully.",
-    });
-    navigate("/auth");
-  };
+  const { user } = useAuth();
+  const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Student";
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <a href="/" className="flex items-center gap-2 group">
-              <Sparkles className="w-6 h-6 text-primary transition-transform group-hover:scale-110" />
-              <span className="text-lg font-bold text-foreground">Lumina</span>
-            </a>
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted">
-                <User className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-foreground truncate max-w-[150px]">
-                  {user?.email || "Student"}
-                </span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSignOut}
-                className="gap-2"
-              >
-                <LogOut className="w-4 h-4" />
-                Sign Out
-              </Button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <DashboardLayout>
+      <div className="p-6 lg:p-8 space-y-6">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.4 }}
         >
-          <h1 className="text-3xl font-bold text-foreground mb-2">Welcome to Lumina 👋</h1>
-          <p className="text-muted-foreground mb-8">Your academic command center awaits.</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-foreground">
+            {getGreeting()}, {userName} 👋
+          </h1>
+          <p className="text-muted-foreground mt-1">Here's what's happening with your studies today.</p>
+        </motion.div>
 
-          {/* Quick Actions */}
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="bg-card rounded-2xl p-6 border border-border hover:border-primary/30 transition-all cursor-pointer group"
+        {/* Stats Cards */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+        >
+          {stats.map((stat, index) => (
+            <div
+              key={stat.label}
+              className="bg-card rounded-xl p-5 shadow-sm border border-border"
             >
-              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 mb-4 group-hover:bg-primary/20 transition-colors">
-                <FolderOpen className="w-6 h-6 text-primary" />
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">{stat.label}</p>
+                  <p className="text-3xl font-bold text-foreground mt-1">{stat.value}</p>
+                </div>
+                <div className={`p-3 rounded-xl bg-muted ${stat.color}`}>
+                  <stat.icon className="w-6 h-6" />
+                </div>
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">The Vault</h3>
-              <p className="text-sm text-muted-foreground">Upload and organize your course materials.</p>
-            </motion.div>
+            </div>
+          ))}
+        </motion.div>
 
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="bg-card rounded-2xl p-6 border border-border hover:border-accent/30 transition-all cursor-pointer group"
-            >
-              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-accent/10 mb-4 group-hover:bg-accent/20 transition-colors">
-                <MessageCircle className="w-6 h-6 text-accent" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">AI Tutor</h3>
-              <p className="text-sm text-muted-foreground">Ask questions about your lecture slides.</p>
-            </motion.div>
-
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="bg-card rounded-2xl p-6 border border-border hover:border-primary/30 transition-all cursor-pointer group"
-            >
-              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 mb-4 group-hover:bg-primary/20 transition-colors">
-                <Bell className="w-6 h-6 text-primary" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">Deadline Radar</h3>
-              <p className="text-sm text-muted-foreground">Track and manage your upcoming assignments.</p>
-            </motion.div>
+        {/* Due Soon Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="bg-card rounded-xl p-6 shadow-sm border border-border"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <AlertCircle className="w-5 h-5 text-destructive" />
+            <h2 className="text-lg font-semibold text-foreground">Due Soon</h2>
           </div>
+          
+          {urgentAssignments.length > 0 ? (
+            <div className="space-y-3">
+              {urgentAssignments.map((assignment) => (
+                <div
+                  key={assignment.id}
+                  className="flex items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                >
+                  <div>
+                    <p className="font-medium text-foreground">{assignment.title}</p>
+                    <p className="text-sm text-muted-foreground">{assignment.course}</p>
+                  </div>
+                  <span className="text-sm font-medium text-destructive bg-destructive/10 px-3 py-1 rounded-full">
+                    {assignment.dueIn}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">All caught up! 🎉</p>
+            </div>
+          )}
+        </motion.div>
 
-          {/* Placeholder Content */}
-          <div className="bg-muted/50 rounded-2xl p-12 border border-dashed border-border text-center">
-            <Sparkles className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-foreground mb-2">Your Dashboard is Ready</h2>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              Enable Lovable Cloud to unlock full authentication and start building your personalized academic workspace.
-            </p>
+        {/* Quick Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+          className="bg-card rounded-xl p-6 shadow-sm border border-border"
+        >
+          <h2 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h2>
+          <div className="flex flex-wrap gap-3">
+            <Button className="gap-2">
+              <Upload className="w-4 h-4" />
+              Upload New PDF
+            </Button>
+            <Button variant="outline" className="gap-2">
+              <Plus className="w-4 h-4" />
+              Add Assignment
+            </Button>
+            <Button variant="secondary" className="gap-2">
+              <Sparkles className="w-4 h-4" />
+              Ask AI
+            </Button>
           </div>
         </motion.div>
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 };
 
