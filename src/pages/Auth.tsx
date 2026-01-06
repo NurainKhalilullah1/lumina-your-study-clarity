@@ -17,14 +17,14 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { signIn, signUp, signInWithGoogle, user } = useAuth();
+  const { signIn, signUp, signInWithGoogle, user, loading } = useAuth();
 
-  // Redirect if already logged in
+  // Redirect if already logged in (only after validation completes)
   useEffect(() => {
-    if (user) {
-      navigate("/dashboard");
+    if (!loading && user) {
+      navigate("/dashboard", { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
