@@ -1,20 +1,12 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { 
-  ClipboardList, 
-  Calendar, 
-  Clock, 
-  AlertCircle, 
-  Upload, 
-  Sparkles,
-  ArrowRight
-} from "lucide-react";
+import { ClipboardList, Calendar, CheckCircle2, AlertCircle, Upload, Sparkles } from "lucide-react"; // Added CheckCircle2
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { AddAssignmentDialog } from "@/components/AddAssignmentDialog"; // Import the Dialog
+import { AddAssignmentDialog } from "@/components/AddAssignmentDialog";
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -31,23 +23,38 @@ const Dashboard = () => {
   const [stats, setStats] = useState([
     { label: "Assignments Pending", value: 0, icon: ClipboardList, color: "text-primary" },
     { label: "Upcoming Exams", value: 0, icon: Calendar, color: "text-accent" },
-    { label: "Study Hours", value: "0h", icon: Clock, color: "text-emerald-500" },
+    { label: "Tasks Completed", value: 0, icon: CheckCircle2, color: "text-emerald-500" }, // Changed from Study Hours
   ]);
 
   const [urgentAssignments, setUrgentAssignments] = useState<any[]>([]);
 
-  // Function to fetch fresh data
   const fetchData = async () => {
     if (!user) return;
 
-    // 1. Get Pending Assignments Count
+    // 1. Get Assignments Pending
     const { count: pendingCount } = await supabase
       .from("assignments")
       .select("*", { count: 'exact', head: true })
       .eq("user_id", user.id)
-      .eq("status", "pending");
+      .eq("status", "pending")
+      .eq("type", "assignment"); // Only count assignments
 
-    // 2. Get Urgent Assignments (Due in next 3 days)
+    // 2. Get Upcoming Exams
+    const { count: examCount } = await supabase
+      .from("assignments")
+      .select("*", { count: 'exact', head: true })
+      .eq("user_id", user.id)
+      .eq("status", "pending")
+      .eq("type", "exam"); // Only count exams
+
+    // 3. Get Completed Tasks (All types)
+    const { count: completedCount } = await supabase
+      .from("assignments")
+      .select("*", { count: 'exact', head: true })
+      .eq("user_id", user.id)
+      .eq("status", "completed");
+
+    // 4. Get Urgent Items
     const threeDaysFromNow = new Date();
     threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
     
@@ -60,22 +67,20 @@ const Dashboard = () => {
       .order("due_date", { ascending: true })
       .limit(3);
 
-    // Update State
-    setStats(prev => [
-      { ...prev[0], value: pendingCount || 0 }, // Update pending count
-      { ...prev[1], value: 0 }, // Exams placeholder
-      { ...prev[2], value: "12h" } // Study hours placeholder
+    setStats([
+      { label: "Assignments Pending", value: pendingCount || 0, icon: ClipboardList, color: "text-primary" },
+      { label: "Upcoming Exams", value: examCount || 0, icon: Calendar, color: "text-accent" },
+      { label: "Tasks Completed", value: completedCount || 0, icon: CheckCircle2, color: "text-emerald-500" },
     ]);
 
     if (urgent) {
       setUrgentAssignments(urgent.map(a => ({
         ...a,
-        dueIn: new Date(a.due_date).toLocaleDateString() // Simple date formatting
+        dueIn: new Date(a.due_date).toLocaleDateString()
       })));
     }
   };
 
-  // Fetch on load
   useEffect(() => {
     fetchData();
   }, [user]);
@@ -107,7 +112,7 @@ const Dashboard = () => {
           ))}
         </motion.div>
 
-        {/* Urgent Assignments */}
+        {/* Due Soon */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-card rounded-xl p-6 shadow-sm border border-border">
           <div className="flex items-center gap-2 mb-4">
             <AlertCircle className="w-5 h-5 text-destructive" />
@@ -119,7 +124,10 @@ const Dashboard = () => {
               {urgentAssignments.map((assignment) => (
                 <div key={assignment.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                   <div>
-                    <p className="font-medium text-foreground">{assignment.title}</p>
+                    <div className="flex items-center gap-2">
+                        <p className="font-medium text-foreground">{assignment.title}</p>
+                        {assignment.type === 'exam' && <span className="text-[10px] bg-accent/20 text-accent px-2 py-0.5 rounded-full uppercase font-bold">Exam</span>}
+                    </div>
                     <p className="text-sm text-muted-foreground">{assignment.course_name}</p>
                   </div>
                   <span className="text-sm font-medium text-destructive bg-destructive/10 px-3 py-1 rounded-full">
@@ -132,7 +140,6 @@ const Dashboard = () => {
             <div className="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed border-muted rounded-lg">
               <Sparkles className="w-8 h-8 text-primary/50 mb-2" />
               <p className="text-muted-foreground">No urgent deadlines!</p>
-              {/* Insert the Add Modal here so they can add one right away */}
               <div className="mt-4">
                 <AddAssignmentDialog onAssignmentAdded={fetchData} />
               </div>
@@ -147,10 +154,7 @@ const Dashboard = () => {
             <Button className="gap-2" onClick={() => navigate('/tutor')}>
               <Upload className="w-4 h-4" /> Upload PDF
             </Button>
-            
-            {/* The Magic: Add Assignment Dialog is here now */}
             <AddAssignmentDialog onAssignmentAdded={fetchData} />
-            
             <Button variant="secondary" className="gap-2" onClick={() => navigate('/tutor')}>
               <Sparkles className="w-4 h-4" /> Ask AI
             </Button>
