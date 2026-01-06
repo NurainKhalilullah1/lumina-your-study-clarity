@@ -1,9 +1,10 @@
-import { format, isToday, isYesterday, isWithinInterval, subDays } from "date-fns";
+import { isToday, isYesterday, isWithinInterval, subDays } from "date-fns";
 import { SquarePen, MessageSquare, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Conversation, useDeleteConversation } from "@/hooks/useConversations";
+import { useToast } from "@/hooks/use-toast";
 
 interface ChatSidebarProps {
   conversations: Conversation[];
@@ -44,11 +45,20 @@ const ChatSidebar = ({
   onNewChat,
 }: ChatSidebarProps) => {
   const deleteConversation = useDeleteConversation();
+  const { toast } = useToast();
   const grouped = groupConversationsByDate(conversations);
   
-  const handleDelete = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    deleteConversation.mutate(id);
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation(); // Stop the click from opening the chat
+    
+    if (window.confirm("Are you sure you want to delete this chat?")) {
+      try {
+        await deleteConversation.mutateAsync(id);
+        toast({ title: "Deleted", description: "Conversation removed." });
+      } catch (error) {
+        toast({ title: "Error", description: "Could not delete chat.", variant: "destructive" });
+      }
+    }
   };
   
   const renderGroup = (title: string, items: Conversation[]) => {
@@ -61,25 +71,32 @@ const ChatSidebar = ({
         </p>
         <div className="space-y-1">
           {items.map((conv) => (
-            <button
+            <div
               key={conv.id}
-              onClick={() => onSelectConversation(conv.id)}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm transition-colors group",
+                "group relative flex items-center rounded-lg transition-colors pr-2",
                 activeConversationId === conv.id
                   ? "bg-primary/10 text-primary"
                   : "hover:bg-muted text-foreground"
               )}
             >
-              <MessageSquare className="w-4 h-4 shrink-0" />
-              <span className="truncate flex-1">{conv.title}</span>
+              <button
+                onClick={() => onSelectConversation(conv.id)}
+                className="flex-1 flex items-center gap-3 px-3 py-2 text-left text-sm truncate"
+              >
+                <MessageSquare className="w-4 h-4 shrink-0" />
+                <span className="truncate">{conv.title}</span>
+              </button>
+              
+              {/* Delete Button - Only visible on hover */}
               <button
                 onClick={(e) => handleDelete(e, conv.id)}
-                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive/10 rounded transition-opacity"
+                className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-destructive/10 hover:text-destructive rounded-md transition-all"
+                title="Delete Chat"
               >
-                <Trash2 className="w-3 h-3 text-destructive" />
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
-            </button>
+            </div>
           ))}
         </div>
       </div>
