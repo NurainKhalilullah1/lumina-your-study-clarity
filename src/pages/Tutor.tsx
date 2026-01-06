@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Menu, ChevronDown, FileText, X, Sparkles } from "lucide-react";
+import { Menu, ChevronDown, FileText, X, Sparkles, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -26,6 +26,42 @@ import {
 } from "@/hooks/useConversations";
 import { useUserFiles, useUploadFile, UserFile } from "@/hooks/useFileUpload";
 
+// --- AI & PDF IMPORTS ---
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import * as pdfjsLib from "pdfjs-dist";
+
+// --- PDF WORKER CONFIGURATION ---
+// This tells the browser where to find the code to read PDFs
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
+// --- PDF EXTRACTION FUNCTION ---
+const extractTextFromPDF = async (file: File): Promise<string> => {
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+    let fullText = "";
+
+    // Loop through every page
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map((item: any) => item.str).join(" ");
+      fullText += `Page ${i}: ${pageText}\n\n`;
+    }
+
+    return fullText;
+  } catch (error) {
+    console.error("Error extracting text from PDF:", error);
+    throw new Error("Failed to extract text from PDF");
+  }
+};
+
+// --- INITIALIZE GOOGLE GEMINI ---
+// IMPORTANT: Make sure VITE_GEMINI_API_KEY is in your .env file
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
 const Tutor = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -33,6 +69,9 @@ const Tutor = () => {
   const [isThinking, setIsThinking] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [contextFile, setContextFile] = useState<UserFile | null>(null);
+
+  // New State: Store the actual text from the PDF
+  const [extractedContext, setExtractedContext] = useState<string>("");
   const [chatSidebarOpen, setChatSidebarOpen] = useState(false);
 
   const { data: conversations = [] } = useConversations(user?.id);
@@ -57,6 +96,7 @@ const Tutor = () => {
       const newConv = await createConversation.mutateAsync({ userId: user.id });
       setActiveConversationId(newConv.id);
       setContextFile(null);
+      setExtractedContext(""); // Clear context on new chat
       setChatSidebarOpen(false);
     } catch (error) {
       toast({
@@ -72,6 +112,7 @@ const Tutor = () => {
     setChatSidebarOpen(false);
   };
 
+  // --- REAL AI SEND HANDLER ---
   const handleSend = async (content: string) => {
     if (!user) return;
 
@@ -104,7 +145,7 @@ const Tutor = () => {
       });
     }
 
-    // Send user message
+    // 1. Save USER message to database
     try {
       await sendMessage.mutateAsync({
         conversationId,
@@ -112,56 +153,87 @@ const Tutor = () => {
         content,
       });
 
-      // Simulate AI thinking
       setIsThinking(true);
-      await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      // Mock AI response
-      const aiResponse = generateMockResponse(content, contextFile?.file_name);
+      // 2. Prepare Gemini Prompt
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+      let finalPrompt = content;
+
+      // If we have extracted PDF text, attach it to the prompt
+      if (extractedContext) {
+        finalPrompt = `You are an expert academic tutor. 
+        I have uploaded a document. Here is the content of the document:
+        
+        --- START OF DOCUMENT ---
+        ${extractedContext.slice(0, 30000)} 
+        --- END OF DOCUMENT ---
+        
+        User Question: ${content}
+        
+        Answer based on the document provided. If the answer is not in the document, say so.`;
+      }
+
+      // 3. Call Gemini API
+      const result = await model.generateContent(finalPrompt);
+      const responseText = result.response.text();
+
+      // 4. Save AI response to database
       await sendMessage.mutateAsync({
         conversationId,
         role: "assistant",
-        content: aiResponse,
+        content: responseText,
       });
 
       setIsThinking(false);
     } catch (error) {
       setIsThinking(false);
+      console.error("AI Error:", error);
       toast({
-        title: "Error",
-        description: "Failed to send message",
+        title: "AI Error",
+        description: "Gemini failed to respond. Check your API key.",
         variant: "destructive",
       });
     }
   };
 
+  // --- REAL FILE HANDLER (With Extraction) ---
   const handleFileSelect = async (file: File) => {
     if (!user) return;
     setSelectedFile(file);
+    setIsThinking(true); // Show loading
 
     try {
+      // 1. Extract Text Locally (Browser)
+      toast({ title: "Reading PDF...", description: "Extracting text for the AI." });
+      const text = await extractTextFromPDF(file);
+      setExtractedContext(text);
+
+      // 2. Upload to Supabase Storage (Optional - mainly for file keeping)
       const uploadedFile = await uploadFile.mutateAsync({ userId: user.id, file });
       setContextFile(uploadedFile);
+
       setSelectedFile(null);
       toast({
-        title: "File uploaded",
-        description: `${file.name} is ready to use as context.`,
+        title: "Ready!",
+        description: `${file.name} has been read. You can now ask questions about it.`,
       });
     } catch (error) {
       setSelectedFile(null);
+      console.error(error);
       toast({
-        title: "Upload failed",
-        description: "Could not upload the file. Please try again.",
+        title: "Error",
+        description: "Could not read the PDF text. Is it a scanned image?",
         variant: "destructive",
       });
+    } finally {
+      setIsThinking(false);
     }
   };
 
   const handleStarterSelect = (prompt: string) => {
     handleSend(prompt);
   };
-
-  const activeConversation = conversations.find((c) => c.id === activeConversationId);
 
   return (
     <SidebarProvider>
@@ -221,9 +293,25 @@ const Tutor = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
-                    <DropdownMenuItem onClick={() => setContextFile(null)}>General Knowledge</DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setContextFile(null);
+                        setExtractedContext("");
+                      }}
+                    >
+                      General Knowledge
+                    </DropdownMenuItem>
                     {userFiles.map((file) => (
-                      <DropdownMenuItem key={file.id} onClick={() => setContextFile(file)}>
+                      <DropdownMenuItem
+                        key={file.id}
+                        onClick={() => {
+                          setContextFile(file);
+                          toast({
+                            title: "Note",
+                            description: "You selected an old file. Re-upload to refresh the AI context.",
+                          });
+                        }}
+                      >
                         {file.file_name}
                       </DropdownMenuItem>
                     ))}
@@ -234,7 +322,10 @@ const Tutor = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setContextFile(null)}
+                    onClick={() => {
+                      setContextFile(null);
+                      setExtractedContext("");
+                    }}
                     className="gap-1 text-muted-foreground"
                   >
                     <X className="w-3 h-3" />
@@ -281,72 +372,6 @@ const Tutor = () => {
       </div>
     </SidebarProvider>
   );
-};
-
-// Mock response generator
-const generateMockResponse = (query: string, fileName?: string): string => {
-  const lowerQuery = query.toLowerCase();
-
-  if (lowerQuery.includes("summarize") || lowerQuery.includes("summary")) {
-    return `## Summary${fileName ? ` of ${fileName}` : ""}
-
-Here are the key points I found:
-
-1. **Main Concept**: The document discusses fundamental principles that form the basis of the subject matter.
-
-2. **Key Findings**: Several important observations were noted throughout the material.
-
-3. **Conclusions**: The author presents compelling arguments supported by evidence.
-
-Would you like me to elaborate on any of these points?`;
-  }
-
-  if (lowerQuery.includes("quiz") || lowerQuery.includes("test")) {
-    return `## Practice Quiz
-
-Here are some questions to test your understanding:
-
-**Question 1:** What is the primary purpose of the concept discussed in the material?
-- A) To simplify complex processes
-- B) To introduce new methodologies
-- C) To challenge existing theories
-- D) All of the above
-
-**Question 2:** True or False: The principles outlined can be applied across multiple domains.
-
-**Question 3:** Explain in your own words the main takeaway from this topic.
-
-Would you like me to provide the answers or create more questions?`;
-  }
-
-  if (lowerQuery.includes("explain") || lowerQuery.includes("what is")) {
-    return `## Explanation
-
-Let me break this down for you:
-
-**In simple terms:** Think of this concept like a building block. Just as you need a strong foundation to build a house, this principle serves as the foundation for understanding more complex ideas.
-
-**Example:** Imagine you're learning to cook. You start with basic techniques like chopping and sautéing before moving to complex recipes. Similarly, this concept is one of those fundamental techniques.
-
-**Why it matters:** Understanding this helps you grasp more advanced topics and apply knowledge in practical situations.
-
-Does this explanation help? Would you like me to provide more examples?`;
-  }
-
-  return `I understand you're asking about "${query.slice(0, 50)}${query.length > 50 ? "..." : ""}". 
-
-Based on my analysis, here are some insights:
-
-1. This is an interesting topic that connects to several key concepts.
-2. There are multiple perspectives to consider when approaching this question.
-3. I'd recommend reviewing the relevant sections of your materials for more context.
-
-Would you like me to:
-- **Elaborate** on any specific aspect?
-- **Create practice questions** to test your understanding?
-- **Summarize** related concepts?
-
-Just let me know how I can help further! 📚`;
 };
 
 export default Tutor;
