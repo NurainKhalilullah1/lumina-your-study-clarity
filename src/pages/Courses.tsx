@@ -1,54 +1,68 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, FolderOpen } from "lucide-react";
+import { BookOpen, Plus, FolderOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/DashboardLayout";
-
-const mockCourses = [
-  { id: 1, code: "PHY 201", name: "Physics II", materials: 12, color: "bg-blue-500" },
-  { id: 2, code: "MAT 301", name: "Calculus III", materials: 8, color: "bg-purple-500" },
-  { id: 3, code: "ENG 102", name: "Academic Writing", materials: 15, color: "bg-emerald-500" },
-  { id: 4, code: "CSC 201", name: "Data Structures", materials: 20, color: "bg-orange-500" },
-];
+import { useNavigate } from "react-router-dom";
 
 const Courses = () => {
+  const navigate = useNavigate();
+  // State is empty by default
+  const [courses, setCourses] = useState<any[]>([]);
+
   return (
     <DashboardLayout>
       <div className="p-6 lg:p-8 space-y-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <h1 className="text-2xl lg:text-3xl font-bold text-foreground">My Courses</h1>
-          <p className="text-muted-foreground mt-1">Manage your courses and study materials.</p>
-        </motion.div>
+        <div className="flex items-center justify-between">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+            <h1 className="text-2xl lg:text-3xl font-bold text-foreground">My Courses</h1>
+            <p className="text-muted-foreground mt-1">Manage your courses and study materials.</p>
+          </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-        >
-          {mockCourses.map((course, index) => (
-            <motion.div
-              key={course.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 + index * 0.05 }}
-              whileHover={{ scale: 1.02 }}
-              className="bg-card rounded-xl p-6 shadow-sm border border-border cursor-pointer hover:border-primary/30 transition-colors"
+          <Button
+            onClick={() => {
+              /* TODO: Open Add Course Modal */
+            }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Course
+          </Button>
+        </div>
+
+        {courses.length > 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+          >
+            {/* Course mapping logic would go here */}
+          </motion.div>
+        ) : (
+          // EMPTY STATE
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center justify-center h-[60vh] border-2 border-dashed border-muted rounded-xl bg-muted/10"
+          >
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+              <BookOpen className="w-8 h-8 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground mb-2">No courses yet</h3>
+            <p className="text-muted-foreground max-w-sm text-center mb-6">
+              Create your first course to start organizing your lecture slides and assignments.
+            </p>
+            <Button
+              size="lg"
+              onClick={() => {
+                /* TODO: Open Add Course Modal */
+              }}
             >
-              <div className={`w-12 h-12 ${course.color} rounded-xl flex items-center justify-center mb-4`}>
-                <BookOpen className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground">{course.code}</h3>
-              <p className="text-muted-foreground text-sm">{course.name}</p>
-              <div className="flex items-center gap-2 mt-4 text-sm text-muted-foreground">
-                <FolderOpen className="w-4 h-4" />
-                <span>{course.materials} materials</span>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
+              <Plus className="w-4 h-4 mr-2" />
+              Create Course
+            </Button>
+          </motion.div>
+        )}
       </div>
     </DashboardLayout>
   );
