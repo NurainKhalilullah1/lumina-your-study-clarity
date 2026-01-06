@@ -37,7 +37,7 @@ export function AddAssignmentDialog({ onAssignmentAdded }: AddAssignmentDialogPr
       const { error } = await supabase.from("assignments").insert({
         user_id: user.id,
         title: title,
-        course_id: null,
+        course_name: course, // CHANGE: Save the course variable to the course_name column
         status: "pending",
         due_date: date.toISOString(),
         priority: "medium" 
