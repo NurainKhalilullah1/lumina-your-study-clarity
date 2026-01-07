@@ -1,143 +1,123 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { PartyPopper, Sparkles, Loader2, User } from "lucide-react"; // Changed icon to PartyPopper
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProfile, createProfile } from "@/hooks/useProfile";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Sparkles, UserPlus } from "lucide-react";
+import { motion } from "framer-motion";
 
 const Onboarding = () => {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { data: profile, isLoading: profileLoading, refetch } = useProfile(user?.id);
+  const [isCreating, setIsCreating] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  
-  const [fullName, setFullName] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 1. Check Auth & Pre-fill Name (if Google provided it)
+  // Redirect if not authenticated
   useEffect(() => {
-    if (!loading && !user) {
-      navigate("/auth");
-    } else if (user?.user_metadata?.full_name) {
-      setFullName(user.user_metadata.full_name);
+    if (!authLoading && !user) {
+      navigate("/auth", { replace: true });
     }
-  }, [user, loading, navigate]);
+  }, [authLoading, user, navigate]);
 
-  // 2. Create Profile in Database
-  const handleCompleteSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Redirect if profile already exists
+  useEffect(() => {
+    if (!profileLoading && profile) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [profileLoading, profile, navigate]);
+
+  const handleCompleteSignup = async () => {
     if (!user) return;
     
-    setIsSubmitting(true);
-
+    setIsCreating(true);
     try {
-      // Create/Update the profile row
-      const { error } = await supabase.from("profiles").upsert({
-        id: user.id,
-        full_name: fullName,
-        username: user.email?.split("@")[0],
-        avatar_url: user.user_metadata?.avatar_url || "",
-      });
-
-      if (error) throw error;
-
+      await createProfile(
+        user.id,
+        user.email,
+        user.user_metadata?.full_name || user.user_metadata?.name,
+        user.user_metadata?.avatar_url
+      );
+      
       toast({
-        title: "All set!",
-        description: "Welcome to your new dashboard.",
+        title: "Welcome to Lumina!",
+        description: "Your account has been created successfully.",
       });
-
-      // Send to Dashboard
+      
+      await refetch();
       navigate("/dashboard", { replace: true });
-
     } catch (error: any) {
-      console.error(error);
+      console.error("Error creating profile:", error);
       toast({
         title: "Error",
-        description: "Could not set up profile. Please try again.",
+        description: error.message || "Failed to create your account. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsCreating(false);
     }
   };
 
-  if (loading) {
+  // Show loading while checking auth or profile
+  if (authLoading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <div className="flex flex-col items-center gap-4">
+          <Sparkles className="w-10 h-10 text-primary animate-pulse" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <motion.div 
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full"
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md text-center"
       >
-        <div className="bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
-          {/* Header - Friendly Welcome Message */}
-          <div className="bg-primary/5 p-8 text-center border-b border-border/50">
+        <div className="bg-card border border-border rounded-2xl p-8 shadow-lg">
+          <div className="mb-6">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <PartyPopper className="w-8 h-8 text-primary" />
+              <UserPlus className="w-8 h-8 text-primary" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">Welcome to Lumina!</h1>
-            <p className="text-muted-foreground mt-2 text-sm">
-              Let's set up your profile so you can start planning your success.
+            <h1 className="text-2xl font-bold text-foreground mb-2">
+              Complete Your Signup
+            </h1>
+            <p className="text-muted-foreground">
+              We couldn't find an existing Lumina account for this login. 
+              Click below to create your account and get started.
             </p>
           </div>
 
-          {/* Form */}
-          <div className="p-8">
-            <form onSubmit={handleCompleteSignup} className="space-y-6">
-              
-              {/* Email Display (Read-Only) */}
-              <div className="p-3 bg-muted/50 rounded-lg border border-border flex items-center gap-3">
-                 <div className="w-8 h-8 rounded-full bg-background flex items-center justify-center border border-border">
-                    <User className="w-4 h-4 text-muted-foreground" />
-                 </div>
-                 <div className="overflow-hidden">
-                   <p className="text-xs text-muted-foreground font-medium uppercase">Signed in as</p>
-                   <p className="text-sm font-medium text-foreground truncate">{user?.email}</p>
-                 </div>
-              </div>
+          {user && (
+            <div className="mb-6 p-4 bg-muted/50 rounded-lg">
+              <p className="text-sm text-muted-foreground">Signing up as</p>
+              <p className="font-medium text-foreground">{user.email}</p>
+            </div>
+          )}
 
-              {/* Name Input - Crucial for Email Signups */}
-              <div className="space-y-2">
-                <Label htmlFor="name">Display Name</Label>
-                <Input
-                  id="name"
-                  placeholder="e.g. Alex Student"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="h-11 bg-background"
-                  required
-                />
-              </div>
-
-              <Button 
-                type="submit" 
-                className="w-full h-11 text-base" 
-                disabled={isSubmitting || !fullName.trim()}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                    Setting up...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-5 h-5 mr-2" />
-                    Get Started
-                  </>
-                )}
-              </Button>
-            </form>
-          </div>
+          <Button
+            onClick={handleCompleteSignup}
+            disabled={isCreating}
+            className="w-full"
+            size="lg"
+          >
+            {isCreating ? (
+              <>
+                <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                Creating Account...
+              </>
+            ) : (
+              <>
+                <UserPlus className="w-4 h-4 mr-2" />
+                Complete Signup
+              </>
+            )}
+          </Button>
         </div>
       </motion.div>
     </div>
