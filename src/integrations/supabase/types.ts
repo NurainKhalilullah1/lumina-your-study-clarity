@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      assignments: {
+        Row: {
+          course_id: string | null
+          course_name: string | null
+          created_at: string
+          due_date: string
+          id: string
+          priority: string | null
+          status: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          course_id?: string | null
+          course_name?: string | null
+          created_at?: string
+          due_date: string
+          id?: string
+          priority?: string | null
+          status?: string
+          title: string
+          type?: string
+          user_id?: string
+        }
+        Update: {
+          course_id?: string | null
+          course_name?: string | null
+          created_at?: string
+          due_date?: string
+          id?: string
+          priority?: string | null
+          status?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           context_file_path: string | null
@@ -40,6 +79,33 @@ export type Database = {
           id?: string
           title?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      courses: {
+        Row: {
+          code: string
+          color: string | null
+          created_at: string
+          id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          title: string
+          user_id?: string
+        }
+        Update: {
+          code?: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          title?: string
           user_id?: string
         }
         Relationships: []
@@ -138,7 +204,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_own_account: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
