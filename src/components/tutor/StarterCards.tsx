@@ -1,64 +1,48 @@
-import { BookOpen, BrainCircuit, FileText, Calendar } from "lucide-react";
-import { motion } from "framer-motion";
+import { Card } from "@/components/ui/card";
+import { MessageCircle, BookOpen, BrainCircuit } from "lucide-react";
 
 interface StarterCardsProps {
-  onSelect: (prompt: string) => void;
+  onCardClick: (text: string) => void;
 }
 
-const starters = [
-  {
-    icon: FileText,
-    title: "Summarize a PDF",
-    prompt: "Can you summarize the key points from my uploaded document?",
-    color: "bg-blue-500/10 text-blue-600",
-  },
-  {
-    icon: BrainCircuit,
-    title: "Create a Quiz",
-    prompt: "Create a practice quiz based on my course materials.",
-    color: "bg-purple-500/10 text-purple-600",
-  },
-  {
-    icon: BookOpen,
-    title: "Explain a Topic",
-    prompt: "Explain the concept in simple terms with examples.",
-    color: "bg-emerald-500/10 text-emerald-600",
-  },
-  {
-    icon: Calendar,
-    title: "Study Plan",
-    prompt: "Help me create a study plan for my upcoming exam.",
-    color: "bg-orange-500/10 text-orange-600",
-  },
-];
+// Named export to match Tutor.tsx import { StarterCards }
+export const StarterCards = ({ onCardClick }: StarterCardsProps) => {
+  const starters = [
+    {
+      icon: <BookOpen className="w-5 h-5 text-blue-500" />,
+      title: "Summarize this topic",
+      text: "Create a bullet-point summary of the attached document.",
+      prompt: "Summarize this document into bullet points."
+    },
+    {
+      icon: <BrainCircuit className="w-5 h-5 text-purple-500" />,
+      title: "Quiz me",
+      text: "Generate 5 MCQs to test my knowledge.",
+      prompt: "Generate a quiz based on this text."
+    },
+    {
+      icon: <MessageCircle className="w-5 h-5 text-green-500" />,
+      title: "Explain Key Terms",
+      text: "Find complex terms and define them simply.",
+      prompt: "Identify and define key terms from this document."
+    }
+  ];
 
-const StarterCards = ({ onSelect }: StarterCardsProps) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto">
-      {starters.map((starter, index) => (
-        <motion.button
-          key={starter.title}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.1 }}
-          onClick={() => onSelect(starter.prompt)}
-          className="flex items-start gap-3 p-4 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors text-left group"
+    <div className="grid gap-4 md:grid-cols-3">
+      {starters.map((card, i) => (
+        <Card 
+          key={i} 
+          className="p-4 cursor-pointer hover:bg-muted/50 transition-colors border-2 hover:border-primary/20"
+          onClick={() => onCardClick(card.prompt)}
         >
-          <div className={`p-2 rounded-lg ${starter.color}`}>
-            <starter.icon className="w-5 h-5" />
+          <div className="flex flex-col gap-2">
+            <div className="mb-2">{card.icon}</div>
+            <h3 className="font-semibold">{card.title}</h3>
+            <p className="text-sm text-muted-foreground">{card.text}</p>
           </div>
-          <div>
-            <p className="font-medium text-foreground group-hover:text-primary transition-colors">
-              {starter.title}
-            </p>
-            <p className="text-sm text-muted-foreground line-clamp-2">
-              {starter.prompt}
-            </p>
-          </div>
-        </motion.button>
+        </Card>
       ))}
     </div>
   );
 };
-
-export default StarterCards;
