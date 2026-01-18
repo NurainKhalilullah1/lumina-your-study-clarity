@@ -1,135 +1,97 @@
-import { isToday, isYesterday, isWithinInterval, subDays } from "date-fns";
-import { SquarePen, MessageSquare, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { MessageSquare, Plus, Trash2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Conversation, useDeleteConversation } from "@/hooks/useConversations";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-interface ChatSidebarProps {
-  conversations: Conversation[];
-  activeConversationId: string | null;
-  onSelectConversation: (id: string) => void;
-  onNewChat: () => void;
+interface ChatSession {
+  id: string;
+  title: string;
+  created_at: string;
 }
 
-const groupConversationsByDate = (conversations: Conversation[]) => {
-  const today: Conversation[] = [];
-  const yesterday: Conversation[] = [];
-  const lastWeek: Conversation[] = [];
-  const older: Conversation[] = [];
-  
-  const now = new Date();
-  const weekAgo = subDays(now, 7);
-  
-  conversations.forEach((conv) => {
-    const date = new Date(conv.updated_at);
-    if (isToday(date)) {
-      today.push(conv);
-    } else if (isYesterday(date)) {
-      yesterday.push(conv);
-    } else if (isWithinInterval(date, { start: weekAgo, end: now })) {
-      lastWeek.push(conv);
-    } else {
-      older.push(conv);
-    }
-  });
-  
-  return { today, yesterday, lastWeek, older };
-};
+interface ChatSidebarProps {
+  currentSessionId: string | null;
+  onSelectSession: (id: string) => void;
+  onNewChat: () => void;
+  className?: string; // Support for mobile drawer
+}
 
-const ChatSidebar = ({
-  conversations,
-  activeConversationId,
-  onSelectConversation,
-  onNewChat,
-}: ChatSidebarProps) => {
-  const deleteConversation = useDeleteConversation();
+export const ChatSidebar = ({ currentSessionId, onSelectSession, onNewChat, className }: ChatSidebarProps) => {
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const grouped = groupConversationsByDate(conversations);
-  
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation(); // Stop the click from opening the chat
+
+  const fetchSessions = async () => {
+    const { data } = await supabase
+      .from('chat_sessions')
+      .select('*')
+      .order('created_at', { ascending: false });
     
-    if (window.confirm("Are you sure you want to delete this chat?")) {
-      try {
-        await deleteConversation.mutateAsync(id);
-        toast({ title: "Deleted", description: "Conversation removed." });
-      } catch (error) {
-        toast({ title: "Error", description: "Could not delete chat.", variant: "destructive" });
-      }
+    if (data) setSessions(data);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchSessions();
+  }, [currentSessionId]); // Refetch when session changes (e.g. title update)
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation(); // Prevent clicking the chat itself
+    
+    const { error } = await supabase.from('chat_sessions').delete().eq('id', id);
+
+    if (error) {
+      toast({ title: "Error", description: "Could not delete chat.", variant: "destructive" });
+    } else {
+      setSessions(prev => prev.filter(s => s.id !== id));
+      if (currentSessionId === id) onNewChat();
+      toast({ title: "Deleted", description: "Chat history removed." });
     }
   };
-  
-  const renderGroup = (title: string, items: Conversation[]) => {
-    if (items.length === 0) return null;
-    
-    return (
-      <div className="mb-4">
-        <p className="px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-          {title}
-        </p>
-        <div className="space-y-1">
-          {items.map((conv) => (
-            <div
-              key={conv.id}
-              className={cn(
-                "group relative flex items-center rounded-lg transition-colors pr-2",
-                activeConversationId === conv.id
-                  ? "bg-primary/10 text-primary"
-                  : "hover:bg-muted text-foreground"
-              )}
-            >
-              <button
-                onClick={() => onSelectConversation(conv.id)}
-                className="flex-1 flex items-center gap-3 px-3 py-2 text-left text-sm truncate"
-              >
-                <MessageSquare className="w-4 h-4 shrink-0" />
-                <span className="truncate">{conv.title}</span>
-              </button>
-              
-              {/* Delete Button - Only visible on hover */}
-              <button
-                onClick={(e) => handleDelete(e, conv.id)}
-                className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-destructive/10 hover:text-destructive rounded-md transition-all"
-                title="Delete Chat"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-  
+
   return (
-    <div className="h-full flex flex-col bg-slate-50 border-r border-border">
-      <div className="p-3 border-b border-border">
-        <Button
-          variant="outline"
-          className="w-full justify-start gap-2"
-          onClick={onNewChat}
-        >
-          <SquarePen className="w-4 h-4" />
-          New Chat
+    <div className={cn("flex flex-col h-full border-r bg-muted/10 w-64", className)}>
+      <div className="p-4 border-b">
+        <Button onClick={onNewChat} className="w-full gap-2" variant="default">
+          <Plus className="w-4 h-4" /> New Chat
         </Button>
       </div>
-      
-      <ScrollArea className="flex-1 px-2 py-3">
-        {renderGroup("Today", grouped.today)}
-        {renderGroup("Yesterday", grouped.yesterday)}
-        {renderGroup("Previous 7 Days", grouped.lastWeek)}
-        {renderGroup("Older", grouped.older)}
-        
-        {conversations.length === 0 && (
-          <p className="text-center text-sm text-muted-foreground py-8">
-            No conversations yet
-          </p>
+
+      <ScrollArea className="flex-1 p-4">
+        {loading ? (
+          <div className="flex justify-center py-4"><Loader2 className="animate-spin w-5 h-5 opacity-50"/></div>
+        ) : (
+          <div className="space-y-2">
+            {sessions.map((session) => (
+              <div
+                key={session.id}
+                onClick={() => onSelectSession(session.id)}
+                className={cn(
+                  "group flex items-center justify-between p-3 text-sm rounded-lg cursor-pointer transition-colors hover:bg-muted",
+                  currentSessionId === session.id ? "bg-muted font-medium text-primary" : "text-muted-foreground"
+                )}
+              >
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <MessageSquare className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{session.title}</span>
+                </div>
+                
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
+                  onClick={(e) => handleDelete(e, session.id)}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
         )}
       </ScrollArea>
     </div>
   );
 };
-
-export default ChatSidebar;
