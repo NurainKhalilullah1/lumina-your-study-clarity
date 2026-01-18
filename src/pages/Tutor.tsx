@@ -19,10 +19,8 @@ export default function Tutor() {
   const [messages, setMessages] = useState<any[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  
-  // === NEW: MEMORY STATE ===
-  // This keeps the PDF text alive even after the first message
   const [activeDocument, setActiveDocument] = useState<string>(""); 
+  const [sidebarRefresh, setSidebarRefresh] = useState(0); // <--- Signal to refresh sidebar
 
   const { toast } = useToast();
   const { user } = useAuth();
@@ -33,18 +31,14 @@ export default function Tutor() {
   useEffect(() => {
     if (!sessionId) {
       setMessages([]);
-      // Optional: Clear active document when switching chats? 
-      // setActiveDocument(""); 
       return;
     }
-
     const loadHistory = async () => {
       const { data } = await supabase
         .from('chat_messages')
         .select('*')
         .eq('session_id', sessionId)
         .order('created_at', { ascending: true });
-      
       if (data) setMessages(data);
     };
     loadHistory();
@@ -54,17 +48,22 @@ export default function Tutor() {
     if (!inputMessage.trim() && !file) return;
 
     const userMsg = { role: "user", content: inputMessage, attachment_name: file?.name };
-    
-    // Optimistically update UI
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
 
     try {
+      // 1. Create Session if needed
       let currentSession = sessionId;
+      let isNewSession = false;
+
       if (!currentSession && user) {
+        isNewSession = true;
+        // Start with a temporary title
+        const tempTitle = file ? file.name : inputMessage.slice(0, 30);
+        
         const { data, error } = await supabase
           .from('chat_sessions')
-          .insert({ user_id: user.id, title: inputMessage.slice(0, 30) + "..." })
+          .insert({ user_id: user.id, title: tempTitle })
           .select()
           .single();
         if (error) throw error;
@@ -80,47 +79,32 @@ export default function Tutor() {
         });
       }
 
-      // === 1. HANDLE FILE MEMORY ===
-      let contextText = activeDocument; // Start with what we already know
-      
+      // 2. Handle Document Context
+      let contextText = activeDocument;
       if (file) {
-        // If new file, extract and overwrite memory
         if (file.type === "application/pdf") {
             const extracted = await extractTextFromPDF(file);
             contextText = extracted;
-            setActiveDocument(extracted); // Save to state
+            setActiveDocument(extracted);
         } else {
             const text = await file.text();
             contextText = text;
-            setActiveDocument(text); // Save to state
+            setActiveDocument(text);
         }
       }
 
-      // === 2. BUILD CONVERSATION HISTORY ===
-      // We grab the last few messages so AI knows the context (e.g., "Change IT to bullets")
+      // 3. Generate AI Response
       const historyContext = messages.slice(-6).map(m => 
         `${m.role === 'user' ? 'Student' : 'Tutor'}: ${m.content}`
       ).join('\n');
 
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      
       const prompt = `
-        You are Lumina, a persistent study tutor.
-        
-        === ACTIVE DOCUMENT ===
-        (The student is currently looking at this content. specific questions refer to this.)
-        ${contextText ? contextText.slice(0, 30000) : "No document active."}
-        =======================
-
-        === RECENT CHAT HISTORY ===
-        ${historyContext}
-        Student: ${inputMessage}
-        ===========================
-
-        INSTRUCTIONS:
-        1. Answer the student's LAST question based on the Document and History.
-        2. If they ask to "summarize" or "explain", refer to the ACTIVE DOCUMENT.
-        3. Use Bullet Points for clarity.
+        You are Lumina.
+        ACTIVE DOCUMENT: ${contextText ? contextText.slice(0, 25000) : "None"}
+        HISTORY: ${historyContext}
+        USER: "${inputMessage}"
+        INSTRUCTIONS: Simplify, use bullets, be concise.
       `;
 
       const result = await model.generateContent(prompt);
@@ -134,6 +118,31 @@ export default function Tutor() {
           role: 'assistant',
           content: responseText
         });
+
+        // 4. GENERATE SMART TITLE (If new session)
+        if (isNewSession) {
+          // Run in background - don't await blocking the UI
+          (async () => {
+            try {
+              const titlePrompt = `
+                Generate a very short, specific 3-5 word title for a chat about this.
+                User asked: "${inputMessage}"
+                Document context: "${contextText ? contextText.slice(0, 100) : "None"}"
+                AI replied: "${responseText.slice(0, 100)}"
+                Return ONLY the title. No quotes.
+              `;
+              const titleResult = await model.generateContent(titlePrompt);
+              const newTitle = titleResult.response.text().trim().replace(/['"]/g, '');
+              
+              if (newTitle) {
+                await supabase.from('chat_sessions').update({ title: newTitle }).eq('id', currentSession);
+                setSidebarRefresh(prev => prev + 1); // Trigger sidebar update
+              }
+            } catch (e) {
+              console.error("Title gen failed", e);
+            }
+          })();
+        }
       }
 
     } catch (error) {
@@ -151,10 +160,8 @@ export default function Tutor() {
           <ChatSidebar 
             currentSessionId={sessionId} 
             onSelectSession={setSessionId} 
-            onNewChat={() => {
-                setSessionId(null);
-                setActiveDocument(""); // Optional: Reset doc on new chat
-            }} 
+            onNewChat={() => { setSessionId(null); setActiveDocument(""); }}
+            refreshTrigger={sidebarRefresh} // Pass the signal
           />
         </div>
 
@@ -166,10 +173,8 @@ export default function Tutor() {
                 <ChatSidebar 
                    currentSessionId={sessionId} 
                    onSelectSession={(id) => setSessionId(id)} 
-                   onNewChat={() => {
-                       setSessionId(null);
-                       setActiveDocument("");
-                   }} 
+                   onNewChat={() => { setSessionId(null); setActiveDocument(""); }}
+                   refreshTrigger={sidebarRefresh}
                 />
               </SheetContent>
             </Sheet>
