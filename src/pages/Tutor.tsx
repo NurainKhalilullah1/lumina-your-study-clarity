@@ -9,7 +9,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { extractTextFromPDF } from "@/utils/pdfUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"; // For mobile sidebar
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -19,17 +19,22 @@ export default function Tutor() {
   const [messages, setMessages] = useState<any[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // === NEW: MEMORY STATE ===
+  // This keeps the PDF text alive even after the first message
+  const [activeDocument, setActiveDocument] = useState<string>(""); 
+
   const { toast } = useToast();
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll
   useEffect(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), [messages, isLoading]);
 
-  // Load Messages when switching sessions
   useEffect(() => {
     if (!sessionId) {
       setMessages([]);
+      // Optional: Clear active document when switching chats? 
+      // setActiveDocument(""); 
       return;
     }
 
@@ -48,13 +53,13 @@ export default function Tutor() {
   const handleSendMessage = async (inputMessage: string, file?: File) => {
     if (!inputMessage.trim() && !file) return;
 
-    // 1. Optimistic UI Update
     const userMsg = { role: "user", content: inputMessage, attachment_name: file?.name };
+    
+    // Optimistically update UI
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
 
     try {
-      // 2. Ensure Session Exists (Create if new)
       let currentSession = sessionId;
       if (!currentSession && user) {
         const { data, error } = await supabase
@@ -62,13 +67,11 @@ export default function Tutor() {
           .insert({ user_id: user.id, title: inputMessage.slice(0, 30) + "..." })
           .select()
           .single();
-        
         if (error) throw error;
         currentSession = data.id;
         setSessionId(data.id);
       }
 
-      // 3. Save User Message to DB
       if (currentSession && user) {
         await supabase.from('chat_messages').insert({
           session_id: currentSession,
@@ -77,24 +80,52 @@ export default function Tutor() {
         });
       }
 
-      // 4. Process File & AI
-      let contextText = "";
+      // === 1. HANDLE FILE MEMORY ===
+      let contextText = activeDocument; // Start with what we already know
+      
       if (file) {
-        contextText = file.type === "application/pdf" ? await extractTextFromPDF(file) : await file.text();
+        // If new file, extract and overwrite memory
+        if (file.type === "application/pdf") {
+            const extracted = await extractTextFromPDF(file);
+            contextText = extracted;
+            setActiveDocument(extracted); // Save to state
+        } else {
+            const text = await file.text();
+            contextText = text;
+            setActiveDocument(text); // Save to state
+        }
       }
 
+      // === 2. BUILD CONVERSATION HISTORY ===
+      // We grab the last few messages so AI knows the context (e.g., "Change IT to bullets")
+      const historyContext = messages.slice(-6).map(m => 
+        `${m.role === 'user' ? 'Student' : 'Tutor'}: ${m.content}`
+      ).join('\n');
+
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      
       const prompt = `
-        You are Lumina.
-        CONTEXT: ${contextText ? `FILE CONTENT:\n${contextText.slice(0, 25000)}...` : "No file."}
-        USER: "${inputMessage}"
-        INSTRUCTIONS: Simplify complex topics. Use bullets. If asked for a quiz, provide 5 MCQs.
+        You are Lumina, a persistent study tutor.
+        
+        === ACTIVE DOCUMENT ===
+        (The student is currently looking at this content. specific questions refer to this.)
+        ${contextText ? contextText.slice(0, 30000) : "No document active."}
+        =======================
+
+        === RECENT CHAT HISTORY ===
+        ${historyContext}
+        Student: ${inputMessage}
+        ===========================
+
+        INSTRUCTIONS:
+        1. Answer the student's LAST question based on the Document and History.
+        2. If they ask to "summarize" or "explain", refer to the ACTIVE DOCUMENT.
+        3. Use Bullet Points for clarity.
       `;
 
       const result = await model.generateContent(prompt);
       const responseText = result.response.text();
 
-      // 5. Update UI & Save Assistant Message
       setMessages((prev) => [...prev, { role: "assistant", content: responseText }]);
 
       if (currentSession && user) {
@@ -107,7 +138,7 @@ export default function Tutor() {
 
     } catch (error) {
       console.error(error);
-      toast({ title: "Error", description: "Failed to generate response.", variant: "destructive" });
+      toast({ title: "Error", description: "Connection interrupted.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -116,19 +147,18 @@ export default function Tutor() {
   return (
     <DashboardLayout>
       <div className="flex h-[calc(100vh-2rem)] bg-background">
-        
-        {/* Sidebar (Desktop) */}
         <div className="hidden md:block">
           <ChatSidebar 
             currentSessionId={sessionId} 
             onSelectSession={setSessionId} 
-            onNewChat={() => setSessionId(null)} 
+            onNewChat={() => {
+                setSessionId(null);
+                setActiveDocument(""); // Optional: Reset doc on new chat
+            }} 
           />
         </div>
 
-        {/* Main Chat Area */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Mobile Header with Sidebar Toggle */}
           <div className="md:hidden p-4 border-b flex items-center gap-2">
             <Sheet>
               <SheetTrigger asChild><Button variant="ghost" size="icon"><Menu /></Button></SheetTrigger>
@@ -136,7 +166,10 @@ export default function Tutor() {
                 <ChatSidebar 
                    currentSessionId={sessionId} 
                    onSelectSession={(id) => setSessionId(id)} 
-                   onNewChat={() => setSessionId(null)} 
+                   onNewChat={() => {
+                       setSessionId(null);
+                       setActiveDocument("");
+                   }} 
                 />
               </SheetContent>
             </Sheet>
