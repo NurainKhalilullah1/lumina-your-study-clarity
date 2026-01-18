@@ -16,7 +16,7 @@ interface ChatSidebarProps {
   currentSessionId: string | null;
   onSelectSession: (id: string) => void;
   onNewChat: () => void;
-  className?: string; // Support for mobile drawer
+  className?: string;
 }
 
 export const ChatSidebar = ({ currentSessionId, onSelectSession, onNewChat, className }: ChatSidebarProps) => {
@@ -36,18 +36,21 @@ export const ChatSidebar = ({ currentSessionId, onSelectSession, onNewChat, clas
 
   useEffect(() => {
     fetchSessions();
-  }, [currentSessionId]); // Refetch when session changes (e.g. title update)
+  }, [currentSessionId]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation(); // Prevent clicking the chat itself
+    e.stopPropagation(); // Stop the click from opening the chat
     
+    // Optimistic UI update (remove immediately)
+    setSessions(prev => prev.filter(s => s.id !== id));
+    if (currentSessionId === id) onNewChat();
+
     const { error } = await supabase.from('chat_sessions').delete().eq('id', id);
 
     if (error) {
       toast({ title: "Error", description: "Could not delete chat.", variant: "destructive" });
+      fetchSessions(); // Revert if failed
     } else {
-      setSessions(prev => prev.filter(s => s.id !== id));
-      if (currentSessionId === id) onNewChat();
       toast({ title: "Deleted", description: "Chat history removed." });
     }
   };
@@ -70,22 +73,23 @@ export const ChatSidebar = ({ currentSessionId, onSelectSession, onNewChat, clas
                 key={session.id}
                 onClick={() => onSelectSession(session.id)}
                 className={cn(
-                  "group flex items-center justify-between p-3 text-sm rounded-lg cursor-pointer transition-colors hover:bg-muted",
-                  currentSessionId === session.id ? "bg-muted font-medium text-primary" : "text-muted-foreground"
+                  "flex items-center justify-between p-3 text-sm rounded-lg cursor-pointer transition-colors hover:bg-muted border border-transparent",
+                  currentSessionId === session.id ? "bg-muted font-medium text-primary border-border" : "text-muted-foreground"
                 )}
               >
-                <div className="flex items-center gap-3 overflow-hidden">
+                <div className="flex items-center gap-3 overflow-hidden flex-1">
                   <MessageSquare className="w-4 h-4 shrink-0" />
                   <span className="truncate">{session.title}</span>
                 </div>
                 
+                {/* FIX: Removed opacity-0 so it is always visible */}
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0 ml-2"
                   onClick={(e) => handleDelete(e, session.id)}
                 >
-                  <Trash2 className="w-3 h-3" />
+                  <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
             ))}
