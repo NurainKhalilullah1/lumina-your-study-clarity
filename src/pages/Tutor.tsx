@@ -83,7 +83,7 @@ export default function Tutor() {
         contextText = file.type === "application/pdf" ? await extractTextFromPDF(file) : await file.text();
       }
 
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       const prompt = `
         You are Lumina.
         CONTEXT: ${contextText ? `FILE CONTENT:\n${contextText.slice(0, 25000)}...` : "No file."}
