@@ -1,7 +1,7 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { Bot, User, FileText } from "lucide-react";
+import { Bot, User, FileText, Loader2 } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 
 interface Message {
@@ -12,12 +12,12 @@ interface Message {
 
 interface ChatMessagesProps {
   messages: Message[];
+  isLoading?: boolean; // Added this prop
 }
 
-// Named export to match Tutor.tsx import { ChatMessages }
-export const ChatMessages = ({ messages }: ChatMessagesProps) => {
+export const ChatMessages = ({ messages, isLoading }: ChatMessagesProps) => {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-4">
       {messages.map((msg, idx) => (
         <div key={idx} className={cn("flex gap-3", msg.role === 'user' ? "flex-row-reverse" : "flex-row")}>
           <Avatar className="w-8 h-8 border">
@@ -35,7 +35,6 @@ export const ChatMessages = ({ messages }: ChatMessagesProps) => {
             
             <Card className={cn("p-3 text-sm", msg.role === 'user' ? "bg-primary text-primary-foreground" : "bg-muted/50")}>
               {msg.role === 'assistant' ? (
-                // Use ReactMarkdown to render the AI's bullet points nicely
                 <div className="prose prose-sm dark:prose-invert max-w-none">
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
@@ -46,6 +45,20 @@ export const ChatMessages = ({ messages }: ChatMessagesProps) => {
           </div>
         </div>
       ))}
+
+      {/* === THE AI INDICATOR === */}
+      {isLoading && (
+        <div className="flex gap-3 flex-row animate-pulse">
+          <Avatar className="w-8 h-8 border">
+            <AvatarFallback className="bg-primary/10"><Bot className="w-4 h-4 text-primary" /></AvatarFallback>
+          </Avatar>
+          <div className="flex items-center gap-1 bg-muted/50 px-4 py-3 rounded-lg">
+            <span className="w-2 h-2 bg-primary/50 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+            <span className="w-2 h-2 bg-primary/50 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+            <span className="w-2 h-2 bg-primary/50 rounded-full animate-bounce"></span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
