@@ -1,78 +1,51 @@
-import { useEffect, useRef } from "react";
-import { Sparkles } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Message } from "@/hooks/useConversations";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import ReactMarkdown from "react-markdown";
+import { Bot, User, FileText } from "lucide-react";
+import ReactMarkdown from 'react-markdown';
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+  attachment_name?: string;
+}
 
 interface ChatMessagesProps {
   messages: Message[];
-  isThinking: boolean;
 }
 
-const TypingIndicator = () => (
-  <div className="flex items-start gap-3 py-4">
-    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-      <Sparkles className="w-4 h-4 text-primary" />
-    </div>
-    <div className="flex items-center gap-1 pt-2">
-      <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-      <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-      <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-    </div>
-  </div>
-);
-
-const ChatMessages = ({ messages, isThinking }: ChatMessagesProps) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isThinking]);
-  
+// Named export to match Tutor.tsx import { ChatMessages }
+export const ChatMessages = ({ messages }: ChatMessagesProps) => {
   return (
-    <ScrollArea className="flex-1 px-4" ref={scrollRef}>
-      <div className="max-w-3xl mx-auto py-6 space-y-6">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={cn(
-              "flex",
-              message.role === "user" ? "justify-end" : "justify-start"
-            )}
-          >
-            {message.role === "assistant" && (
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mr-3">
-                <Sparkles className="w-4 h-4 text-primary" />
+    <div className="space-y-4">
+      {messages.map((msg, idx) => (
+        <div key={idx} className={cn("flex gap-3", msg.role === 'user' ? "flex-row-reverse" : "flex-row")}>
+          <Avatar className="w-8 h-8 border">
+            <AvatarFallback className={msg.role === 'assistant' ? "bg-primary/10" : ""}>
+              {msg.role === 'assistant' ? <Bot className="w-4 h-4 text-primary" /> : <User className="w-4 h-4" />}
+            </AvatarFallback>
+          </Avatar>
+
+          <div className={cn("flex flex-col max-w-[85%]", msg.role === 'user' ? "items-end" : "items-start")}>
+            {msg.attachment_name && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1 bg-muted px-2 py-1 rounded-md w-fit">
+                <FileText className="w-3 h-3" /> {msg.attachment_name}
               </div>
             )}
             
-            <div
-              className={cn(
-                "max-w-[80%] px-4 py-3",
-                message.role === "user"
-                  ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm"
-                  : "bg-transparent text-foreground"
-              )}
-            >
-              {message.role === "assistant" ? (
-                <div className="prose prose-sm prose-slate dark:prose-invert max-w-none">
-                  <ReactMarkdown>{message.content}</ReactMarkdown>
+            <Card className={cn("p-3 text-sm", msg.role === 'user' ? "bg-primary text-primary-foreground" : "bg-muted/50")}>
+              {msg.role === 'assistant' ? (
+                // Use ReactMarkdown to render the AI's bullet points nicely
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
               ) : (
-                <p className="whitespace-pre-wrap">{message.content}</p>
+                <p className="whitespace-pre-wrap">{msg.content}</p>
               )}
-            </div>
+            </Card>
           </div>
-        ))}
-        
-        {isThinking && <TypingIndicator />}
-        
-        <div ref={bottomRef} />
-      </div>
-    </ScrollArea>
+        </div>
+      ))}
+    </div>
   );
 };
-
-export default ChatMessages;
