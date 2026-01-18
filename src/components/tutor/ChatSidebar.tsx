@@ -17,9 +17,10 @@ interface ChatSidebarProps {
   onSelectSession: (id: string) => void;
   onNewChat: () => void;
   className?: string;
+  refreshTrigger?: number; // <--- NEW PROP
 }
 
-export const ChatSidebar = ({ currentSessionId, onSelectSession, onNewChat, className }: ChatSidebarProps) => {
+export const ChatSidebar = ({ currentSessionId, onSelectSession, onNewChat, className, refreshTrigger = 0 }: ChatSidebarProps) => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -34,14 +35,14 @@ export const ChatSidebar = ({ currentSessionId, onSelectSession, onNewChat, clas
     setLoading(false);
   };
 
+  // Fetch when session changes OR when parent tells us to refresh (title generated)
   useEffect(() => {
     fetchSessions();
-  }, [currentSessionId]);
+  }, [currentSessionId, refreshTrigger]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation(); // Stop the click from opening the chat
+    e.stopPropagation();
     
-    // Optimistic UI update (remove immediately)
     setSessions(prev => prev.filter(s => s.id !== id));
     if (currentSessionId === id) onNewChat();
 
@@ -49,7 +50,7 @@ export const ChatSidebar = ({ currentSessionId, onSelectSession, onNewChat, clas
 
     if (error) {
       toast({ title: "Error", description: "Could not delete chat.", variant: "destructive" });
-      fetchSessions(); // Revert if failed
+      fetchSessions();
     } else {
       toast({ title: "Deleted", description: "Chat history removed." });
     }
@@ -82,7 +83,6 @@ export const ChatSidebar = ({ currentSessionId, onSelectSession, onNewChat, clas
                   <span className="truncate">{session.title}</span>
                 </div>
                 
-                {/* FIX: Removed opacity-0 so it is always visible */}
                 <Button
                   variant="ghost"
                   size="icon"
