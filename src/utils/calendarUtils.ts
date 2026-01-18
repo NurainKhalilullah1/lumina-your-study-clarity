@@ -1,36 +1,75 @@
-export const downloadCalendarInvite = (title: string, dueDate: Date, courseName: string) => {
-  // Format dates for ICS (YYYYMMDDTHHMMSSZ)
-  const formatDate = (date: Date) => date.toISOString().replace(/-|:|\.\d+/g, "");
-  
-  const start = formatDate(dueDate);
-  // End time is 1 hour after start
-  const end = formatDate(new Date(dueDate.getTime() + 60 * 60 * 1000));
+// src/utils/calendarUtils.ts
 
-  // Create the ICS content
-  // TRIGGER:-P2D means "Alert 2 Days before"
-  const icsContent = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Lumina//Student Planner//EN
-BEGIN:VEVENT
-UID:${Date.now()}@lumina.app
-DTSTAMP:${formatDate(new Date())}
-DTSTART:${start}
-DTEND:${end}
-SUMMARY:📚 Due: ${title} (${courseName})
-DESCRIPTION:Assignment for ${courseName} is due!
-BEGIN:VALARM
-TRIGGER:-P2D
-ACTION:DISPLAY
-DESCRIPTION:Reminder: Assignment due in 2 days
-END:VALARM
-END:VEVENT
-END:VCALENDAR`;
+export const downloadCalendarInvite = (title: string, date: Date, courseName: string) => {
+  // Helper to format date as YYYYMMDD for .ics files
+  const formatDate = (d: Date) => d.toISOString().replace(/-|:|\.\d\d\d/g, "").split("T")[0];
 
-  // Create a blob and trigger download
+  const eventDate = formatDate(date);
+  const now = new Date().toISOString().replace(/-|:|\.\d\d\d/g, "");
+
+  const icsContent = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Lumina//Student Planner//EN",
+    "BEGIN:VEVENT",
+    `UID:${Date.now()}@lumina.app`,
+    `DTSTAMP:${now}`,
+    `DTSTART;VALUE=DATE:${eventDate}`,
+    `SUMMARY:${title} (${courseName})`,
+    `DESCRIPTION:Reminder for ${title} in ${courseName}.`,
+    // === THE 2-DAY REMINDER LOGIC ===
+    "BEGIN:VALARM",
+    "TRIGGER:-P2D", // -P2D means "Minus Period 2 Days"
+    "ACTION:DISPLAY",
+    `DESCRIPTION:Reminder: ${title} is due in 2 days!`,
+    "END:VALARM",
+    // ================================
+    "END:VEVENT",
+    "END:VCALENDAR"
+  ].join("\r\n");
+
+  // Trigger the download
   const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
   const link = document.createElement("a");
   link.href = window.URL.createObjectURL(blob);
   link.setAttribute("download", `${title.replace(/\s+/g, "_")}.ics`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+export const downloadBulkCalendarInvite = (tasks: any[]) => {
+  const now = new Date().toISOString().replace(/-|:|\.\d\d\d/g, "");
+  
+  let events = tasks.map(task => {
+    const dateStr = new Date(task.date).toISOString().replace(/-|:|\.\d\d\d/g, "").split("T")[0];
+    return [
+      "BEGIN:VEVENT",
+      `UID:${Math.random().toString(36).substr(2)}@lumina.app`,
+      `DTSTAMP:${now}`,
+      `DTSTART;VALUE=DATE:${dateStr}`,
+      `SUMMARY:${task.title} (${task.course})`,
+      "BEGIN:VALARM",
+      "TRIGGER:-P2D",
+      "ACTION:DISPLAY",
+      `DESCRIPTION:Reminder: ${task.title} is due in 2 days!`,
+      "END:VALARM",
+      "END:VEVENT"
+    ].join("\r\n");
+  }).join("\r\n");
+
+  const icsContent = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Lumina//Student Planner//EN",
+    events,
+    "END:VCALENDAR"
+  ].join("\r\n");
+
+  const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = window.URL.createObjectURL(blob);
+  link.setAttribute("download", `Lumina_Bulk_Import.ics`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
