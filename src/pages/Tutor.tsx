@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { DashboardLayout } from "@/components/DashboardLayout";
+// FIX: Removed curly braces because DashboardLayout is likely a default export
+import DashboardLayout from "@/components/DashboardLayout"; 
 import { ChatMessages } from "@/components/tutor/ChatMessages";
 import { ChatInput } from "@/components/tutor/ChatInput";
 import { StarterCards } from "@/components/tutor/StarterCards";
 import { useToast } from "@/hooks/use-toast";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { extractTextFromPDF } from "@/utils/pdfUtils";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 // Initialize Gemini
@@ -75,11 +75,6 @@ export default function Tutor() {
       // 5. Add AI Response to UI
       const aiMsg = { role: "assistant", content: responseText };
       setMessages((prev) => [...prev, aiMsg]);
-
-      // 6. Save to Supabase (Optional - for history)
-      if (user) {
-         // await supabase.from('chat_history').insert({...})
-      }
 
     } catch (error) {
       console.error(error);
