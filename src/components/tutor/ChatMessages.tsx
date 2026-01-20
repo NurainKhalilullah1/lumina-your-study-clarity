@@ -3,11 +3,13 @@ import { cn } from "@/lib/utils";
 import { User, FileText } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import { StudyFlowLogo } from "@/components/StudyFlowLogo";
+import { ImagePreview } from "./ImagePreview";
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
   attachment_name?: string;
+  image_url?: string;
 }
 
 interface ChatMessagesProps {
@@ -49,8 +51,19 @@ export const ChatMessages = ({ messages, isLoading }: ChatMessagesProps) => {
             "flex flex-col max-w-[80%]",
             msg.role === 'user' ? "items-end" : "items-start"
           )}>
-            {/* Attachment badge */}
-            {msg.attachment_name && (
+            {/* Image preview */}
+            {msg.image_url && (
+              <div className="mb-2 rounded-xl overflow-hidden border shadow-sm">
+                <ImagePreview 
+                  src={msg.image_url} 
+                  alt={msg.attachment_name || "Uploaded image"}
+                  className="max-w-[200px] max-h-[200px] object-cover hover:opacity-90 transition-opacity"
+                />
+              </div>
+            )}
+
+            {/* Attachment badge (for non-image files) */}
+            {msg.attachment_name && !msg.image_url && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2 bg-muted/50 px-3 py-1.5 rounded-full border">
                 <FileText className="w-3.5 h-3.5" /> 
                 <span className="truncate max-w-[150px]">{msg.attachment_name}</span>

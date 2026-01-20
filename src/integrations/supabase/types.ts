@@ -163,6 +163,44 @@ export type Database = {
         }
         Relationships: []
       }
+      flashcards: {
+        Row: {
+          back: string
+          created_at: string
+          deck_name: string | null
+          front: string
+          id: string
+          session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          back: string
+          created_at?: string
+          deck_name?: string | null
+          front: string
+          id?: string
+          session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          back?: string
+          created_at?: string
+          deck_name?: string | null
+          front?: string
+          id?: string
+          session_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcards_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "chat_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
