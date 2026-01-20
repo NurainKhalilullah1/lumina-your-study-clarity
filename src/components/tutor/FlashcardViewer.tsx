@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, RotateCcw, Shuffle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTrackStudyEvent } from "@/hooks/useStudyStats";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Flashcard {
   id: string;
@@ -13,14 +15,31 @@ interface Flashcard {
 interface FlashcardViewerProps {
   cards: Flashcard[];
   onClose?: () => void;
+  trackReviews?: boolean;
 }
 
-export const FlashcardViewer = ({ cards, onClose }: FlashcardViewerProps) => {
+export const FlashcardViewer = ({ cards, onClose, trackReviews = true }: FlashcardViewerProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [shuffledCards, setShuffledCards] = useState(cards);
+  const [reviewedCards, setReviewedCards] = useState<Set<string>>(new Set());
+  
+  const { user } = useAuth();
+  const trackEvent = useTrackStudyEvent();
 
   const currentCard = shuffledCards[currentIndex];
+
+  // Track when a card is flipped (reviewed)
+  useEffect(() => {
+    if (isFlipped && currentCard && !reviewedCards.has(currentCard.id) && trackReviews && user) {
+      setReviewedCards(prev => new Set(prev).add(currentCard.id));
+      trackEvent.mutate({
+        userId: user.id,
+        eventType: 'flashcard_reviewed',
+        metadata: { cardId: currentCard.id }
+      });
+    }
+  }, [isFlipped, currentCard, reviewedCards, trackReviews, user, trackEvent]);
 
   const handleNext = () => {
     setIsFlipped(false);
