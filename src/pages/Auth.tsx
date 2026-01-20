@@ -1,23 +1,56 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Sparkles, Mail, Lock, ArrowRight, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { z } from "zod";
+import PasswordStrengthIndicator from "@/components/PasswordStrengthIndicator";
+
+// Zod validation schemas
+const emailSchema = z
+  .string()
+  .trim()
+  .min(1, { message: "Email is required" })
+  .email({ message: "Please enter a valid email address" })
+  .max(255, { message: "Email must be less than 255 characters" });
+
+const signInSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1, { message: "Password is required" }),
+});
+
+const signUpSchema = z.object({
+  email: emailSchema,
+  password: z
+    .string()
+    .min(6, { message: "Password must be at least 6 characters" })
+    .max(72, { message: "Password must be less than 72 characters" }),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+const resetPasswordSchema = z.object({
+  email: emailSchema,
+});
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { signIn, signUp, signInWithGoogle, user, loading } = useAuth();
+  const { signIn, signUp, signInWithGoogle, resetPassword, user, loading } = useAuth();
 
   // Redirect if already logged in (only after validation completes)
   useEffect(() => {
@@ -26,27 +59,26 @@ const Auth = () => {
     }
   }, [user, loading, navigate]);
 
+  const clearErrors = () => setErrors({});
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    clearErrors();
 
-    // Validation
-    if (!email || !password) {
-      toast({
-        title: "Missing fields",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return;
-    }
+    // Validate with Zod
+    const schema = isLogin ? signInSchema : signUpSchema;
+    const result = schema.safeParse({ email, password, confirmPassword });
 
-    if (!isLogin && password !== confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        description: "Please make sure your passwords match.",
-        variant: "destructive",
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as string;
+        if (!fieldErrors[field]) {
+          fieldErrors[field] = err.message;
+        }
       });
+      setErrors(fieldErrors);
       setIsLoading(false);
       return;
     }
@@ -84,6 +116,44 @@ const Auth = () => {
     setIsLoading(false);
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    clearErrors();
+
+    const result = resetPasswordSchema.safeParse({ email });
+
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as string;
+        if (!fieldErrors[field]) {
+          fieldErrors[field] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      setIsLoading(false);
+      return;
+    }
+
+    const { error } = await resetPassword(email);
+    if (error) {
+      toast({
+        title: "Password reset failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Check your email",
+        description: "We've sent you a password reset link.",
+      });
+      setShowForgotPassword(false);
+      setEmail("");
+    }
+    setIsLoading(false);
+  };
+
   const handleGoogleSignIn = async () => {
     const { error } = await signInWithGoogle();
     if (error) {
@@ -94,6 +164,89 @@ const Auth = () => {
       });
     }
   };
+
+  // Forgot Password View
+  if (showForgotPassword) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8 bg-background">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md"
+        >
+          {/* Back Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setShowForgotPassword(false);
+              clearErrors();
+            }}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to sign in
+          </button>
+
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              Reset your password
+            </h1>
+            <p className="text-muted-foreground">
+              Enter your email and we'll send you a reset link.
+            </p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleForgotPassword} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="reset-email" className="text-foreground">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="reset-email"
+                  type="email"
+                  placeholder="you@university.edu"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (errors.email) clearErrors();
+                  }}
+                  className={`pl-10 h-12 bg-muted/50 border-border focus:border-primary ${
+                    errors.email ? "border-destructive" : ""
+                  }`}
+                />
+              </div>
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email}</p>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              variant="hero"
+              size="lg"
+              className="w-full group"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  Sending reset link...
+                </span>
+              ) : (
+                <>
+                  Send Reset Link
+                  <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                </>
+              )}
+            </Button>
+          </form>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">
@@ -134,10 +287,18 @@ const Auth = () => {
                   type="email"
                   placeholder="you@university.edu"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 h-12 bg-muted/50 border-border focus:border-primary"
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (errors.email) clearErrors();
+                  }}
+                  className={`pl-10 h-12 bg-muted/50 border-border focus:border-primary ${
+                    errors.email ? "border-destructive" : ""
+                  }`}
                 />
               </div>
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -149,8 +310,13 @@ const Auth = () => {
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-10 h-12 bg-muted/50 border-border focus:border-primary"
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errors.password) clearErrors();
+                  }}
+                  className={`pl-10 pr-10 h-12 bg-muted/50 border-border focus:border-primary ${
+                    errors.password ? "border-destructive" : ""
+                  }`}
                 />
                 <button
                   type="button"
@@ -160,6 +326,16 @@ const Auth = () => {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {errors.password && (
+                <p className="text-sm text-destructive">{errors.password}</p>
+              )}
+              
+              {/* Password Strength Indicator - Only for Sign Up */}
+              <AnimatePresence>
+                {!isLogin && password && (
+                  <PasswordStrengthIndicator password={password} />
+                )}
+              </AnimatePresence>
             </div>
 
             <AnimatePresence mode="wait">
@@ -179,10 +355,18 @@ const Auth = () => {
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-10 h-12 bg-muted/50 border-border focus:border-primary"
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        if (errors.confirmPassword) clearErrors();
+                      }}
+                      className={`pl-10 h-12 bg-muted/50 border-border focus:border-primary ${
+                        errors.confirmPassword ? "border-destructive" : ""
+                      }`}
                     />
                   </div>
+                  {errors.confirmPassword && (
+                    <p className="text-sm text-destructive">{errors.confirmPassword}</p>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -191,6 +375,7 @@ const Auth = () => {
               <div className="flex justify-end">
                 <button
                   type="button"
+                  onClick={() => setShowForgotPassword(true)}
                   className="text-sm text-primary hover:text-primary/80 transition-colors"
                 >
                   Forgot password?
@@ -268,6 +453,7 @@ const Auth = () => {
                   setIsLogin(!isLogin);
                   setPassword("");
                   setConfirmPassword("");
+                  clearErrors();
                 }}
                 className="text-primary font-medium hover:text-primary/80 transition-colors"
               >

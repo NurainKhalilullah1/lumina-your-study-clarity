@@ -1,4 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -33,6 +34,7 @@ const menuItems = [
 const DashboardSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { signOut } = useAuth();
   const { toast } = useToast();
   const { state } = useSidebar();
@@ -40,6 +42,7 @@ const DashboardSidebar = () => {
 
   const handleSignOut = async () => {
     await signOut();
+    queryClient.clear(); // Clear all cached data to prevent stale data on re-login
     toast({
       title: "Signed out",
       description: "You have been signed out successfully.",
