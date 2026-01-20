@@ -14,6 +14,7 @@ import Onboarding from "./pages/Onboarding";
 import Courses from "./pages/Courses";
 import Assignments from "./pages/Assignments";
 import Tutor from "./pages/Tutor";
+import Flashcards from "./pages/Flashcards";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -84,6 +85,14 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <Tutor />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/flashcards"
+                element={
+                  <ProtectedRoute>
+                    <Flashcards />
                   </ProtectedRoute>
                 }
               />

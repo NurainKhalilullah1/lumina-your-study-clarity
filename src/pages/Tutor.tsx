@@ -4,6 +4,9 @@ import { ChatMessages } from "@/components/tutor/ChatMessages";
 import { ChatInput } from "@/components/tutor/ChatInput";
 import { StarterCards } from "@/components/tutor/StarterCards";
 import { ChatSidebar } from "@/components/tutor/ChatSidebar";
+import { ExportButton } from "@/components/tutor/ExportButton";
+import { PomodoroTimer } from "@/components/tutor/PomodoroTimer";
+import { FlashcardGenerator } from "@/components/tutor/FlashcardGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { extractTextFromPDF } from "@/utils/pdfUtils";
@@ -53,10 +56,33 @@ export default function Tutor() {
     toast({ title: "Context cleared", description: "Document context removed." });
   };
 
+  // Convert file to base64 for image uploads
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove the data URL prefix to get just the base64 data
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+    });
+  };
+
   const handleSendMessage = async (inputMessage: string, file?: File) => {
     if (!inputMessage.trim() && !file) return;
 
-    const userMsg = { role: "user", content: inputMessage, attachment_name: file?.name };
+    const isImage = file?.type.startsWith('image/');
+    const imageUrl = file && isImage ? URL.createObjectURL(file) : undefined;
+    
+    const userMsg = { 
+      role: "user", 
+      content: inputMessage, 
+      attachment_name: file?.name,
+      image_url: imageUrl
+    };
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
 
@@ -87,33 +113,58 @@ export default function Tutor() {
       }
 
       let contextText = activeDocument;
+      let imagePart: { inlineData: { data: string; mimeType: string } } | null = null;
+
       if (file) {
-        if (file.type === "application/pdf") {
+        if (isImage) {
+          // Handle image upload for vision
+          const base64 = await fileToBase64(file);
+          imagePart = {
+            inlineData: {
+              data: base64,
+              mimeType: file.type
+            }
+          };
+          setActiveDocumentName(file.name);
+        } else if (file.type === "application/pdf") {
           const extracted = await extractTextFromPDF(file);
           contextText = extracted;
           setActiveDocument(extracted);
+          setActiveDocumentName(file.name);
         } else {
           const text = await file.text();
           contextText = text;
           setActiveDocument(text);
+          setActiveDocumentName(file.name);
         }
-        setActiveDocumentName(file.name);
       }
 
       const historyContext = messages.slice(-6).map(m => 
         `${m.role === 'user' ? 'Student' : 'Tutor'}: ${m.content}`
       ).join('\n');
 
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      const prompt = `
-        You are StudyFlow, a friendly and knowledgeable AI tutor.
-        ACTIVE DOCUMENT: ${contextText ? contextText.slice(0, 25000) : "None"}
-        HISTORY: ${historyContext}
-        USER: "${inputMessage}"
-        INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points when appropriate. Keep responses concise but comprehensive.
-      `;
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-preview-05-20" });
+      
+      let result;
+      if (imagePart) {
+        // Use vision capabilities for images
+        const prompt = `You are StudyFlow, a friendly and knowledgeable AI tutor. 
+A student has shared an image with you. Please analyze it and help them understand it.
+${inputMessage ? `Their question: "${inputMessage}"` : "Please describe and explain what you see in this image."}
+INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points when appropriate. Keep responses concise but comprehensive.`;
+        
+        result = await model.generateContent([prompt, imagePart]);
+      } else {
+        const prompt = `
+          You are StudyFlow, a friendly and knowledgeable AI tutor.
+          ACTIVE DOCUMENT: ${contextText ? contextText.slice(0, 25000) : "None"}
+          HISTORY: ${historyContext}
+          USER: "${inputMessage}"
+          INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points when appropriate. Keep responses concise but comprehensive.
+        `;
+        result = await model.generateContent(prompt);
+      }
 
-      const result = await model.generateContent(prompt);
       const responseText = result.response.text();
 
       setMessages((prev) => [...prev, { role: "assistant", content: responseText }]);
@@ -169,6 +220,15 @@ export default function Tutor() {
     setMobileSheetOpen(false);
   };
 
+  // Get all content for flashcard generation
+  const getAllContent = () => {
+    const chatContent = messages
+      .filter(m => m.role === 'assistant')
+      .map(m => m.content)
+      .join('\n\n');
+    return activeDocument ? `${activeDocument}\n\n${chatContent}` : chatContent;
+  };
+
   return (
     <DashboardLayout>
       <div className="flex h-[calc(100vh-2rem)] bg-background overflow-hidden">
@@ -213,7 +273,7 @@ export default function Tutor() {
               </div>
             </div>
 
-            {/* Document context indicator */}
+            {/* Center: Document context indicator */}
             {activeDocumentName && (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full border border-primary/20 text-sm">
                 <FileText className="w-4 h-4 text-primary" />
@@ -228,6 +288,19 @@ export default function Tutor() {
                 </button>
               </div>
             )}
+
+            {/* Right: Tools */}
+            <div className="flex items-center gap-1">
+              {messages.length > 0 && (
+                <FlashcardGenerator 
+                  content={getAllContent()} 
+                  sessionId={sessionId || undefined}
+                  deckName={activeDocumentName || 'Chat Session'}
+                />
+              )}
+              <ExportButton messages={messages} title={activeDocumentName || 'StudyFlow Chat'} />
+              <PomodoroTimer />
+            </div>
           </header>
 
           {/* Chat Area */}
