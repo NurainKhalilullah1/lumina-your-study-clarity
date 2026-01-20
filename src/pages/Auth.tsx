@@ -492,7 +492,7 @@ const Auth = () => {
           <blockquote className="text-3xl lg:text-4xl font-bold text-primary-foreground leading-relaxed max-w-lg">
             "Focus on what matters. Let AI handle the rest."
           </blockquote>
-          <p className="mt-6 text-primary-foreground/70 text-lg">— The Lumina Way</p>
+          <p className="mt-6 text-primary-foreground/70 text-lg">— The StudyFlow Way</p>
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-8 mt-16">

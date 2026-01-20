@@ -17,7 +17,7 @@ export const Footer = () => {
           {/* Logo */}
           <a href="#" className="flex items-center gap-2 group">
             <Sparkles className="w-6 h-6 text-primary transition-transform group-hover:scale-110 group-hover:rotate-12" />
-            <span className="text-lg font-bold text-foreground">Lumina</span>
+            <span className="text-lg font-bold text-foreground">StudyFlow</span>
           </a>
 
           {/* Links */}
@@ -37,7 +37,7 @@ export const Footer = () => {
         {/* Copyright */}
         <div className="mt-8 pt-8 border-t border-border/50 text-center">
           <p className="text-sm text-muted-foreground">
-            Copyright © 2026 Lumina. All rights reserved.
+            Copyright © 2026 StudyFlow. All rights reserved.
           </p>
         </div>
       </div>
