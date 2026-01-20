@@ -20,7 +20,7 @@ export const Navbar = () => {
               <Sparkles className="w-7 h-7 text-primary transition-transform group-hover:scale-110 group-hover:rotate-12" />
               <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
             </div>
-            <span className="text-xl font-bold text-foreground">Lumina</span>
+            <span className="text-xl font-bold text-foreground">StudyFlow</span>
           </Link>
 
           {/* Desktop Navigation */}

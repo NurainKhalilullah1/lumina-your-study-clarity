@@ -261,13 +261,13 @@ const Auth = () => {
           {/* Logo */}
           <a href="/" className="flex items-center gap-2 mb-8 group">
             <Sparkles className="w-7 h-7 text-primary transition-transform group-hover:scale-110 group-hover:rotate-12" />
-            <span className="text-xl font-bold text-foreground">Lumina</span>
+            <span className="text-xl font-bold text-foreground">StudyFlow</span>
           </a>
 
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">
-              {isLogin ? "Welcome back to Lumina." : "Create your account."}
+              {isLogin ? "Welcome back to StudyFlow." : "Create your account."}
             </h1>
             <p className="text-muted-foreground">
               {isLogin 

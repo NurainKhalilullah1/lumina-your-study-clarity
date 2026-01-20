@@ -41,7 +41,7 @@ const Onboarding = () => {
       );
       
       toast({
-        title: "Welcome to Lumina!",
+        title: "Welcome to StudyFlow!",
         description: "Your account has been created successfully.",
       });
       
@@ -88,7 +88,7 @@ const Onboarding = () => {
               Complete Your Signup
             </h1>
             <p className="text-muted-foreground">
-              We couldn't find an existing Lumina account for this login. 
+              We couldn't find an existing StudyFlow account for this login. 
               Click below to create your account and get started.
             </p>
           </div>

@@ -10,9 +10,9 @@ export const downloadCalendarInvite = (title: string, date: Date, courseName: st
   const icsContent = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Lumina//Student Planner//EN",
+    "PRODID:-//StudyFlow//Student Planner//EN",
     "BEGIN:VEVENT",
-    `UID:${Date.now()}@lumina.app`,
+    `UID:${Date.now()}@studyflow.app`,
     `DTSTAMP:${now}`,
     `DTSTART;VALUE=DATE:${eventDate}`,
     `SUMMARY:${title} (${courseName})`,
@@ -45,7 +45,7 @@ export const downloadBulkCalendarInvite = (tasks: any[]) => {
     const dateStr = new Date(task.date).toISOString().replace(/-|:|\.\d\d\d/g, "").split("T")[0];
     return [
       "BEGIN:VEVENT",
-      `UID:${Math.random().toString(36).substr(2)}@lumina.app`,
+      `UID:${Math.random().toString(36).substr(2)}@studyflow.app`,
       `DTSTAMP:${now}`,
       `DTSTART;VALUE=DATE:${dateStr}`,
       `SUMMARY:${task.title} (${task.course})`,
@@ -61,7 +61,7 @@ export const downloadBulkCalendarInvite = (tasks: any[]) => {
   const icsContent = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Lumina//Student Planner//EN",
+    "PRODID:-//StudyFlow//Student Planner//EN",
     events,
     "END:VCALENDAR"
   ].join("\r\n");
@@ -69,7 +69,7 @@ export const downloadBulkCalendarInvite = (tasks: any[]) => {
   const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
   const link = document.createElement("a");
   link.href = window.URL.createObjectURL(blob);
-  link.setAttribute("download", `Lumina_Bulk_Import.ics`);
+  link.setAttribute("download", `StudyFlow_Bulk_Import.ics`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

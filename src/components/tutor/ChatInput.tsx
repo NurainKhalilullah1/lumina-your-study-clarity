@@ -78,7 +78,7 @@ export const ChatInput = ({ onSendMessage, isLoading }: ChatInputProps) => {
           <Input
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder={selectedFile ? "Ask about this document..." : "Ask Lumina anything..."}
+            placeholder={selectedFile ? "Ask about this document..." : "Ask StudyFlow anything..."}
             disabled={isLoading}
             className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-base placeholder:text-muted-foreground/60"
           />
@@ -105,7 +105,7 @@ export const ChatInput = ({ onSendMessage, isLoading }: ChatInputProps) => {
 
         {/* Helper text */}
         <p className="text-[11px] text-muted-foreground/50 text-center mt-2">
-          Lumina can make mistakes. Verify important information.
+          StudyFlow can make mistakes. Verify important information.
         </p>
       </form>
     </div>

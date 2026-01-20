@@ -54,7 +54,7 @@ export const StarterCards = ({ onCardClick }: StarterCardsProps) => {
           <Sparkles className="w-10 h-10 text-primary" />
         </div>
         <h1 className="text-3xl md:text-4xl font-bold mb-3">
-          Hi! I'm <span className="gradient-text">Lumina</span>
+          Hi! I'm <span className="gradient-text">StudyFlow</span>
         </h1>
         <p className="text-muted-foreground text-lg max-w-md mx-auto">
           Your AI study companion. Upload a document or ask me anything!

@@ -192,7 +192,7 @@ export const ChatSidebar = ({ currentSessionId, onSelectSession, onNewChat, clas
       <div className="p-4 border-t bg-background/30">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Sparkles className="w-3.5 h-3.5 text-primary" />
-          <span>Powered by Lumina AI</span>
+          <span>Powered by StudyFlow AI</span>
         </div>
       </div>
     </div>

@@ -17,7 +17,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <SidebarTrigger className="-ml-1">
               <Menu className="w-5 h-5" />
             </SidebarTrigger>
-            <span className="text-lg font-bold text-foreground">Lumina</span>
+            <span className="text-lg font-bold text-foreground">StudyFlow</span>
           </header>
           
           {/* Desktop Toggle */}
