@@ -58,7 +58,7 @@ const DashboardSidebar = () => {
         <div className="flex items-center gap-2 px-2 py-3">
           <Sparkles className="w-6 h-6 text-primary shrink-0" />
           {!isCollapsed && (
-            <span className="text-lg font-bold text-sidebar-foreground">Lumina</span>
+            <span className="text-lg font-bold text-sidebar-foreground">StudyFlow</span>
           )}
         </div>
       </SidebarHeader>
