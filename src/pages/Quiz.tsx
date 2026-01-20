@@ -101,11 +101,11 @@ export default function Quiz() {
         description: "Good luck! 🍀"
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to start quiz:", error);
       toast({
         title: "Failed to create quiz",
-        description: "There was an error setting up the quiz. Please try again.",
+        description: error.message || "There was an error setting up the quiz. Please try again.",
         variant: "destructive"
       });
     }
