@@ -207,7 +207,7 @@ export default function Tutor() {
               {/* Branding */}
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-                  <StudyFlowLogo size="md" />
+                  <StudyFlowLogo size="md" variant="purple" />
                 </div>
                 <span className="font-semibold text-lg hidden sm:inline">StudyFlow</span>
               </div>

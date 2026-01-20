@@ -261,7 +261,7 @@ const Auth = () => {
         >
           {/* Logo */}
           <a href="/" className="flex items-center gap-2 mb-8 group">
-            <StudyFlowLogo size="lg" className="transition-transform group-hover:scale-110" />
+            <StudyFlowLogo size="lg" variant="purple" className="transition-transform group-hover:scale-110" />
             <span className="text-xl font-bold text-foreground">StudyFlow</span>
           </a>
 
@@ -489,7 +489,7 @@ const Auth = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="relative z-10 flex flex-col items-center justify-center w-full p-12 text-center"
         >
-          <StudyFlowLogo size="xl" className="mb-8 opacity-80" />
+          <StudyFlowLogo size="xl" variant="white" className="mb-8 opacity-80" />
           <blockquote className="text-3xl lg:text-4xl font-bold text-primary-foreground leading-relaxed max-w-lg">
             "Focus on what matters. Let AI handle the rest."
           </blockquote>

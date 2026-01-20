@@ -17,7 +17,7 @@ export const Navbar = () => {
             className="flex items-center gap-2 group"
           >
             <div className="relative">
-              <StudyFlowLogo size="lg" className="transition-transform group-hover:scale-110" />
+              <StudyFlowLogo size="lg" variant="purple" className="transition-transform group-hover:scale-110" />
               <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
             </div>
             <span className="text-xl font-bold text-foreground">StudyFlow</span>
