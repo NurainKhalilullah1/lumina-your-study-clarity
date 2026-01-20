@@ -86,7 +86,7 @@ export const ChatMessages = ({ messages, isLoading }: ChatMessagesProps) => {
           
           <div className="flex flex-col items-start">
             <div className="flex items-center gap-2 px-4 py-3 bg-muted/50 rounded-2xl rounded-bl-md border border-border/50">
-              <span className="text-sm text-muted-foreground">Lumina is thinking</span>
+              <span className="text-sm text-muted-foreground">StudyFlow is thinking</span>
               <div className="flex items-center gap-1">
                 <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
                 <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:-0.15s]"></span>

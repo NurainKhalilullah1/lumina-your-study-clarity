@@ -105,7 +105,7 @@ export default function Tutor() {
 
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       const prompt = `
-        You are Lumina, a friendly and knowledgeable AI tutor.
+        You are StudyFlow, a friendly and knowledgeable AI tutor.
         ACTIVE DOCUMENT: ${contextText ? contextText.slice(0, 25000) : "None"}
         HISTORY: ${historyContext}
         USER: "${inputMessage}"
@@ -208,7 +208,7 @@ export default function Tutor() {
                 <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
                   <Sparkles className="w-4 h-4 text-primary-foreground" />
                 </div>
-                <span className="font-semibold text-lg hidden sm:inline">Lumina</span>
+                <span className="font-semibold text-lg hidden sm:inline">StudyFlow</span>
               </div>
             </div>
 

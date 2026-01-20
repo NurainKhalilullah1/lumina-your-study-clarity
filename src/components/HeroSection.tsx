@@ -44,7 +44,7 @@ export const HeroSection = () => {
               {/* FIXED BUTTON: Uses asChild and Link to work on mobile */}
               <Button variant="hero" size="xl" className="group" asChild>
                 <Link to="/auth">
-                  Try Lumina for Free
+                  Try StudyFlow for Free
                   <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                 </Link>
               </Button>
@@ -70,7 +70,7 @@ export const HeroSection = () => {
                     <Sparkles className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">Lumina Dashboard</h3>
+                    <h3 className="font-semibold text-foreground">StudyFlow Dashboard</h3>
                     <p className="text-sm text-muted-foreground">Your academic command center</p>
                   </div>
                 </div>

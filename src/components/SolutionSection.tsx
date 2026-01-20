@@ -13,7 +13,7 @@ const features = [
     icon: MessageCircle,
     title: "The AI Tutor",
     subtitle: "Instant Understanding",
-    description: "Chat with your slides. Ask Lumina to 'Explain this page like I'm 5.'",
+    description: "Chat with your slides. Ask StudyFlow to 'Explain this page like I'm 5.'",
     color: "accent",
   },
   {
@@ -65,7 +65,7 @@ export const SolutionSection = () => {
           </span>
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
             How{" "}
-            <span className="gradient-text">Lumina</span>{" "}
+            <span className="gradient-text">StudyFlow</span>{" "}
             Helps You
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
