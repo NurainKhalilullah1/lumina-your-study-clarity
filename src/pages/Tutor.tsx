@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { ChatMessages } from "@/components/tutor/ChatMessages";
 import { ChatInput } from "@/components/tutor/ChatInput";
@@ -28,11 +29,13 @@ export default function Tutor() {
   const [activeDocumentName, setActiveDocumentName] = useState<string>("");
   const [sidebarRefresh, setSidebarRefresh] = useState(0);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+  const [pendingInput, setPendingInput] = useState("");
 
   const { toast } = useToast();
   const { user } = useAuth();
   const trackEvent = useTrackStudyEvent();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), [messages, isLoading]);
 
@@ -75,6 +78,21 @@ export default function Tutor() {
 
   const handleSendMessage = async (inputMessage: string, file?: File) => {
     if (!inputMessage.trim() && !file) return;
+
+    // Check for quiz-related keywords
+    const quizKeywords = ['quiz me', 'test me', 'generate quiz', 'i want a quiz', 'create a quiz'];
+    const isQuizRequest = quizKeywords.some(kw => inputMessage.toLowerCase().includes(kw));
+    
+    if (isQuizRequest && (activeDocument || file)) {
+      toast({ title: "Quiz Mode", description: "Starting quiz setup..." });
+      navigate('/quiz', {
+        state: {
+          documentContent: activeDocument,
+          documentName: activeDocumentName
+        }
+      });
+      return;
+    }
 
     const isImage = file?.type.startsWith('image/');
     const imageUrl = file && isImage ? URL.createObjectURL(file) : undefined;
@@ -321,7 +339,11 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
           {/* Chat Area */}
           <div className="flex-1 overflow-y-auto p-4 bg-glow">
             {messages.length === 0 ? (
-              <StarterCards onCardClick={(text) => handleSendMessage(text)} />
+              <StarterCards 
+                onSetInputText={setPendingInput}
+                documentContext={activeDocument}
+                documentName={activeDocumentName}
+              />
             ) : (
               <ChatMessages messages={messages} isLoading={isLoading} />
             )}
@@ -329,7 +351,12 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
           </div>
           
           {/* Input */}
-          <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+          <ChatInput 
+            onSendMessage={handleSendMessage} 
+            isLoading={isLoading}
+            value={pendingInput}
+            onValueChange={setPendingInput}
+          />
         </div>
       </div>
     </DashboardLayout>

@@ -1,25 +1,39 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, Paperclip, X, FileText, Loader2, Image as ImageIcon } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface ChatInputProps {
   onSendMessage: (message: string, file?: File) => void;
   isLoading: boolean;
+  value?: string;
+  onValueChange?: (value: string) => void;
 }
 
-export const ChatInput = ({ onSendMessage, isLoading }: ChatInputProps) => {
-  const [message, setMessage] = useState("");
+export const ChatInput = ({ onSendMessage, isLoading, value, onValueChange }: ChatInputProps) => {
+  const [message, setMessage] = useState(value || "");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync with external value when it changes
+  useEffect(() => {
+    if (value !== undefined && value !== message) {
+      setMessage(value);
+    }
+  }, [value]);
+
+  const handleMessageChange = (newValue: string) => {
+    setMessage(newValue);
+    onValueChange?.(newValue);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if ((message.trim() || selectedFile) && !isLoading) {
       onSendMessage(message, selectedFile || undefined);
-      setMessage("");
+      handleMessageChange("");
       setSelectedFile(null);
       setImagePreview(null);
     }

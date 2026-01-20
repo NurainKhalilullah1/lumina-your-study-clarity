@@ -2,13 +2,19 @@ import { Card } from "@/components/ui/card";
 import { MessageCircle, BookOpen, BrainCircuit, NotebookPen, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StudyFlowLogo } from "@/components/StudyFlowLogo";
+import { useNavigate } from "react-router-dom";
 
 interface StarterCardsProps {
-  onCardClick: (text: string) => void;
+  onSetInputText: (text: string) => void;
+  documentContext?: string;
+  documentName?: string;
 }
 
-export const StarterCards = ({ onCardClick }: StarterCardsProps) => {
-  const starters = [
+export const StarterCards = ({ onSetInputText, documentContext, documentName }: StarterCardsProps) => {
+  const navigate = useNavigate();
+
+  // Cards that populate the input (require document upload)
+  const inputCards = [
     {
       icon: BookOpen,
       title: "Summarize",
@@ -17,15 +23,6 @@ export const StarterCards = ({ onCardClick }: StarterCardsProps) => {
       gradient: "from-primary/20 to-accent/20",
       iconColor: "text-primary",
       hoverBorder: "hover:border-primary/40"
-    },
-    {
-      icon: BrainCircuit,
-      title: "Quiz me",
-      text: "Generate MCQs to test your knowledge",
-      prompt: "Generate a quiz based on this text.",
-      gradient: "from-accent/20 to-primary/20",
-      iconColor: "text-accent",
-      hoverBorder: "hover:border-accent/40"
     },
     {
       icon: MessageCircle,
@@ -56,6 +53,25 @@ export const StarterCards = ({ onCardClick }: StarterCardsProps) => {
     }
   ];
 
+  // Quiz card - navigates to separate quiz page
+  const quizCard = {
+    icon: BrainCircuit,
+    title: "Quiz Me",
+    text: "Take a timed CBT quiz based on your material",
+    gradient: "from-accent/20 to-primary/20",
+    iconColor: "text-accent",
+    hoverBorder: "hover:border-accent/40"
+  };
+
+  const handleQuizClick = () => {
+    navigate('/quiz', {
+      state: {
+        documentContent: documentContext,
+        documentName: documentName
+      }
+    });
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
       {/* Hero Section */}
@@ -73,7 +89,8 @@ export const StarterCards = ({ onCardClick }: StarterCardsProps) => {
 
       {/* Cards Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 w-full max-w-5xl">
-        {starters.map((card, i) => {
+        {/* Input cards - populate input field */}
+        {inputCards.map((card, i) => {
           const Icon = card.icon;
           return (
             <Card 
@@ -84,7 +101,7 @@ export const StarterCards = ({ onCardClick }: StarterCardsProps) => {
                 "hover:shadow-xl hover:scale-[1.02] hover:-translate-y-1",
                 card.hoverBorder
               )}
-              onClick={() => onCardClick(card.prompt)}
+              onClick={() => onSetInputText(card.prompt)}
               style={{ animationDelay: `${i * 100}ms` }}
             >
               {/* Gradient background on hover */}
@@ -108,6 +125,37 @@ export const StarterCards = ({ onCardClick }: StarterCardsProps) => {
             </Card>
           );
         })}
+
+        {/* Quiz card - navigates to quiz page */}
+        <Card 
+          className={cn(
+            "group relative p-5 cursor-pointer transition-all duration-300",
+            "border-2 border-transparent bg-card/80 backdrop-blur-sm",
+            "hover:shadow-xl hover:scale-[1.02] hover:-translate-y-1",
+            quizCard.hoverBorder
+          )}
+          onClick={handleQuizClick}
+          style={{ animationDelay: `${inputCards.length * 100}ms` }}
+        >
+          {/* Gradient background on hover */}
+          <div className={cn(
+            "absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+            "bg-gradient-to-br",
+            quizCard.gradient
+          )} />
+
+          <div className="relative flex flex-col gap-3">
+            <div className={cn(
+              "w-12 h-12 rounded-xl flex items-center justify-center",
+              "bg-gradient-to-br",
+              quizCard.gradient
+            )}>
+              <quizCard.icon className={cn("w-6 h-6", quizCard.iconColor)} />
+            </div>
+            <h3 className="font-semibold text-foreground">{quizCard.title}</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">{quizCard.text}</p>
+          </div>
+        </Card>
       </div>
 
       {/* Hint */}
