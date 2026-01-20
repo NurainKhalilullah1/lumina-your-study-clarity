@@ -260,6 +260,30 @@ export type Database = {
         }
         Relationships: []
       }
+      study_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_files: {
         Row: {
           created_at: string

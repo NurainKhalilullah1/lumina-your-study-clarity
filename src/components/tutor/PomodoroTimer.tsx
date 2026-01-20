@@ -3,7 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Timer, Play, Pause, RotateCcw, SkipForward, Coffee, BookOpen } from "lucide-react";
 import { usePomodoroTimer, TimerMode } from "@/hooks/usePomodoroTimer";
+import { useTrackStudyEvent } from "@/hooks/useStudyStats";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const modeConfig: Record<TimerMode, { label: string; icon: React.ElementType; color: string }> = {
   work: { label: 'Focus', icon: BookOpen, color: 'text-primary' },
@@ -13,7 +16,21 @@ const modeConfig: Record<TimerMode, { label: string; icon: React.ElementType; co
 
 export const PomodoroTimer = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const timer = usePomodoroTimer();
+  const { user } = useAuth();
+  const trackEvent = useTrackStudyEvent();
+
+  const handleSessionComplete = (duration: number) => {
+    if (user) {
+      trackEvent.mutate({
+        userId: user.id,
+        eventType: 'pomodoro_completed',
+        metadata: { duration }
+      });
+      toast.success("Pomodoro session completed! 🍅");
+    }
+  };
+
+  const timer = usePomodoroTimer({}, { onSessionComplete: handleSessionComplete });
   
   const currentModeConfig = modeConfig[timer.mode];
   const ModeIcon = currentModeConfig.icon;

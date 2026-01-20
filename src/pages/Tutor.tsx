@@ -12,6 +12,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { extractTextFromPDF } from "@/utils/pdfUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTrackStudyEvent } from "@/hooks/useStudyStats";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ export default function Tutor() {
 
   const { toast } = useToast();
   const { user } = useAuth();
+  const trackEvent = useTrackStudyEvent();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), [messages, isLoading]);
@@ -116,6 +118,19 @@ export default function Tutor() {
       let imagePart: { inlineData: { data: string; mimeType: string } } | null = null;
 
       if (file) {
+        // Track document analysis
+        if (user) {
+          trackEvent.mutate({
+            userId: user.id,
+            eventType: 'document_analyzed',
+            metadata: { 
+              fileName: file.name, 
+              fileType: file.type,
+              fileSize: file.size
+            }
+          });
+        }
+
         if (isImage) {
           // Handle image upload for vision
           const base64 = await fileToBase64(file);

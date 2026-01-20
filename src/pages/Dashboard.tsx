@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ClipboardList, Calendar, CheckCircle2, AlertCircle, Upload, Sparkles } from "lucide-react"; // Added CheckCircle2
+import { ClipboardList, Calendar, CheckCircle2, AlertCircle, Upload, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AddAssignmentDialog } from "@/components/AddAssignmentDialog";
+import { StudyStatsDashboard } from "@/components/dashboard/StudyStatsDashboard";
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -23,7 +24,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState([
     { label: "Assignments Pending", value: 0, icon: ClipboardList, color: "text-primary" },
     { label: "Upcoming Exams", value: 0, icon: Calendar, color: "text-accent" },
-    { label: "Tasks Completed", value: 0, icon: CheckCircle2, color: "text-emerald-500" }, // Changed from Study Hours
+    { label: "Tasks Completed", value: 0, icon: CheckCircle2, color: "text-emerald-500" },
   ]);
 
   const [urgentAssignments, setUrgentAssignments] = useState<any[]>([]);
@@ -31,30 +32,26 @@ const Dashboard = () => {
   const fetchData = async () => {
     if (!user) return;
 
-    // 1. Get Assignments Pending
     const { count: pendingCount } = await supabase
       .from("assignments")
       .select("*", { count: 'exact', head: true })
       .eq("user_id", user.id)
       .eq("status", "pending")
-      .eq("type", "assignment"); // Only count assignments
+      .eq("type", "assignment");
 
-    // 2. Get Upcoming Exams
     const { count: examCount } = await supabase
       .from("assignments")
       .select("*", { count: 'exact', head: true })
       .eq("user_id", user.id)
       .eq("status", "pending")
-      .eq("type", "exam"); // Only count exams
+      .eq("type", "exam");
 
-    // 3. Get Completed Tasks (All types)
     const { count: completedCount } = await supabase
       .from("assignments")
       .select("*", { count: 'exact', head: true })
       .eq("user_id", user.id)
       .eq("status", "completed");
 
-    // 4. Get Urgent Items
     const threeDaysFromNow = new Date();
     threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
     
@@ -87,7 +84,7 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-6 lg:p-8 space-y-6">
+      <div className="p-6 lg:p-8 space-y-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-2xl lg:text-3xl font-bold text-foreground">
             {getGreeting()}, {userName} 👋
@@ -95,7 +92,12 @@ const Dashboard = () => {
           <p className="text-muted-foreground mt-1">Here is your academic overview.</p>
         </motion.div>
 
-        {/* Stats Cards */}
+        {/* Study Statistics Dashboard */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+          <StudyStatsDashboard />
+        </motion.div>
+
+        {/* Assignment Stats Cards */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {stats.map((stat) => (
             <div key={stat.label} className="bg-card rounded-xl p-5 shadow-sm border border-border">

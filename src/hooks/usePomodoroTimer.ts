@@ -23,7 +23,11 @@ const DEFAULT_SETTINGS: PomodoroSettings = {
   sessionsBeforeLongBreak: 4,
 };
 
-export const usePomodoroTimer = (settings: Partial<PomodoroSettings> = {}) => {
+export interface PomodoroCallbacks {
+  onSessionComplete?: (duration: number) => void;
+}
+
+export const usePomodoroTimer = (settings: Partial<PomodoroSettings> = {}, callbacks?: PomodoroCallbacks) => {
   const mergedSettings = { ...DEFAULT_SETTINGS, ...settings };
   
   const [state, setState] = useState<PomodoroState>(() => ({
@@ -123,6 +127,8 @@ export const usePomodoroTimer = (settings: Partial<PomodoroSettings> = {}) => {
 
           if (prev.mode === 'work') {
             newCompletedSessions += 1;
+            // Trigger callback when work session completes
+            callbacks?.onSessionComplete?.(mergedSettings.workDuration);
             newMode = newCompletedSessions % mergedSettings.sessionsBeforeLongBreak === 0 
               ? 'longBreak' 
               : 'shortBreak';
@@ -142,7 +148,7 @@ export const usePomodoroTimer = (settings: Partial<PomodoroSettings> = {}) => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [state.isRunning, getDurationForMode, mergedSettings.sessionsBeforeLongBreak, playNotification]);
+  }, [state.isRunning, getDurationForMode, mergedSettings.sessionsBeforeLongBreak, mergedSettings.workDuration, playNotification, callbacks]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
