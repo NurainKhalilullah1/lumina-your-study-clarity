@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom"; // <--- Import Link
-
+import { Link } from "react-router-dom";
+import { StudyFlowLogo } from "./StudyFlowLogo";
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -17,7 +17,7 @@ export const Navbar = () => {
             className="flex items-center gap-2 group"
           >
             <div className="relative">
-              <Sparkles className="w-7 h-7 text-primary transition-transform group-hover:scale-110 group-hover:rotate-12" />
+              <StudyFlowLogo size="lg" className="transition-transform group-hover:scale-110" />
               <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
             </div>
             <span className="text-xl font-bold text-foreground">StudyFlow</span>

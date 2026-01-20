@@ -10,8 +10,9 @@ import { extractTextFromPDF } from "@/utils/pdfUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Sparkles, FileText, X } from "lucide-react";
+import { Menu, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { StudyFlowLogo } from "@/components/StudyFlowLogo";
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || "");
 
@@ -206,7 +207,7 @@ export default function Tutor() {
               {/* Branding */}
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-primary-foreground" />
+                  <StudyFlowLogo size="md" />
                 </div>
                 <span className="font-semibold text-lg hidden sm:inline">StudyFlow</span>
               </div>

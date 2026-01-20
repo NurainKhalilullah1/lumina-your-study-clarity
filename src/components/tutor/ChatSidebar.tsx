@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, Plus, Trash2, Loader2, Sparkles } from "lucide-react";
+import { MessageSquare, Plus, Trash2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
+import { StudyFlowLogo } from "@/components/StudyFlowLogo";
 
 interface ChatSession {
   id: string;
@@ -129,7 +130,7 @@ export const ChatSidebar = ({ currentSessionId, onSelectSession, onNewChat, clas
   const EmptyState = () => (
     <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
       <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-        <Sparkles className="w-8 h-8 text-primary" />
+        <StudyFlowLogo size="lg" />
       </div>
       <h4 className="font-semibold text-foreground mb-1">No conversations yet</h4>
       <p className="text-xs text-muted-foreground">Start a new chat to begin learning!</p>
@@ -191,7 +192,7 @@ export const ChatSidebar = ({ currentSessionId, onSelectSession, onNewChat, clas
       {/* Footer branding */}
       <div className="p-4 border-t bg-background/30">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Sparkles className="w-3.5 h-3.5 text-primary" />
+          <StudyFlowLogo size="sm" />
           <span>Powered by StudyFlow AI</span>
         </div>
       </div>

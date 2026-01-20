@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react";
+import { StudyFlowLogo } from "./StudyFlowLogo";
 
 const footerLinks = [
   { label: "Features", href: "#" },
@@ -16,7 +16,7 @@ export const Footer = () => {
         <div className="flex flex-col md:flex-row items-center justify-between gap-8">
           {/* Logo */}
           <a href="#" className="flex items-center gap-2 group">
-            <Sparkles className="w-6 h-6 text-primary transition-transform group-hover:scale-110 group-hover:rotate-12" />
+            <StudyFlowLogo size="md" className="transition-transform group-hover:scale-110" />
             <span className="text-lg font-bold text-foreground">StudyFlow</span>
           </a>
 

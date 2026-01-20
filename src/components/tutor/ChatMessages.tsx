@@ -1,7 +1,8 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { Sparkles, User, FileText } from "lucide-react";
+import { User, FileText } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
+import { StudyFlowLogo } from "@/components/StudyFlowLogo";
 
 interface Message {
   role: 'user' | 'assistant';
@@ -37,7 +38,7 @@ export const ChatMessages = ({ messages, isLoading }: ChatMessagesProps) => {
               msg.role === 'assistant' && "bg-transparent"
             )}>
               {msg.role === 'assistant' 
-                ? <Sparkles className="w-4 h-4 text-primary" /> 
+                ? <StudyFlowLogo size="sm" /> 
                 : <User className="w-4 h-4 text-muted-foreground" />
               }
             </AvatarFallback>
@@ -80,7 +81,7 @@ export const ChatMessages = ({ messages, isLoading }: ChatMessagesProps) => {
         <div className="flex gap-4 flex-row animate-fade-in">
           <Avatar className="w-9 h-9 shrink-0 border-2 border-primary/20 bg-gradient-to-br from-primary/10 to-accent/10">
             <AvatarFallback className="bg-transparent">
-              <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+              <StudyFlowLogo size="sm" className="animate-pulse" />
             </AvatarFallback>
           </Avatar>
           

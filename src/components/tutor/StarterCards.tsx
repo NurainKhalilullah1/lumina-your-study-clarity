@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
-import { MessageCircle, BookOpen, BrainCircuit, NotebookPen, Sparkles } from "lucide-react";
+import { MessageCircle, BookOpen, BrainCircuit, NotebookPen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StudyFlowLogo } from "@/components/StudyFlowLogo";
 
 interface StarterCardsProps {
   onCardClick: (text: string) => void;
@@ -51,7 +52,7 @@ export const StarterCards = ({ onCardClick }: StarterCardsProps) => {
       {/* Hero Section */}
       <div className="text-center mb-10 animate-fade-in">
         <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-primary/20 to-accent/20 mb-6 glow-primary">
-          <Sparkles className="w-10 h-10 text-primary" />
+          <StudyFlowLogo size="xl" />
         </div>
         <h1 className="text-3xl md:text-4xl font-bold mb-3">
           Hi! I'm <span className="gradient-text">StudyFlow</span>
