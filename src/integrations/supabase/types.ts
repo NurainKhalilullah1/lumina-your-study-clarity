@@ -260,6 +260,92 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_questions: {
+        Row: {
+          correct_answer: string
+          created_at: string
+          id: string
+          is_flagged: boolean
+          options: Json
+          question: string
+          question_number: number
+          quiz_session_id: string
+          user_answer: string | null
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string
+          id?: string
+          is_flagged?: boolean
+          options: Json
+          question: string
+          question_number: number
+          quiz_session_id: string
+          user_answer?: string | null
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string
+          id?: string
+          is_flagged?: boolean
+          options?: Json
+          question?: string
+          question_number?: number
+          quiz_session_id?: string
+          user_answer?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_questions_quiz_session_id_fkey"
+            columns: ["quiz_session_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_sessions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          document_content: string | null
+          document_name: string | null
+          id: string
+          num_questions: number
+          score: number | null
+          started_at: string | null
+          time_limit_minutes: number
+          total_questions: number | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          document_content?: string | null
+          document_name?: string | null
+          id?: string
+          num_questions?: number
+          score?: number | null
+          started_at?: string | null
+          time_limit_minutes?: number
+          total_questions?: number | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          document_content?: string | null
+          document_name?: string | null
+          id?: string
+          num_questions?: number
+          score?: number | null
+          started_at?: string | null
+          time_limit_minutes?: number
+          total_questions?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       study_events: {
         Row: {
           created_at: string

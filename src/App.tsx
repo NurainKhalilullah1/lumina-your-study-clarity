@@ -15,6 +15,7 @@ import Courses from "./pages/Courses";
 import Assignments from "./pages/Assignments";
 import Tutor from "./pages/Tutor";
 import Flashcards from "./pages/Flashcards";
+import Quiz from "./pages/Quiz";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -93,6 +94,14 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <Flashcards />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/quiz"
+                element={
+                  <ProtectedRoute>
+                    <Quiz />
                   </ProtectedRoute>
                 }
               />
