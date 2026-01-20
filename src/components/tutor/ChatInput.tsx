@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Paperclip, X, FileText } from "lucide-react";
+import { Send, Paperclip, X, FileText, Loader2 } from "lucide-react";
 import { useState, useRef } from "react";
+import { cn } from "@/lib/utils";
 
 interface ChatInputProps {
   onSendMessage: (message: string, file?: File) => void;
@@ -28,50 +29,85 @@ export const ChatInput = ({ onSendMessage, isLoading }: ChatInputProps) => {
     }
   };
 
+  const canSubmit = (message.trim() || selectedFile) && !isLoading;
+
   return (
-    <form onSubmit={handleSubmit} className="p-4 border-t bg-background">
-      {/* File Preview Badge */}
-      {selectedFile && (
-        <div className="mb-2 flex items-center gap-2 bg-accent/10 w-fit px-3 py-1 rounded-full text-xs text-accent-foreground border border-accent/20">
-          <FileText className="w-3 h-3" />
-          <span className="max-w-[200px] truncate">{selectedFile.name}</span>
-          <button type="button" onClick={() => setSelectedFile(null)} className="hover:text-destructive">
-            <X className="w-3 h-3" />
-          </button>
+    <div className="p-4 border-t bg-gradient-to-t from-background via-background to-transparent">
+      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
+        {/* File Preview Badge */}
+        {selectedFile && (
+          <div className="mb-3 animate-fade-in">
+            <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full text-sm border border-primary/20">
+              <FileText className="w-4 h-4 text-primary" />
+              <span className="max-w-[200px] truncate text-foreground font-medium">{selectedFile.name}</span>
+              <button 
+                type="button" 
+                onClick={() => setSelectedFile(null)} 
+                className="ml-1 p-0.5 rounded-full hover:bg-destructive/20 transition-colors"
+              >
+                <X className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Input Container - Glassmorphism style */}
+        <div className="flex items-center gap-2 p-2 rounded-2xl bg-card/80 backdrop-blur-sm border shadow-lg">
+          {/* Hidden file input */}
+          <Input
+            type="file"
+            accept=".pdf,.txt"
+            className="hidden"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+          />
+          
+          {/* Attach button */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => fileInputRef.current?.click()}
+            className="shrink-0 h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors"
+            title="Upload PDF or text file"
+          >
+            <Paperclip className="h-5 w-5" />
+          </Button>
+
+          {/* Text input */}
+          <Input
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder={selectedFile ? "Ask about this document..." : "Ask Lumina anything..."}
+            disabled={isLoading}
+            className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-base placeholder:text-muted-foreground/60"
+          />
+          
+          {/* Send button */}
+          <Button 
+            type="submit" 
+            disabled={!canSubmit}
+            size="icon"
+            className={cn(
+              "shrink-0 h-10 w-10 rounded-xl transition-all duration-300",
+              canSubmit 
+                ? "gradient-primary text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105" 
+                : "bg-muted text-muted-foreground"
+            )}
+          >
+            {isLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Send className="h-5 w-5" />
+            )}
+          </Button>
         </div>
-      )}
 
-      <div className="flex gap-2">
-        <Input
-          type="file"
-          accept=".pdf,.txt"
-          className="hidden"
-          ref={fileInputRef}
-          onChange={handleFileSelect}
-        />
-        
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={() => fileInputRef.current?.click()}
-          title="Upload Slides (PDF)"
-        >
-          <Paperclip className="h-4 w-4" />
-        </Button>
-
-        <Input
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder={selectedFile ? "Ask about this document (e.g., 'Summarize', 'Quiz me')..." : "Ask a question..."}
-          disabled={isLoading}
-          className="flex-1"
-        />
-        
-        <Button type="submit" disabled={isLoading || (!message.trim() && !selectedFile)}>
-          <Send className="h-4 w-4" />
-        </Button>
-      </div>
-    </form>
+        {/* Helper text */}
+        <p className="text-[11px] text-muted-foreground/50 text-center mt-2">
+          Lumina can make mistakes. Verify important information.
+        </p>
+      </form>
+    </div>
   );
 };
