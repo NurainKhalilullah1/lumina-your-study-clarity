@@ -66,7 +66,7 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           
           {/* Logo background */}
           <div className="relative w-24 h-24 rounded-3xl bg-gradient-to-br from-primary/10 to-accent/10 backdrop-blur-sm border border-primary/20 flex items-center justify-center shadow-2xl">
-            <StudyFlowLogo size="xl" className="w-14 h-14" />
+            <StudyFlowLogo size="xl" variant="purple" className="w-14 h-14" />
           </div>
         </motion.div>
 

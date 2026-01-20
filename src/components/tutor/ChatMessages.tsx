@@ -38,7 +38,7 @@ export const ChatMessages = ({ messages, isLoading }: ChatMessagesProps) => {
               msg.role === 'assistant' && "bg-transparent"
             )}>
               {msg.role === 'assistant' 
-                ? <StudyFlowLogo size="sm" /> 
+                ? <StudyFlowLogo size="sm" variant="purple" /> 
                 : <User className="w-4 h-4 text-muted-foreground" />
               }
             </AvatarFallback>
@@ -81,7 +81,7 @@ export const ChatMessages = ({ messages, isLoading }: ChatMessagesProps) => {
         <div className="flex gap-4 flex-row animate-fade-in">
           <Avatar className="w-9 h-9 shrink-0 border-2 border-primary/20 bg-gradient-to-br from-primary/10 to-accent/10">
             <AvatarFallback className="bg-transparent">
-              <StudyFlowLogo size="sm" className="animate-pulse" />
+              <StudyFlowLogo size="sm" variant="purple" className="animate-pulse" />
             </AvatarFallback>
           </Avatar>
           

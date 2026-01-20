@@ -16,7 +16,7 @@ export const Footer = () => {
         <div className="flex flex-col md:flex-row items-center justify-between gap-8">
           {/* Logo */}
           <a href="#" className="flex items-center gap-2 group">
-            <StudyFlowLogo size="md" className="transition-transform group-hover:scale-110" />
+            <StudyFlowLogo size="md" variant="purple" className="transition-transform group-hover:scale-110" />
             <span className="text-lg font-bold text-foreground">StudyFlow</span>
           </a>
 

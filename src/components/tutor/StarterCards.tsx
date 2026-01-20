@@ -52,7 +52,7 @@ export const StarterCards = ({ onCardClick }: StarterCardsProps) => {
       {/* Hero Section */}
       <div className="text-center mb-10 animate-fade-in">
         <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-primary/20 to-accent/20 mb-6 glow-primary">
-          <StudyFlowLogo size="xl" />
+          <StudyFlowLogo size="xl" variant="purple" />
         </div>
         <h1 className="text-3xl md:text-4xl font-bold mb-3">
           Hi! I'm <span className="gradient-text">StudyFlow</span>
