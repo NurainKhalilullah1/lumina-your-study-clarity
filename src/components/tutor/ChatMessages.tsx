@@ -1,7 +1,6 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { Bot, User, FileText, Loader2 } from "lucide-react";
+import { Sparkles, User, FileText } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 
 interface Message {
@@ -12,50 +11,88 @@ interface Message {
 
 interface ChatMessagesProps {
   messages: Message[];
-  isLoading?: boolean; // Added this prop
+  isLoading?: boolean;
 }
 
 export const ChatMessages = ({ messages, isLoading }: ChatMessagesProps) => {
   return (
-    <div className="space-y-4 pb-4">
+    <div className="space-y-6 pb-4 max-w-4xl mx-auto">
       {messages.map((msg, idx) => (
-        <div key={idx} className={cn("flex gap-3", msg.role === 'user' ? "flex-row-reverse" : "flex-row")}>
-          <Avatar className="w-8 h-8 border">
-            <AvatarFallback className={msg.role === 'assistant' ? "bg-primary/10" : ""}>
-              {msg.role === 'assistant' ? <Bot className="w-4 h-4 text-primary" /> : <User className="w-4 h-4" />}
+        <div 
+          key={idx} 
+          className={cn(
+            "flex gap-4 animate-fade-in",
+            msg.role === 'user' ? "flex-row-reverse" : "flex-row"
+          )}
+          style={{ animationDelay: `${idx * 50}ms` }}
+        >
+          {/* Avatar */}
+          <Avatar className={cn(
+            "w-9 h-9 shrink-0 border-2 shadow-sm",
+            msg.role === 'assistant' 
+              ? "border-primary/20 bg-gradient-to-br from-primary/10 to-accent/10" 
+              : "border-border"
+          )}>
+            <AvatarFallback className={cn(
+              msg.role === 'assistant' && "bg-transparent"
+            )}>
+              {msg.role === 'assistant' 
+                ? <Sparkles className="w-4 h-4 text-primary" /> 
+                : <User className="w-4 h-4 text-muted-foreground" />
+              }
             </AvatarFallback>
           </Avatar>
 
-          <div className={cn("flex flex-col max-w-[85%]", msg.role === 'user' ? "items-end" : "items-start")}>
+          {/* Message content */}
+          <div className={cn(
+            "flex flex-col max-w-[80%]",
+            msg.role === 'user' ? "items-end" : "items-start"
+          )}>
+            {/* Attachment badge */}
             {msg.attachment_name && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1 bg-muted px-2 py-1 rounded-md w-fit">
-                <FileText className="w-3 h-3" /> {msg.attachment_name}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2 bg-muted/50 px-3 py-1.5 rounded-full border">
+                <FileText className="w-3.5 h-3.5" /> 
+                <span className="truncate max-w-[150px]">{msg.attachment_name}</span>
               </div>
             )}
             
-            <Card className={cn("p-3 text-sm", msg.role === 'user' ? "bg-primary text-primary-foreground" : "bg-muted/50")}>
+            {/* Message bubble */}
+            <div className={cn(
+              "px-4 py-3 rounded-2xl text-sm leading-relaxed",
+              msg.role === 'user' 
+                ? "gradient-primary text-primary-foreground rounded-br-md shadow-lg" 
+                : "bg-muted/50 text-foreground rounded-bl-md border border-border/50"
+            )}>
               {msg.role === 'assistant' ? (
-                <div className="prose prose-sm dark:prose-invert max-w-none">
+                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-ul:my-2 prose-li:my-0.5">
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
               ) : (
                 <p className="whitespace-pre-wrap">{msg.content}</p>
               )}
-            </Card>
+            </div>
           </div>
         </div>
       ))}
 
-      {/* === THE AI INDICATOR === */}
+      {/* Typing indicator */}
       {isLoading && (
-        <div className="flex gap-3 flex-row animate-pulse">
-          <Avatar className="w-8 h-8 border">
-            <AvatarFallback className="bg-primary/10"><Bot className="w-4 h-4 text-primary" /></AvatarFallback>
+        <div className="flex gap-4 flex-row animate-fade-in">
+          <Avatar className="w-9 h-9 shrink-0 border-2 border-primary/20 bg-gradient-to-br from-primary/10 to-accent/10">
+            <AvatarFallback className="bg-transparent">
+              <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+            </AvatarFallback>
           </Avatar>
-          <div className="flex items-center gap-1 bg-muted/50 px-4 py-3 rounded-lg">
-            <span className="w-2 h-2 bg-primary/50 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-            <span className="w-2 h-2 bg-primary/50 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-            <span className="w-2 h-2 bg-primary/50 rounded-full animate-bounce"></span>
+          
+          <div className="flex flex-col items-start">
+            <div className="flex items-center gap-2 px-4 py-3 bg-muted/50 rounded-2xl rounded-bl-md border border-border/50">
+              <span className="text-sm text-muted-foreground">Lumina is thinking</span>
+              <div className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"></span>
+              </div>
+            </div>
           </div>
         </div>
       )}
