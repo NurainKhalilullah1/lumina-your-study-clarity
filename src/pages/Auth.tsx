@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Mail, Lock, ArrowRight, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Mail, Lock, ArrowRight, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
 import PasswordStrengthIndicator from "@/components/PasswordStrengthIndicator";
+import { StudyFlowLogo } from "@/components/StudyFlowLogo";
 
 // Zod validation schemas
 const emailSchema = z
@@ -260,7 +261,7 @@ const Auth = () => {
         >
           {/* Logo */}
           <a href="/" className="flex items-center gap-2 mb-8 group">
-            <Sparkles className="w-7 h-7 text-primary transition-transform group-hover:scale-110 group-hover:rotate-12" />
+            <StudyFlowLogo size="lg" className="transition-transform group-hover:scale-110" />
             <span className="text-xl font-bold text-foreground">StudyFlow</span>
           </a>
 
@@ -488,7 +489,7 @@ const Auth = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="relative z-10 flex flex-col items-center justify-center w-full p-12 text-center"
         >
-          <Sparkles className="w-12 h-12 text-primary-foreground/80 mb-8" />
+          <StudyFlowLogo size="xl" className="mb-8 opacity-80" />
           <blockquote className="text-3xl lg:text-4xl font-bold text-primary-foreground leading-relaxed max-w-lg">
             "Focus on what matters. Let AI handle the rest."
           </blockquote>

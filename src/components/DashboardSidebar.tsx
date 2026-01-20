@@ -22,6 +22,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { StudyFlowLogo } from "./StudyFlowLogo";
 
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -56,7 +57,7 @@ const DashboardSidebar = () => {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2 px-2 py-3">
-          <Sparkles className="w-6 h-6 text-primary shrink-0" />
+          <StudyFlowLogo size="md" className="shrink-0" />
           {!isCollapsed && (
             <span className="text-lg font-bold text-sidebar-foreground">StudyFlow</span>
           )}
