@@ -5,7 +5,7 @@ import { useStorageQuota, formatBytes } from "@/hooks/useStorageQuota";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, FileText, Loader2, AlertTriangle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-
+import { detectHorizontalOverflow } from "@/lib/detectHorizontalOverflow";
 const MAX_FILE_SIZE_MB = 5;
 const ACCEPTED_TYPES = [
   "application/pdf",
@@ -110,6 +110,13 @@ export function DocumentUploadZone() {
           title: "Document uploaded",
           description: `${file.name} is now available in your library.`,
         });
+
+        // DEV: Check for overflow immediately after toast (guarded by localStorage flag)
+        if (import.meta.env.DEV && typeof localStorage !== "undefined" && localStorage.getItem("sf_debug_overflow") === "1") {
+          setTimeout(() => {
+            detectHorizontalOverflow({ reason: `after upload: ${file.name}`, highlightOffenders: true });
+          }, 100);
+        }
       } catch (error) {
         setUploadingFiles((prev) => prev.filter((f) => f.name !== file.name));
         toast({
