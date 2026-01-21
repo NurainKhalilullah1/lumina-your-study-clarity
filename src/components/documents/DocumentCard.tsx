@@ -57,14 +57,14 @@ export function DocumentCard({ file, onPreview, onDelete }: DocumentCardProps) {
   };
 
   return (
-    <Card className="group hover:shadow-md transition-shadow">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3 flex-1 min-w-0">
+    <Card className="group hover:shadow-md transition-shadow overflow-hidden max-w-full">
+      <CardContent className="p-4 min-w-0">
+        <div className="flex items-start justify-between gap-3 min-w-0">
+          <div className="flex items-start gap-3 flex-1 min-w-0 overflow-hidden">
             <div className="shrink-0 p-2 bg-muted rounded-lg">
               {getFileIcon()}
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 overflow-hidden">
               <h3 className="font-medium text-foreground truncate" title={file.file_name}>
                 {file.file_name}
               </h3>
