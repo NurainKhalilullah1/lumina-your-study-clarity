@@ -44,9 +44,9 @@ export function DocumentPreviewModal({ file, open, onClose }: DocumentPreviewMod
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[80vh]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 min-w-0">
             {getFileIcon()}
-            <span className="truncate">{file.file_name}</span>
+            <span className="truncate min-w-0">{file.file_name}</span>
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
             {formatFileSize(file.file_size)} • {file.text_content?.length.toLocaleString() || 0} characters
@@ -55,7 +55,7 @@ export function DocumentPreviewModal({ file, open, onClose }: DocumentPreviewMod
         
         <ScrollArea className="h-[50vh] mt-4">
           {file.text_content ? (
-            <pre className="text-sm whitespace-pre-wrap font-sans text-foreground leading-relaxed">
+            <pre className="text-sm whitespace-pre-wrap break-words font-sans text-foreground leading-relaxed max-w-full overflow-hidden">
               {file.text_content}
             </pre>
           ) : (

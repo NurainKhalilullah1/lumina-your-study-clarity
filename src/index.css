@@ -119,6 +119,12 @@
   #root {
     overflow-x: hidden;
   }
+
+  /* DEV: Allow horizontal scroll for debugging when sf_debug_overflow=1 is set in localStorage */
+  /* This class is toggled via JS in development mode only */
+  #root.debug-overflow-visible {
+    overflow-x: auto !important;
+  }
 }
 
 /* Force desktop sidebar container to have no width on mobile viewports */

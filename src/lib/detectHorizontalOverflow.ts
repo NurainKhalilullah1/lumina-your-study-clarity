@@ -1,6 +1,7 @@
 type DetectOverflowOptions = {
   reason?: string;
   maxOffenders?: number;
+  highlightOffenders?: boolean; // DEV: outline offenders with red border
 };
 
 const EPS = 1; // px tolerance
@@ -31,11 +32,17 @@ function getDomPath(el: Element, maxDepth = 6) {
 export function detectHorizontalOverflow(options: DetectOverflowOptions = {}) {
   if (typeof document === "undefined") return;
 
-  const { reason = "(unspecified)", maxOffenders = 15 } = options;
+  const { reason = "(unspecified)", maxOffenders = 15, highlightOffenders = false } = options;
   const root = document.documentElement;
   const clientW = root.clientWidth;
   const scrollW = root.scrollWidth;
   const delta = scrollW - clientW;
+
+  // DEV: Toggle debug-overflow-visible class on #root for horizontal scroll debugging
+  const rootEl = document.getElementById("root");
+  if (rootEl && typeof localStorage !== "undefined" && localStorage.getItem("sf_debug_overflow") === "1") {
+    rootEl.classList.add("debug-overflow-visible");
+  }
 
   // Always print a single-line summary (cheap), detailed list only if overflowing.
   // eslint-disable-next-line no-console
@@ -77,6 +84,15 @@ export function detectHorizontalOverflow(options: DetectOverflowOptions = {}) {
     if (offenders.length >= maxOffenders) break;
   }
 
+  // Print simplified top offender for quick identification
+  if (offenders.length > 0) {
+    const top = offenders[0];
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[overflow-check] TOP OFFENDER: ${top.path} (rectRight=${Math.round(top.rectRight)}, scrollWidth=${top.scrollWidth})`
+    );
+  }
+
   // eslint-disable-next-line no-console
   console.groupCollapsed(
     `[overflow-check] Found ${offenders.length} offender(s) — ${reason}`
@@ -97,4 +113,20 @@ export function detectHorizontalOverflow(options: DetectOverflowOptions = {}) {
   });
   // eslint-disable-next-line no-console
   console.groupEnd();
+
+  // DEV: Highlight offenders with a red border for visual identification
+  if (highlightOffenders && offenders.length > 0) {
+    offenders.forEach((o) => {
+      const htmlEl = o.el as HTMLElement;
+      const originalOutline = htmlEl.style.outline;
+      const originalOutlineOffset = htmlEl.style.outlineOffset;
+      htmlEl.style.outline = "3px solid red";
+      htmlEl.style.outlineOffset = "-1px";
+      
+      setTimeout(() => {
+        htmlEl.style.outline = originalOutline;
+        htmlEl.style.outlineOffset = originalOutlineOffset;
+      }, 2000);
+    });
+  }
 }
