@@ -6,6 +6,7 @@ import {
   CalendarCheck, 
   Sparkles, 
   ClipboardList,
+  FolderOpen,
   Settings, 
   LogOut 
 } from "lucide-react";
@@ -27,6 +28,7 @@ import { StudyFlowLogo } from "./StudyFlowLogo";
 
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "My Documents", url: "/documents", icon: FolderOpen },
   { title: "My Courses", url: "/courses", icon: BookOpen },
   { title: "Assignments", url: "/assignments", icon: CalendarCheck },
   { title: "AI Tutor", url: "/tutor", icon: Sparkles },

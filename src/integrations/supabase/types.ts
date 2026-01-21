@@ -373,29 +373,35 @@ export type Database = {
       user_files: {
         Row: {
           created_at: string
+          extraction_status: string | null
           file_name: string
           file_path: string
           file_size: number | null
           id: string
           mime_type: string | null
+          text_content: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
+          extraction_status?: string | null
           file_name: string
           file_path: string
           file_size?: number | null
           id?: string
           mime_type?: string | null
+          text_content?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
+          extraction_status?: string | null
           file_name?: string
           file_path?: string
           file_size?: number | null
           id?: string
           mime_type?: string | null
+          text_content?: string | null
           user_id?: string
         }
         Relationships: []

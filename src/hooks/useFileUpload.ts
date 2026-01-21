@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { extractTextFromPDF } from "@/utils/pdfUtils";
 
 export interface UserFile {
   id: string;
@@ -8,6 +9,8 @@ export interface UserFile {
   file_path: string;
   file_size: number | null;
   mime_type: string | null;
+  text_content: string | null;
+  extraction_status: string | null;
   created_at: string;
 }
 
@@ -44,7 +47,33 @@ export const useUploadFile = () => {
       
       if (uploadError) throw uploadError;
       
-      // Create file record
+      // Extract text content based on file type
+      let textContent: string | null = null;
+      let extractionStatus = "pending";
+      
+      try {
+        if (file.type === "application/pdf") {
+          textContent = await extractTextFromPDF(file);
+        } else if (
+          file.type === "text/plain" ||
+          file.type === "text/markdown" ||
+          file.name.endsWith(".txt") ||
+          file.name.endsWith(".md")
+        ) {
+          textContent = await file.text();
+        }
+        
+        if (textContent) {
+          extractionStatus = "completed";
+        } else {
+          extractionStatus = "failed";
+        }
+      } catch (error) {
+        console.error("Text extraction failed:", error);
+        extractionStatus = "failed";
+      }
+      
+      // Create file record with extracted content
       const { data, error: dbError } = await supabase
         .from("user_files")
         .insert({
@@ -53,6 +82,8 @@ export const useUploadFile = () => {
           file_path: filePath,
           file_size: file.size,
           mime_type: file.type,
+          text_content: textContent,
+          extraction_status: extractionStatus,
         })
         .select()
         .single();

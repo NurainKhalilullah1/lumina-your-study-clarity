@@ -14,6 +14,7 @@ import Onboarding from "./pages/Onboarding";
 import Courses from "./pages/Courses";
 import Assignments from "./pages/Assignments";
 import Tutor from "./pages/Tutor";
+import Documents from "./pages/Documents";
 import Flashcards from "./pages/Flashcards";
 import Quiz from "./pages/Quiz";
 import QuizHistory from "./pages/QuizHistory";
@@ -87,6 +88,14 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <Tutor />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/documents"
+                element={
+                  <ProtectedRoute>
+                    <Documents />
                   </ProtectedRoute>
                 }
               />
