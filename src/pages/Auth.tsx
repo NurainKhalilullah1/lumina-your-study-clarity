@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
 import PasswordStrengthIndicator from "@/components/PasswordStrengthIndicator";
 import { StudyFlowLogo } from "@/components/StudyFlowLogo";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 // Zod validation schemas
 const emailSchema = z
@@ -169,7 +170,12 @@ const Auth = () => {
   // Forgot Password View
   if (showForgotPassword) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-8 bg-background">
+      <div className="min-h-screen flex items-center justify-center p-8 bg-background relative">
+        {/* Theme Toggle */}
+        <div className="absolute top-4 right-4">
+          <ThemeToggle />
+        </div>
+        
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -250,7 +256,12 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex relative">
+      {/* Theme Toggle - visible on mobile, hidden on lg (right side has its own) */}
+      <div className="absolute top-4 right-4 z-10 lg:hidden">
+        <ThemeToggle />
+      </div>
+      
       {/* Left Side - Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-background">
         <motion.div

@@ -1,11 +1,16 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Shield, Palette, Loader2, Moon, Sun, Save, LogOut } from "lucide-react";
+import { User, Shield, Loader2, Save, LogOut, BookOpen, Database, Info, Trash2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { useTheme } from "next-themes";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +30,6 @@ import DashboardLayout from "@/components/DashboardLayout";
 
 const Settings = () => {
   const { user, signOut } = useAuth();
-  const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -33,6 +37,9 @@ const Settings = () => {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isClearingHistory, setIsClearingHistory] = useState(false);
+  const [defaultQuizQuestions, setDefaultQuizQuestions] = useState("10");
+  const [pomodoroDuration, setPomodoroDuration] = useState("25");
 
   // 1. Load current name when page opens
   useEffect(() => {
@@ -69,7 +76,36 @@ const Settings = () => {
     }
   };
 
-  // 3. Function to COMPLETELY Delete Account
+  // 3. Function to Clear Chat History
+  const handleClearChatHistory = async () => {
+    if (!user) return;
+    setIsClearingHistory(true);
+    
+    try {
+      // Delete all chat sessions for this user (messages will cascade delete)
+      const { error } = await supabase
+        .from('chat_sessions')
+        .delete()
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Chat History Cleared",
+        description: "All your AI tutor conversations have been deleted."
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsClearingHistory(false);
+    }
+  };
+
+  // 4. Function to COMPLETELY Delete Account
   const handleDeleteAccount = async () => {
     if (!user) return;
     setIsDeleting(true);
@@ -95,6 +131,8 @@ const Settings = () => {
       setIsDeleting(false);
     }
   };
+
+  const hasNameChanged = name !== (user?.user_metadata?.full_name || "");
 
   return (
     <DashboardLayout>
@@ -131,7 +169,7 @@ const Settings = () => {
             <div className="pt-2 flex flex-wrap gap-3">
               <Button 
                 onClick={handleUpdateProfile} 
-                disabled={loading || name === (user?.user_metadata?.full_name || "")}
+                disabled={loading || !hasNameChanged}
               >
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 Save Changes
@@ -144,24 +182,117 @@ const Settings = () => {
           </div>
         </div>
 
-        {/* Appearance Section */}
+        {/* Study Preferences Section */}
         <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
           <div className="flex items-center gap-2 mb-6">
-            <Palette className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Appearance</h2>
+            <BookOpen className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Study Preferences</h2>
           </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {theme === 'dark' ? <Moon className="w-4 h-4 text-purple-400" /> : <Sun className="w-4 h-4 text-orange-400" />}
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-foreground">Dark Mode</p>
-                <p className="text-sm text-muted-foreground">Switch between light and dark themes</p>
+                <p className="font-medium text-foreground">Default Quiz Questions</p>
+                <p className="text-sm text-muted-foreground">Number of questions per quiz</p>
               </div>
+              <Select value={defaultQuizQuestions} onValueChange={setDefaultQuizQuestions}>
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="15">15</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Switch 
-              checked={theme === 'dark'}
-              onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
-            />
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-foreground">Pomodoro Duration</p>
+                <p className="text-sm text-muted-foreground">Default focus session length</p>
+              </div>
+              <Select value={pomodoroDuration} onValueChange={setPomodoroDuration}>
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="15">15 min</SelectItem>
+                  <SelectItem value="25">25 min</SelectItem>
+                  <SelectItem value="45">45 min</SelectItem>
+                  <SelectItem value="60">60 min</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* Data & Privacy Section */}
+        <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
+          <div className="flex items-center gap-2 mb-6">
+            <Database className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Data & Privacy</h2>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-foreground">Clear Chat History</p>
+                <p className="text-sm text-muted-foreground">Delete all AI tutor conversations</p>
+              </div>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Clear
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Clear all chat history?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete all your AI tutor conversations. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleClearChatHistory} disabled={isClearingHistory}>
+                      {isClearingHistory ? "Clearing..." : "Yes, Clear All"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-foreground">Export My Data</p>
+                <p className="text-sm text-muted-foreground">Download all your data as JSON</p>
+              </div>
+              <Button variant="outline" size="sm" disabled>
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* About Section */}
+        <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
+          <div className="flex items-center gap-2 mb-6">
+            <Info className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">About</h2>
+          </div>
+          
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <p>StudyFlow v1.0.0</p>
+            <p>Made with ❤️ for students everywhere</p>
+            <div className="flex gap-4 pt-2">
+              <a href="#" className="text-primary hover:underline">Help Center</a>
+              <a href="#" className="text-primary hover:underline">Privacy Policy</a>
+              <a href="#" className="text-primary hover:underline">Terms of Service</a>
+            </div>
           </div>
         </div>
 
