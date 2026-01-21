@@ -400,6 +400,39 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_goals: {
+        Row: {
+          created_at: string
+          flashcard_target: number
+          id: string
+          quiz_target: number
+          study_minutes_target: number
+          updated_at: string
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          flashcard_target?: number
+          id?: string
+          quiz_target?: number
+          study_minutes_target?: number
+          updated_at?: string
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          flashcard_target?: number
+          id?: string
+          quiz_target?: number
+          study_minutes_target?: number
+          updated_at?: string
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
