@@ -105,6 +105,12 @@
     @apply border-border;
   }
 
+  /* Stabilize viewport width by reserving scrollbar space consistently */
+  html {
+    scrollbar-gutter: stable;
+    overflow-y: scroll;
+  }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
