@@ -195,7 +195,11 @@ Generate exactly ${questionsToGenerate} questions. Return ONLY the JSON array, n
         throw new Error("No questions were generated. Please try with different content.");
       }
 
-      console.log("Parsed", questions.length, "questions");
+      // Validate question count and warn if different from requested
+      if (questions.length < numQuestions) {
+        console.warn(`Requested ${numQuestions} questions but AI generated ${questions.length}`);
+      }
+      console.log(`Generated ${questions.length} questions (requested: ${numQuestions})`);
 
       // Insert questions into database
       const questionsToInsert = questions.slice(0, numQuestions).map((q: any, idx: number) => ({

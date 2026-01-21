@@ -38,6 +38,7 @@ export default function Quiz() {
   const [quizScore, setQuizScore] = useState({ score: 0, total: 0 });
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [timeTaken, setTimeTaken] = useState<string>("");
+  const [quizTimeLimit, setQuizTimeLimit] = useState<number>(25);
 
   const createSession = useCreateQuizSession();
   const generateQuestions = useGenerateQuizQuestions();
@@ -78,6 +79,7 @@ export default function Quiz() {
       });
 
       setSessionId(session.id);
+      setQuizTimeLimit(settings.timeLimitMinutes);
 
       // Generate questions
       toast({
@@ -174,12 +176,7 @@ export default function Quiz() {
     setQuizScore({ score: 0, total: 0 });
     setStartTime(null);
     setTimeTaken("");
-  };
-
-  // Get time limit from first question's session or default
-  const getTimeLimit = () => {
-    // Default to 45 minutes
-    return 45;
+    setQuizTimeLimit(25);
   };
 
   return (
@@ -213,7 +210,7 @@ export default function Quiz() {
           {phase === "quiz" && localQuestions.length > 0 && (
             <QuizInterface
               questions={localQuestions}
-              timeLimitMinutes={getTimeLimit()}
+              timeLimitMinutes={quizTimeLimit}
               onSaveAnswer={handleSaveAnswer}
               onToggleFlag={handleToggleFlag}
               onSubmit={handleSubmitQuiz}
