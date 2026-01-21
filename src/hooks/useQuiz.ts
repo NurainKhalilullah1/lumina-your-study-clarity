@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -309,11 +309,58 @@ export const useSubmitQuiz = () => {
   });
 };
 
+// Fetch quiz history for a user
+export const useQuizHistory = (userId: string | null) => {
+  return useQuery({
+    queryKey: ["quiz-history", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase
+        .from("quiz_sessions")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as QuizSession[];
+    },
+    enabled: !!userId,
+  });
+};
+
+// Delete a quiz session and its questions
+export const useDeleteQuizSession = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (sessionId: string) => {
+      // Delete questions first
+      const { error: questionsError } = await supabase
+        .from("quiz_questions")
+        .delete()
+        .eq("quiz_session_id", sessionId);
+
+      if (questionsError) throw questionsError;
+
+      // Then delete the session
+      const { error: sessionError } = await supabase
+        .from("quiz_sessions")
+        .delete()
+        .eq("id", sessionId);
+
+      if (sessionError) throw sessionError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quiz-history"] });
+      queryClient.invalidateQueries({ queryKey: ["quiz-sessions"] });
+    },
+  });
+};
+
 // Hook to manage quiz timer
 export const useQuizTimer = (timeLimitMinutes: number, isActive: boolean, onTimeUp: () => void) => {
   const [timeRemaining, setTimeRemaining] = useState(timeLimitMinutes * 60);
 
-  useState(() => {
+  useEffect(() => {
     if (!isActive) return;
 
     const interval = setInterval(() => {
@@ -328,7 +375,7 @@ export const useQuizTimer = (timeLimitMinutes: number, isActive: boolean, onTime
     }, 1000);
 
     return () => clearInterval(interval);
-  });
+  }, [isActive, onTimeUp]);
 
   return {
     timeRemaining,

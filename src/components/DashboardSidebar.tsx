@@ -5,6 +5,7 @@ import {
   BookOpen, 
   CalendarCheck, 
   Sparkles, 
+  ClipboardList,
   Settings, 
   LogOut 
 } from "lucide-react";
@@ -29,6 +30,7 @@ const menuItems = [
   { title: "My Courses", url: "/courses", icon: BookOpen },
   { title: "Assignments", url: "/assignments", icon: CalendarCheck },
   { title: "AI Tutor", url: "/tutor", icon: Sparkles },
+  { title: "Quiz History", url: "/quiz-history", icon: ClipboardList },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
