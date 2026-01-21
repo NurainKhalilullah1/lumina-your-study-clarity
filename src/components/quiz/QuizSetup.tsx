@@ -3,15 +3,17 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
-import { FileText, Upload, Loader2, Clock, HelpCircle, Sparkles, X, AlertCircle } from "lucide-react";
+import { FileText, Upload, Loader2, Clock, HelpCircle, Sparkles, X, AlertCircle, FolderOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { extractTextFromPDF } from "@/utils/pdfUtils";
 import { useToast } from "@/hooks/use-toast";
+import { DocumentSelector, type UserFile } from "@/components/documents/DocumentSelector";
 
 interface UploadedDocument {
   name: string;
   content: string;
   size: number;
+  fromLibrary?: boolean;
 }
 
 interface QuizSetupProps {
@@ -45,6 +47,7 @@ export const QuizSetup = ({
   const [numQuestions, setNumQuestions] = useState(35);
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(25);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
+  const [showDocumentSelector, setShowDocumentSelector] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -138,6 +141,28 @@ export const QuizSetup = ({
     setDocuments(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleSelectFromLibrary = (selectedFiles: UserFile[]) => {
+    const remainingSlots = MAX_DOCUMENTS - documents.length;
+    const filesToAdd = selectedFiles.slice(0, remainingSlots);
+    
+    const newDocs: UploadedDocument[] = filesToAdd
+      .filter(file => !documents.some(doc => doc.name === file.file_name))
+      .map(file => ({
+        name: file.file_name,
+        content: file.text_content || "",
+        size: file.file_size || 0,
+        fromLibrary: true,
+      }));
+
+    if (newDocs.length > 0) {
+      setDocuments(prev => [...prev, ...newDocs]);
+      toast({
+        title: "Documents added from library",
+        description: `Added ${newDocs.length} document${newDocs.length > 1 ? 's' : ''}.`,
+      });
+    }
+  };
+
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     const files = e.dataTransfer.files;
@@ -227,42 +252,60 @@ export const QuizSetup = ({
 
         {/* Upload Area */}
         {documents.length < MAX_DOCUMENTS && (
-          <div
-            className={cn(
-              "border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer",
-              "border-border hover:border-primary/40"
-            )}
-            onClick={() => fileInputRef.current?.click()}
-            onDrop={handleDrop}
-            onDragOver={(e) => e.preventDefault()}
-          >
-            <Input
-              type="file"
-              accept=".pdf,.txt,.md,.doc,.docx"
-              className="hidden"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
-              multiple
-            />
-            
-            {isProcessingFile ? (
-              <div className="flex flex-col items-center gap-3">
-                <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                <p className="text-muted-foreground">Processing document...</p>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-2">
-                <Upload className="w-8 h-8 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">
-                    {documents.length === 0 ? "Drop files here or click to browse" : "Add more documents"}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    PDF, TXT, text files • Max {MAX_FILE_SIZE_MB}MB each
-                  </p>
+          <div className="space-y-3">
+            {/* Select from Library Button */}
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2"
+              onClick={() => setShowDocumentSelector(true)}
+            >
+              <FolderOpen className="w-4 h-4" />
+              Select from My Documents
+            </Button>
+
+            <div className="relative flex items-center">
+              <div className="flex-grow border-t border-border" />
+              <span className="px-3 text-xs text-muted-foreground">or upload new</span>
+              <div className="flex-grow border-t border-border" />
+            </div>
+
+            <div
+              className={cn(
+                "border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer",
+                "border-border hover:border-primary/40"
+              )}
+              onClick={() => fileInputRef.current?.click()}
+              onDrop={handleDrop}
+              onDragOver={(e) => e.preventDefault()}
+            >
+              <Input
+                type="file"
+                accept=".pdf,.txt,.md,.doc,.docx"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                multiple
+              />
+              
+              {isProcessingFile ? (
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                  <p className="text-muted-foreground">Processing document...</p>
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <Upload className="w-8 h-8 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">
+                      {documents.length === 0 ? "Drop files here or click to browse" : "Add more documents"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      PDF, TXT, text files • Max {MAX_FILE_SIZE_MB}MB each
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -350,6 +393,16 @@ export const QuizSetup = ({
           Upload at least one document to get started
         </p>
       )}
+
+      {/* Document Selector Modal */}
+      <DocumentSelector
+        mode="multi"
+        maxSelections={MAX_DOCUMENTS - documents.length}
+        open={showDocumentSelector}
+        onOpenChange={setShowDocumentSelector}
+        onSelect={handleSelectFromLibrary}
+        selectedIds={[]}
+      />
     </div>
   );
 };
