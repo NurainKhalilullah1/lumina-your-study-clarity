@@ -32,14 +32,10 @@ export interface QuizSession {
 // Fetch a quiz session by ID
 export const useQuizSession = (sessionId: string | null) => {
   return useQuery({
-    queryKey: ['quiz-session', sessionId],
+    queryKey: ["quiz-session", sessionId],
     queryFn: async () => {
       if (!sessionId) return null;
-      const { data, error } = await supabase
-        .from('quiz_sessions')
-        .select('*')
-        .eq('id', sessionId)
-        .single();
+      const { data, error } = await supabase.from("quiz_sessions").select("*").eq("id", sessionId).single();
       if (error) throw error;
       return data as QuizSession;
     },
@@ -50,18 +46,18 @@ export const useQuizSession = (sessionId: string | null) => {
 // Fetch questions for a quiz session
 export const useQuizQuestions = (sessionId: string | null) => {
   return useQuery({
-    queryKey: ['quiz-questions', sessionId],
+    queryKey: ["quiz-questions", sessionId],
     queryFn: async () => {
       if (!sessionId) return [];
       const { data, error } = await supabase
-        .from('quiz_questions')
-        .select('*')
-        .eq('quiz_session_id', sessionId)
-        .order('question_number', { ascending: true });
+        .from("quiz_questions")
+        .select("*")
+        .eq("quiz_session_id", sessionId)
+        .order("question_number", { ascending: true });
       if (error) throw error;
-      return data.map(q => ({
+      return data.map((q) => ({
         ...q,
-        options: q.options as string[]
+        options: q.options as string[],
       })) as QuizQuestion[];
     },
     enabled: !!sessionId,
@@ -71,14 +67,14 @@ export const useQuizQuestions = (sessionId: string | null) => {
 // Create a new quiz session
 export const useCreateQuizSession = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({
       userId,
       documentName,
       documentContent,
       numQuestions,
-      timeLimitMinutes
+      timeLimitMinutes,
     }: {
       userId: string;
       documentName?: string;
@@ -87,7 +83,7 @@ export const useCreateQuizSession = () => {
       timeLimitMinutes: number;
     }) => {
       const { data, error } = await supabase
-        .from('quiz_sessions')
+        .from("quiz_sessions")
         .insert({
           user_id: userId,
           document_name: documentName || null,
@@ -101,7 +97,7 @@ export const useCreateQuizSession = () => {
       return data as QuizSession;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['quiz-sessions'] });
+      queryClient.invalidateQueries({ queryKey: ["quiz-sessions"] });
     },
   });
 };
@@ -109,12 +105,12 @@ export const useCreateQuizSession = () => {
 // Generate quiz questions using AI
 export const useGenerateQuizQuestions = () => {
   const { toast } = useToast();
-  
+
   return useMutation({
     mutationFn: async ({
       sessionId,
       documentContent,
-      numQuestions
+      numQuestions,
     }: {
       sessionId: string;
       documentContent: string;
@@ -127,11 +123,11 @@ export const useGenerateQuizQuestions = () => {
       }
 
       const genAIInstance = new GoogleGenerativeAI(apiKey);
-      const model = genAIInstance.getGenerativeModel({ model: "gemini-2.5-flash-preview-05-20" });
-      
+      const model = genAIInstance.getGenerativeModel({ model: "gemini-2.5-flash" });
+
       // Limit questions for reliability - generate in smaller batches if needed
       const questionsToGenerate = Math.min(numQuestions, 30);
-      
+
       const prompt = `You are an expert quiz generator. Generate exactly ${questionsToGenerate} multiple choice questions based on the following document content.
 
 IMPORTANT RULES:
@@ -156,7 +152,7 @@ Return your response as a valid JSON array with this exact format (no markdown, 
 Generate exactly ${questionsToGenerate} questions. Return ONLY the JSON array, nothing else.`;
 
       console.log("Starting quiz generation for", questionsToGenerate, "questions");
-      
+
       let result;
       try {
         result = await model.generateContent(prompt);
@@ -170,23 +166,23 @@ Generate exactly ${questionsToGenerate} questions. Return ONLY the JSON array, n
         }
         throw new Error(`AI service error: ${apiError.message || "Unknown error"}`);
       }
-      
+
       const responseText = result.response.text();
       console.log("Received response, length:", responseText.length);
-      
+
       // Extract JSON from response (handle potential markdown code blocks)
       let jsonStr = responseText.trim();
-      if (jsonStr.startsWith('```json')) {
+      if (jsonStr.startsWith("```json")) {
         jsonStr = jsonStr.slice(7);
       }
-      if (jsonStr.startsWith('```')) {
+      if (jsonStr.startsWith("```")) {
         jsonStr = jsonStr.slice(3);
       }
-      if (jsonStr.endsWith('```')) {
+      if (jsonStr.endsWith("```")) {
         jsonStr = jsonStr.slice(0, -3);
       }
       jsonStr = jsonStr.trim();
-      
+
       let questions;
       try {
         questions = JSON.parse(jsonStr);
@@ -194,13 +190,13 @@ Generate exactly ${questionsToGenerate} questions. Return ONLY the JSON array, n
         console.error("JSON parse error. Response was:", jsonStr.slice(0, 500));
         throw new Error("Failed to parse quiz questions. The AI returned an invalid format.");
       }
-      
+
       if (!Array.isArray(questions) || questions.length === 0) {
         throw new Error("No questions were generated. Please try with different content.");
       }
-      
+
       console.log("Parsed", questions.length, "questions");
-      
+
       // Insert questions into database
       const questionsToInsert = questions.slice(0, numQuestions).map((q: any, idx: number) => ({
         quiz_session_id: sessionId,
@@ -208,27 +204,25 @@ Generate exactly ${questionsToGenerate} questions. Return ONLY the JSON array, n
         question: q.question,
         options: q.options,
         correct_answer: q.correct,
-        is_flagged: false
+        is_flagged: false,
       }));
-      
-      const { error } = await supabase
-        .from('quiz_questions')
-        .insert(questionsToInsert);
-      
+
+      const { error } = await supabase.from("quiz_questions").insert(questionsToInsert);
+
       if (error) {
         console.error("Database insert error:", error);
         throw new Error("Failed to save questions to database.");
       }
-      
+
       // Update session with total questions and start time
       await supabase
-        .from('quiz_sessions')
+        .from("quiz_sessions")
         .update({
           total_questions: questionsToInsert.length,
-          started_at: new Date().toISOString()
+          started_at: new Date().toISOString(),
         })
-        .eq('id', sessionId);
-      
+        .eq("id", sessionId);
+
       return questionsToInsert.length;
     },
     onError: (error: Error) => {
@@ -236,21 +230,21 @@ Generate exactly ${questionsToGenerate} questions. Return ONLY the JSON array, n
       toast({
         title: "Failed to generate quiz",
         description: error.message || "There was an error generating the quiz questions. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
 };
 
 // Save an answer to a question
 export const useSaveQuizAnswer = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({
       questionId,
       answer,
-      isFlagged
+      isFlagged,
     }: {
       questionId: string;
       answer?: string;
@@ -259,78 +253,71 @@ export const useSaveQuizAnswer = () => {
       const updateData: Record<string, any> = {};
       if (answer !== undefined) updateData.user_answer = answer;
       if (isFlagged !== undefined) updateData.is_flagged = isFlagged;
-      
-      const { error } = await supabase
-        .from('quiz_questions')
-        .update(updateData)
-        .eq('id', questionId);
-      
+
+      const { error } = await supabase.from("quiz_questions").update(updateData).eq("id", questionId);
+
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['quiz-questions'] });
-    }
+      queryClient.invalidateQueries({ queryKey: ["quiz-questions"] });
+    },
   });
 };
 
 // Submit quiz and calculate score
 export const useSubmitQuiz = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (sessionId: string) => {
       // Get all questions for this session
       const { data: questions, error: fetchError } = await supabase
-        .from('quiz_questions')
-        .select('*')
-        .eq('quiz_session_id', sessionId);
-      
+        .from("quiz_questions")
+        .select("*")
+        .eq("quiz_session_id", sessionId);
+
       if (fetchError) throw fetchError;
-      
+
       // Calculate score
       let correct = 0;
-      questions?.forEach(q => {
+      questions?.forEach((q) => {
         if (q.user_answer === q.correct_answer) {
           correct++;
         }
       });
-      
+
       // Update session with score and completion time
       const { error: updateError } = await supabase
-        .from('quiz_sessions')
+        .from("quiz_sessions")
         .update({
           score: correct,
-          completed_at: new Date().toISOString()
+          completed_at: new Date().toISOString(),
         })
-        .eq('id', sessionId);
-      
+        .eq("id", sessionId);
+
       if (updateError) throw updateError;
-      
+
       return {
         score: correct,
-        total: questions?.length || 0
+        total: questions?.length || 0,
       };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['quiz-session'] });
-      queryClient.invalidateQueries({ queryKey: ['quiz-questions'] });
-    }
+      queryClient.invalidateQueries({ queryKey: ["quiz-session"] });
+      queryClient.invalidateQueries({ queryKey: ["quiz-questions"] });
+    },
   });
 };
 
 // Hook to manage quiz timer
-export const useQuizTimer = (
-  timeLimitMinutes: number,
-  isActive: boolean,
-  onTimeUp: () => void
-) => {
+export const useQuizTimer = (timeLimitMinutes: number, isActive: boolean, onTimeUp: () => void) => {
   const [timeRemaining, setTimeRemaining] = useState(timeLimitMinutes * 60);
-  
+
   useState(() => {
     if (!isActive) return;
-    
+
     const interval = setInterval(() => {
-      setTimeRemaining(prev => {
+      setTimeRemaining((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
           onTimeUp();
@@ -339,14 +326,16 @@ export const useQuizTimer = (
         return prev - 1;
       });
     }, 1000);
-    
+
     return () => clearInterval(interval);
   });
-  
+
   return {
     timeRemaining,
     minutes: Math.floor(timeRemaining / 60),
     seconds: timeRemaining % 60,
-    formattedTime: `${Math.floor(timeRemaining / 60).toString().padStart(2, '0')}:${(timeRemaining % 60).toString().padStart(2, '0')}`
+    formattedTime: `${Math.floor(timeRemaining / 60)
+      .toString()
+      .padStart(2, "0")}:${(timeRemaining % 60).toString().padStart(2, "0")}`,
   };
 };
