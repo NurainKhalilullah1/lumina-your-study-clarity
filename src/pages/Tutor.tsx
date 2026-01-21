@@ -46,10 +46,10 @@ export default function Tutor() {
     }
     const loadHistory = async () => {
       const { data } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .eq('session_id', sessionId)
-        .order('created_at', { ascending: true });
+        .from("chat_messages")
+        .select("*")
+        .eq("session_id", sessionId)
+        .order("created_at", { ascending: true });
       if (data) setMessages(data);
     };
     loadHistory();
@@ -69,7 +69,7 @@ export default function Tutor() {
       reader.onload = () => {
         const result = reader.result as string;
         // Remove the data URL prefix to get just the base64 data
-        const base64 = result.split(',')[1];
+        const base64 = result.split(",")[1];
         resolve(base64);
       };
       reader.onerror = reject;
@@ -80,28 +80,28 @@ export default function Tutor() {
     if (!inputMessage.trim() && !file) return;
 
     // Check for quiz-related keywords
-    const quizKeywords = ['quiz me', 'test me', 'generate quiz', 'i want a quiz', 'create a quiz'];
-    const isQuizRequest = quizKeywords.some(kw => inputMessage.toLowerCase().includes(kw));
-    
+    const quizKeywords = ["quiz me", "test me", "generate quiz", "i want a quiz", "create a quiz"];
+    const isQuizRequest = quizKeywords.some((kw) => inputMessage.toLowerCase().includes(kw));
+
     if (isQuizRequest && (activeDocument || file)) {
       toast({ title: "Quiz Mode", description: "Starting quiz setup..." });
-      navigate('/quiz', {
+      navigate("/quiz", {
         state: {
           documentContent: activeDocument,
-          documentName: activeDocumentName
-        }
+          documentName: activeDocumentName,
+        },
       });
       return;
     }
 
-    const isImage = file?.type.startsWith('image/');
+    const isImage = file?.type.startsWith("image/");
     const imageUrl = file && isImage ? URL.createObjectURL(file) : undefined;
-    
-    const userMsg = { 
-      role: "user", 
-      content: inputMessage, 
+
+    const userMsg = {
+      role: "user",
+      content: inputMessage,
       attachment_name: file?.name,
-      image_url: imageUrl
+      image_url: imageUrl,
     };
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
@@ -113,9 +113,9 @@ export default function Tutor() {
       if (!currentSession && user) {
         isNewSession = true;
         const tempTitle = file ? file.name : inputMessage.slice(0, 30);
-        
+
         const { data, error } = await supabase
-          .from('chat_sessions')
+          .from("chat_sessions")
           .insert({ user_id: user.id, title: tempTitle })
           .select()
           .single();
@@ -125,10 +125,10 @@ export default function Tutor() {
       }
 
       if (currentSession && user) {
-        await supabase.from('chat_messages').insert({
+        await supabase.from("chat_messages").insert({
           session_id: currentSession,
-          role: 'user',
-          content: inputMessage + (file ? ` [Attached: ${file.name}]` : '')
+          role: "user",
+          content: inputMessage + (file ? ` [Attached: ${file.name}]` : ""),
         });
       }
 
@@ -140,12 +140,12 @@ export default function Tutor() {
         if (user) {
           trackEvent.mutate({
             userId: user.id,
-            eventType: 'document_analyzed',
-            metadata: { 
-              fileName: file.name, 
+            eventType: "document_analyzed",
+            metadata: {
+              fileName: file.name,
               fileType: file.type,
-              fileSize: file.size
-            }
+              fileSize: file.size,
+            },
           });
         }
 
@@ -155,8 +155,8 @@ export default function Tutor() {
           imagePart = {
             inlineData: {
               data: base64,
-              mimeType: file.type
-            }
+              mimeType: file.type,
+            },
           };
           setActiveDocumentName(file.name);
         } else if (file.type === "application/pdf") {
@@ -172,12 +172,13 @@ export default function Tutor() {
         }
       }
 
-      const historyContext = messages.slice(-6).map(m => 
-        `${m.role === 'user' ? 'Student' : 'Tutor'}: ${m.content}`
-      ).join('\n');
+      const historyContext = messages
+        .slice(-6)
+        .map((m) => `${m.role === "user" ? "Student" : "Tutor"}: ${m.content}`)
+        .join("\n");
 
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-preview-05-20" });
-      
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
       let result;
       if (imagePart) {
         // Use vision capabilities for images
@@ -185,7 +186,7 @@ export default function Tutor() {
 A student has shared an image with you. Please analyze it and help them understand it.
 ${inputMessage ? `Their question: "${inputMessage}"` : "Please describe and explain what you see in this image."}
 INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points when appropriate. Keep responses concise but comprehensive.`;
-        
+
         result = await model.generateContent([prompt, imagePart]);
       } else {
         const prompt = `
@@ -203,10 +204,10 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
       setMessages((prev) => [...prev, { role: "assistant", content: responseText }]);
 
       if (currentSession && user) {
-        await supabase.from('chat_messages').insert({
+        await supabase.from("chat_messages").insert({
           session_id: currentSession,
-          role: 'assistant',
-          content: responseText
+          role: "assistant",
+          content: responseText,
         });
 
         if (isNewSession) {
@@ -220,11 +221,11 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
                 Return ONLY the title. No quotes.
               `;
               const titleResult = await model.generateContent(titlePrompt);
-              const newTitle = titleResult.response.text().trim().replace(/['"]/g, '');
-              
+              const newTitle = titleResult.response.text().trim().replace(/['"]/g, "");
+
               if (newTitle) {
-                await supabase.from('chat_sessions').update({ title: newTitle }).eq('id', currentSession);
-                setSidebarRefresh(prev => prev + 1);
+                await supabase.from("chat_sessions").update({ title: newTitle }).eq("id", currentSession);
+                setSidebarRefresh((prev) => prev + 1);
               }
             } catch (e) {
               console.error("Title gen failed", e);
@@ -232,7 +233,6 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
           })();
         }
       }
-
     } catch (error) {
       console.error(error);
       toast({ title: "Error", description: "Connection interrupted.", variant: "destructive" });
@@ -256,9 +256,9 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
   // Get all content for flashcard generation
   const getAllContent = () => {
     const chatContent = messages
-      .filter(m => m.role === 'assistant')
-      .map(m => m.content)
-      .join('\n\n');
+      .filter((m) => m.role === "assistant")
+      .map((m) => m.content)
+      .join("\n\n");
     return activeDocument ? `${activeDocument}\n\n${chatContent}` : chatContent;
   };
 
@@ -267,9 +267,9 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
       <div className="flex h-[calc(100vh-2rem)] bg-background overflow-hidden">
         {/* Desktop Sidebar */}
         <div className="hidden md:block">
-          <ChatSidebar 
-            currentSessionId={sessionId} 
-            onSelectSession={handleSelectSession} 
+          <ChatSidebar
+            currentSessionId={sessionId}
+            onSelectSession={handleSelectSession}
             onNewChat={handleNewChat}
             refreshTrigger={sidebarRefresh}
           />
@@ -288,9 +288,9 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="p-0 w-72">
-                  <ChatSidebar 
-                    currentSessionId={sessionId} 
-                    onSelectSession={handleSelectSession} 
+                  <ChatSidebar
+                    currentSessionId={sessionId}
+                    onSelectSession={handleSelectSession}
                     onNewChat={handleNewChat}
                     refreshTrigger={sidebarRefresh}
                   />
@@ -313,7 +313,7 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
                 <span className="text-foreground font-medium max-w-[120px] sm:max-w-[200px] truncate">
                   {activeDocumentName}
                 </span>
-                <button 
+                <button
                   onClick={handleClearContext}
                   className="p-0.5 rounded-full hover:bg-destructive/20 transition-colors"
                 >
@@ -325,13 +325,13 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
             {/* Right: Tools */}
             <div className="flex items-center gap-1">
               {messages.length > 0 && (
-                <FlashcardGenerator 
-                  content={getAllContent()} 
+                <FlashcardGenerator
+                  content={getAllContent()}
                   sessionId={sessionId || undefined}
-                  deckName={activeDocumentName || 'Chat Session'}
+                  deckName={activeDocumentName || "Chat Session"}
                 />
               )}
-              <ExportButton messages={messages} title={activeDocumentName || 'StudyFlow Chat'} />
+              <ExportButton messages={messages} title={activeDocumentName || "StudyFlow Chat"} />
               <PomodoroTimer />
             </div>
           </header>
@@ -339,7 +339,7 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
           {/* Chat Area */}
           <div className="flex-1 overflow-y-auto p-4 bg-glow">
             {messages.length === 0 ? (
-              <StarterCards 
+              <StarterCards
                 onSetInputText={setPendingInput}
                 documentContext={activeDocument}
                 documentName={activeDocumentName}
@@ -349,10 +349,10 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
             )}
             <div ref={messagesEndRef} />
           </div>
-          
+
           {/* Input */}
-          <ChatInput 
-            onSendMessage={handleSendMessage} 
+          <ChatInput
+            onSendMessage={handleSendMessage}
             isLoading={isLoading}
             value={pendingInput}
             onValueChange={setPendingInput}
