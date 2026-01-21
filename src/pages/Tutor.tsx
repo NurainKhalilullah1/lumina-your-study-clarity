@@ -8,6 +8,7 @@ import { ChatSidebar } from "@/components/tutor/ChatSidebar";
 import { ExportButton } from "@/components/tutor/ExportButton";
 import { PomodoroTimer } from "@/components/tutor/PomodoroTimer";
 import { FlashcardGenerator } from "@/components/tutor/FlashcardGenerator";
+import { DocumentSelector, type UserFile } from "@/components/documents/DocumentSelector";
 import { useToast } from "@/hooks/use-toast";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { extractTextFromPDF } from "@/utils/pdfUtils";
@@ -15,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTrackStudyEvent } from "@/hooks/useStudyStats";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, FileText, X } from "lucide-react";
+import { Menu, FileText, X, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StudyFlowLogo } from "@/components/StudyFlowLogo";
 
@@ -30,6 +31,7 @@ export default function Tutor() {
   const [sidebarRefresh, setSidebarRefresh] = useState(0);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [pendingInput, setPendingInput] = useState("");
+  const [showDocumentSelector, setShowDocumentSelector] = useState(false);
 
   const { toast } = useToast();
   const { user } = useAuth();
@@ -59,6 +61,18 @@ export default function Tutor() {
     setActiveDocument("");
     setActiveDocumentName("");
     toast({ title: "Context cleared", description: "Document context removed." });
+  };
+
+  const handleSelectDocument = (documents: UserFile[]) => {
+    if (documents.length > 0) {
+      const doc = documents[0];
+      setActiveDocument(doc.text_content || "");
+      setActiveDocumentName(doc.file_name);
+      toast({
+        title: "Document loaded",
+        description: `"${doc.file_name}" is now your active context.`,
+      });
+    }
   };
 
   // Convert file to base64 for image uploads
@@ -307,20 +321,32 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
             </div>
 
             {/* Center: Document context indicator */}
-            {activeDocumentName && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full border border-primary/20 text-sm">
-                <FileText className="w-4 h-4 text-primary" />
-                <span className="text-foreground font-medium max-w-[120px] sm:max-w-[200px] truncate">
-                  {activeDocumentName}
-                </span>
-                <button
-                  onClick={handleClearContext}
-                  className="p-0.5 rounded-full hover:bg-destructive/20 transition-colors"
+            <div className="flex items-center gap-2">
+              {activeDocumentName ? (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full border border-primary/20 text-sm">
+                  <FileText className="w-4 h-4 text-primary" />
+                  <span className="text-foreground font-medium max-w-[120px] sm:max-w-[200px] truncate">
+                    {activeDocumentName}
+                  </span>
+                  <button
+                    onClick={handleClearContext}
+                    className="p-0.5 rounded-full hover:bg-destructive/20 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
+                  </button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDocumentSelector(true)}
+                  className="gap-2"
                 >
-                  <X className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
-                </button>
-              </div>
-            )}
+                  <FolderOpen className="w-4 h-4" />
+                  <span className="hidden sm:inline">Select Document</span>
+                </Button>
+              )}
+            </div>
 
             {/* Right: Tools */}
             <div className="flex items-center gap-1">
@@ -359,6 +385,14 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
           />
         </div>
       </div>
+
+      {/* Document Selector Modal */}
+      <DocumentSelector
+        mode="single"
+        open={showDocumentSelector}
+        onOpenChange={setShowDocumentSelector}
+        onSelect={handleSelectDocument}
+      />
     </DashboardLayout>
   );
 }
