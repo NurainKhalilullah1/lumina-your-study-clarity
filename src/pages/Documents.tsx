@@ -74,11 +74,11 @@ export default function Documents() {
 
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-6 max-w-full min-w-0">
         {/* Header */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">My Documents</h1>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between min-w-0">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-foreground truncate">My Documents</h1>
             <p className="text-muted-foreground">
               Upload documents once, use them across Tutor and Quiz
             </p>
