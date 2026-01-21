@@ -125,8 +125,8 @@ export const useGenerateQuizQuestions = () => {
       const genAIInstance = new GoogleGenerativeAI(apiKey);
       const model = genAIInstance.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-      // Limit questions for reliability - generate in smaller batches if needed
-      const questionsToGenerate = Math.min(numQuestions, 30);
+      // Allow up to 70 questions as per UI slider
+      const questionsToGenerate = Math.min(numQuestions, 70);
 
       const prompt = `You are an expert quiz generator. Generate exactly ${questionsToGenerate} multiple choice questions based on the following document content.
 
@@ -138,7 +138,7 @@ IMPORTANT RULES:
 5. Make wrong answers plausible but clearly incorrect
 
 Document content:
-${documentContent.slice(0, 25000)}
+${documentContent.slice(0, 50000)}
 
 Return your response as a valid JSON array with this exact format (no markdown, no code blocks, just pure JSON):
 [

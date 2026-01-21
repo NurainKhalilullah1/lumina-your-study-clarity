@@ -27,8 +27,8 @@ export const QuizSetup = ({
 }: QuizSetupProps) => {
   const [documentName, setDocumentName] = useState(initialDocumentName || "");
   const [documentContent, setDocumentContent] = useState(initialDocumentContent || "");
-  const [numQuestions, setNumQuestions] = useState(70);
-  const [timeLimitMinutes, setTimeLimitMinutes] = useState(45);
+  const [numQuestions, setNumQuestions] = useState(35);
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState(25);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -187,13 +187,13 @@ export const QuizSetup = ({
             value={[timeLimitMinutes]}
             onValueChange={([val]) => setTimeLimitMinutes(val)}
             min={5}
-            max={45}
+            max={120}
             step={5}
             className="w-full"
           />
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>5 min</span>
-            <span>45 min (max)</span>
+            <span>120 min (max)</span>
           </div>
         </div>
       </Card>
