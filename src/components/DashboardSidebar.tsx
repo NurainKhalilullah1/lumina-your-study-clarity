@@ -25,6 +25,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { StudyFlowLogo } from "./StudyFlowLogo";
+import StorageIndicator from "./dashboard/StorageIndicator";
 
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -97,6 +98,11 @@ const DashboardSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      {/* Storage Indicator */}
+      <div className="px-3 py-3 border-t border-sidebar-border">
+        <StorageIndicator />
+      </div>
 
       <SidebarFooter className="border-t border-sidebar-border">
         <SidebarMenu>

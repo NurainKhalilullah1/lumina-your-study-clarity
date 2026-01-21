@@ -240,6 +240,8 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          storage_limit_bytes: number
+          storage_used_bytes: number
           updated_at: string
         }
         Insert: {
@@ -248,6 +250,8 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          storage_limit_bytes?: number
+          storage_used_bytes?: number
           updated_at?: string
         }
         Update: {
@@ -256,6 +260,8 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          storage_limit_bytes?: number
+          storage_used_bytes?: number
           updated_at?: string
         }
         Relationships: []
