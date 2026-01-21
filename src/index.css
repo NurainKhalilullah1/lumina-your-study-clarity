@@ -41,6 +41,10 @@
     --glow-accent: 263 70% 50%;
     --gradient-start: 239 84% 67%;
     --gradient-end: 263 70% 50%;
+    
+    /* Warning color for storage indicator */
+    --warning: 25 95% 53%;
+    --warning-foreground: 0 0% 100%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -80,6 +84,10 @@
     --border: 217 33% 17%;
     --input: 217 33% 17%;
     --ring: 239 84% 67%;
+    
+    /* Warning color for storage indicator - dark mode */
+    --warning: 25 95% 53%;
+    --warning-foreground: 0 0% 100%;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;

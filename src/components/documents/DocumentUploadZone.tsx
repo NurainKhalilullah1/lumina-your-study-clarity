@@ -1,9 +1,9 @@
 import { useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUploadFile } from "@/hooks/useFileUpload";
+import { useStorageQuota, formatBytes } from "@/hooks/useStorageQuota";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileText, Loader2, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Upload, FileText, Loader2, AlertTriangle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 const MAX_FILE_SIZE_MB = 5;
@@ -22,6 +22,7 @@ interface UploadingFile {
 export function DocumentUploadZone() {
   const { user } = useAuth();
   const uploadFile = useUploadFile();
+  const { data: quota } = useStorageQuota(user?.id);
   const { toast } = useToast();
   
   const [isDragging, setIsDragging] = useState(false);
@@ -43,11 +44,14 @@ export function DocumentUploadZone() {
   };
 
   const handleUpload = useCallback(async (files: FileList | File[]) => {
-    if (!user) return;
+    if (!user || !quota) return;
 
     const fileArray = Array.from(files);
     const errors: string[] = [];
     const validFiles: File[] = [];
+
+    // Calculate total size of files to be uploaded
+    let totalUploadSize = 0;
 
     // Validate all files
     fileArray.forEach((file) => {
@@ -55,7 +59,13 @@ export function DocumentUploadZone() {
       if (error) {
         errors.push(error);
       } else {
-        validFiles.push(file);
+        // Check if this file would exceed storage quota
+        if (quota.remaining < file.size + totalUploadSize) {
+          errors.push(`${file.name}: Not enough storage space (${formatBytes(quota.remaining)} remaining)`);
+        } else {
+          totalUploadSize += file.size;
+          validFiles.push(file);
+        }
       }
     });
 
@@ -109,7 +119,7 @@ export function DocumentUploadZone() {
         });
       }
     }
-  }, [user, uploadFile, toast]);
+  }, [user, quota, uploadFile, toast]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -134,39 +144,62 @@ export function DocumentUploadZone() {
     }
   };
 
+  const isStorageFull = quota?.isAtLimit ?? false;
+
   return (
     <div className="space-y-4">
+      {/* Storage Warning */}
+      {quota?.isNearLimit && (
+        <div className={`flex items-center gap-2 p-3 rounded-lg ${quota.isAtLimit ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning'}`}>
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <p className="text-sm">
+            {quota.isAtLimit
+              ? `Storage full. Delete some files to upload more.`
+              : `Running low on space. ${formatBytes(quota.remaining)} remaining.`}
+          </p>
+        </div>
+      )}
+
       <div
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`
           relative border-2 border-dashed rounded-lg p-8 text-center transition-colors
-          ${isDragging
-            ? "border-primary bg-primary/5"
-            : "border-muted-foreground/25 hover:border-primary/50"
+          ${isStorageFull
+            ? "border-muted bg-muted/50 cursor-not-allowed"
+            : isDragging
+              ? "border-primary bg-primary/5"
+              : "border-muted-foreground/25 hover:border-primary/50"
           }
         `}
       >
-        <input
-          type="file"
-          accept=".pdf,.txt,.md"
-          multiple
-          onChange={handleFileInput}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        />
+        {!isStorageFull && (
+          <input
+            type="file"
+            accept=".pdf,.txt,.md"
+            multiple
+            onChange={handleFileInput}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          />
+        )}
         
         <div className="flex flex-col items-center gap-3">
-          <div className="p-3 bg-primary/10 rounded-full">
-            <Upload className="h-6 w-6 text-primary" />
+          <div className={`p-3 rounded-full ${isStorageFull ? 'bg-muted' : 'bg-primary/10'}`}>
+            <Upload className={`h-6 w-6 ${isStorageFull ? 'text-muted-foreground' : 'text-primary'}`} />
           </div>
           <div>
-            <p className="font-medium text-foreground">
-              Drop files here or click to upload
+            <p className={`font-medium ${isStorageFull ? 'text-muted-foreground' : 'text-foreground'}`}>
+              {isStorageFull ? "Storage full" : "Drop files here or click to upload"}
             </p>
             <p className="text-sm text-muted-foreground mt-1">
               PDF, TXT, MD files up to {MAX_FILE_SIZE_MB}MB each
             </p>
+            {quota && !isStorageFull && (
+              <p className="text-xs text-muted-foreground mt-2">
+                {formatBytes(quota.remaining)} available
+              </p>
+            )}
           </div>
         </div>
       </div>

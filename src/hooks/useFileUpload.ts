@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { extractTextFromPDF } from "@/utils/pdfUtils";
+import { useStorageQuota } from "./useStorageQuota";
 
 export interface UserFile {
   id: string;
@@ -91,8 +92,23 @@ export const useUploadFile = () => {
       if (dbError) throw dbError;
       return data;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (data, variables) => {
+      // Update storage usage in profile
+      const { data: files } = await supabase
+        .from("user_files")
+        .select("file_size")
+        .eq("user_id", variables.userId);
+
+      const totalUsed = files?.reduce((sum, file) => sum + (file.file_size || 0), 0) ?? 0;
+
+      await supabase
+        .from("profiles")
+        .update({ storage_used_bytes: totalUsed })
+        .eq("id", variables.userId);
+
       queryClient.invalidateQueries({ queryKey: ["user-files", variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ["storage-quota", variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ["profile", variables.userId] });
     },
   });
 };
@@ -117,8 +133,25 @@ export const useDeleteFile = () => {
       
       if (dbError) throw dbError;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (_, variables) => {
+      // Update storage usage in profile
+      const { data: files } = await supabase
+        .from("user_files")
+        .select("file_size")
+        .eq("user_id", variables.userId);
+
+      const totalUsed = files?.reduce((sum, file) => sum + (file.file_size || 0), 0) ?? 0;
+
+      await supabase
+        .from("profiles")
+        .update({ storage_used_bytes: totalUsed })
+        .eq("id", variables.userId);
+
       queryClient.invalidateQueries({ queryKey: ["user-files", variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ["storage-quota", variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ["profile", variables.userId] });
     },
   });
 };
+
+export { useStorageQuota };

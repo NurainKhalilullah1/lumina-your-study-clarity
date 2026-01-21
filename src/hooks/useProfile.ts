@@ -6,6 +6,8 @@ export interface Profile {
   email: string | null;
   full_name: string | null;
   avatar_url: string | null;
+  storage_limit_bytes: number;
+  storage_used_bytes: number;
   created_at: string;
   updated_at: string;
 }

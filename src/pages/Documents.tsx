@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserFiles, useDeleteFile } from "@/hooks/useFileUpload";
+import { useStorageQuota, formatBytes } from "@/hooks/useStorageQuota";
 import DashboardLayout from "@/components/DashboardLayout";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 import { DocumentCard } from "@/components/documents/DocumentCard";
 import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModal";
 import { Input } from "@/components/ui/input";
-import { Search, FileText } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Search, FileText, HardDrive } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -34,6 +36,7 @@ export interface UserFile {
 export default function Documents() {
   const { user } = useAuth();
   const { data: files = [], isLoading } = useUserFiles(user?.id);
+  const { data: quota } = useStorageQuota(user?.id);
   const deleteFile = useDeleteFile();
   const { toast } = useToast();
   
@@ -80,6 +83,33 @@ export default function Documents() {
               Upload documents once, use them across Tutor and Quiz
             </p>
           </div>
+
+          {/* Storage Summary Card */}
+          {quota && (
+            <div className="bg-card border rounded-lg p-4 min-w-[200px]">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                <HardDrive className="h-4 w-4" />
+                <span>Storage</span>
+              </div>
+              <Progress
+                value={quota.percentage}
+                className="h-2 mb-2"
+                indicatorClassName={
+                  quota.isAtLimit
+                    ? "bg-destructive"
+                    : quota.isNearLimit
+                      ? "bg-warning"
+                      : "bg-primary"
+                }
+              />
+              <p className="text-sm font-medium">
+                {formatBytes(quota.used)} / {formatBytes(quota.limit)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {formatBytes(quota.remaining)} available
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Upload Zone */}
