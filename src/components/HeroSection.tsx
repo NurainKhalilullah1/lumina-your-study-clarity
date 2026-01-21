@@ -32,8 +32,9 @@ export const HeroSection = () => {
             </h1>
 
             <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed mb-8 max-w-xl">
-              The student OS that organizes your deadlines and uses AI to explain your lecture slides.{" "}
-              <span className="font-medium text-foreground">Stop cramming. Start understanding.</span>
+              The student OS that organizes your deadlines, generates quizzes from your slides, 
+              and uses AI to explain anything you don't understand.{" "}
+              <span className="font-medium text-foreground">Your entire academic life, in one place.</span>
             </p>
 
             <motion.div
