@@ -28,9 +28,9 @@ export function DocumentPreviewModal({ file, open, onClose }: DocumentPreviewMod
 
   const getFileIcon = () => {
     if (file.mime_type?.includes("pdf")) {
-      return <FileType className="h-5 w-5 text-red-500" />;
+      return <FileType className="h-5 w-5 text-red-500 shrink-0" />;
     }
-    return <FileText className="h-5 w-5 text-primary" />;
+    return <FileText className="h-5 w-5 text-primary shrink-0" />;
   };
 
   const formatFileSize = (bytes: number | null) => {
@@ -42,13 +42,15 @@ export function DocumentPreviewModal({ file, open, onClose }: DocumentPreviewMod
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 min-w-0">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
+        <DialogHeader className="min-w-0 overflow-hidden">
+          <DialogTitle className="flex items-center gap-2 min-w-0 overflow-hidden">
             {getFileIcon()}
-            <span className="truncate min-w-0">{file.file_name}</span>
+            <span className="truncate flex-1 min-w-0" title={file.file_name}>
+              {file.file_name}
+            </span>
           </DialogTitle>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground truncate">
             {formatFileSize(file.file_size)} • {file.text_content?.length.toLocaleString() || 0} characters
           </p>
         </DialogHeader>

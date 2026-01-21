@@ -1,27 +1,48 @@
 import { motion } from "framer-motion";
-import { FolderOpen, MessageCircle, Bell, ArrowRight } from "lucide-react";
+import { FolderOpen, MessageCircle, Bell, ArrowRight, HelpCircle, Layers, Timer } from "lucide-react";
 
 const features = [
   {
     icon: FolderOpen,
-    title: "The Vault",
-    subtitle: "Centralized Materials",
-    description: "Upload PDFs and organize courses in one clean view. No more hunting through folders.",
+    title: "Document Library",
+    subtitle: "Your Study Vault",
+    description: "Upload PDFs, text files, and notes once. Access them anywhere—in the AI Tutor, Quiz Generator, or Flashcard Creator.",
     color: "primary",
   },
   {
     icon: MessageCircle,
-    title: "The AI Tutor",
-    subtitle: "Instant Understanding",
-    description: "Chat with your slides. Ask StudyFlow to 'Explain this page like I'm 5.'",
+    title: "AI Tutor",
+    subtitle: "Chat With Your Materials",
+    description: "Upload a lecture slide and ask 'Explain this like I'm 5.' Get instant, contextual answers powered by AI.",
     color: "accent",
   },
   {
-    icon: Bell,
-    title: "The Guardian",
-    subtitle: "Deadline Radar",
-    description: "Get notified 48 hours before any assignment is due. Never miss a deadline again.",
+    icon: HelpCircle,
+    title: "CBT Quiz Generator",
+    subtitle: "Test Yourself Instantly",
+    description: "Generate timed multiple-choice quizzes from your documents. Track performance and review mistakes.",
     color: "primary",
+  },
+  {
+    icon: Layers,
+    title: "Flashcard Studio",
+    subtitle: "Learn Through Repetition",
+    description: "Create AI-generated flashcards from any document. Flip, review, and master your material.",
+    color: "accent",
+  },
+  {
+    icon: Timer,
+    title: "Focus Mode",
+    subtitle: "Built-in Pomodoro Timer",
+    description: "Stay focused with timed study sessions. Track your productivity and build consistent study habits.",
+    color: "primary",
+  },
+  {
+    icon: Bell,
+    title: "Assignment Tracker",
+    subtitle: "Never Miss a Deadline",
+    description: "Add your assignments and get timely reminders. See what's due at a glance from your dashboard.",
+    color: "accent",
   },
 ];
 
@@ -30,7 +51,7 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.2,
+      staggerChildren: 0.15,
     },
   },
 };
@@ -41,7 +62,7 @@ const cardVariants = {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.6,
+      duration: 0.5,
     },
   },
 };
@@ -61,15 +82,14 @@ export const SolutionSection = () => {
           className="text-center mb-16"
         >
           <span className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-            The Solution
+            Your Complete Study Toolkit
           </span>
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-            How{" "}
-            <span className="gradient-text">StudyFlow</span>{" "}
-            Helps You
+            Everything You Need to{" "}
+            <span className="gradient-text">Succeed</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Three powerful tools to transform your academic life.
+            Six powerful tools designed to transform how you study, learn, and stay organized.
           </p>
         </motion.div>
 
@@ -78,21 +98,21 @@ export const SolutionSection = () => {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
-          className="grid md:grid-cols-3 gap-8"
+          className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8"
         >
           {features.map((feature, index) => (
             <motion.div
               key={index}
               variants={cardVariants}
-              className="group relative bg-card rounded-2xl p-8 border border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5"
+              className="group relative bg-card rounded-2xl p-6 lg:p-8 border border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5"
             >
               <div className="flex flex-col h-full">
-                <div className={`flex items-center justify-center w-14 h-14 rounded-2xl mb-6 ${
+                <div className={`flex items-center justify-center w-12 h-12 lg:w-14 lg:h-14 rounded-2xl mb-5 ${
                   feature.color === "accent" 
                     ? "bg-accent/10 group-hover:bg-accent/20" 
                     : "bg-primary/10 group-hover:bg-primary/20"
                 } transition-colors`}>
-                  <feature.icon className={`w-7 h-7 ${
+                  <feature.icon className={`w-6 h-6 lg:w-7 lg:h-7 ${
                     feature.color === "accent" ? "text-accent" : "text-primary"
                   }`} />
                 </div>
@@ -103,17 +123,12 @@ export const SolutionSection = () => {
                   }`}>
                     {feature.title}
                   </p>
-                  <h3 className="text-xl font-semibold text-foreground mb-3">
+                  <h3 className="text-lg lg:text-xl font-semibold text-foreground mb-3">
                     {feature.subtitle}
                   </h3>
-                  <p className="text-muted-foreground leading-relaxed mb-6">
+                  <p className="text-sm lg:text-base text-muted-foreground leading-relaxed">
                     {feature.description}
                   </p>
-                </div>
-
-                <div className="flex items-center text-sm font-medium text-primary group-hover:gap-2 gap-1 transition-all cursor-pointer">
-                  <span>Learn more</span>
-                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </div>
               </div>
 

@@ -128,9 +128,16 @@ export const useGenerateQuizQuestions = () => {
       // Allow up to 70 questions as per UI slider
       const questionsToGenerate = Math.min(numQuestions, 70);
 
-      const prompt = `You are an expert quiz generator. Generate exactly ${questionsToGenerate} multiple choice questions based on the following document content.
+      const prompt = `You are an expert quiz generator. Generate exactly ${questionsToGenerate} multiple choice questions.
 
-IMPORTANT RULES:
+CRITICAL MULTI-DOCUMENT INSTRUCTIONS:
+1. The content below may contain MULTIPLE DOCUMENTS separated by "--- Document: [name] ---"
+2. You MUST draw questions from ALL documents provided, distributing them as evenly as possible
+3. For example: with 3 documents and 30 questions, aim for ~10 questions from each document
+4. SHUFFLE the final question order so questions from different documents are mixed together
+5. Do NOT cluster all questions from one document together
+
+QUESTION FORMAT RULES:
 1. Each question must have exactly 4 options labeled A, B, C, D
 2. Questions should test understanding, not just memorization
 3. Mix difficulty levels (easy, medium, hard)
@@ -149,7 +156,7 @@ Return your response as a valid JSON array with this exact format (no markdown, 
   }
 ]
 
-Generate exactly ${questionsToGenerate} questions. Return ONLY the JSON array, nothing else.`;
+Generate exactly ${questionsToGenerate} questions distributed across ALL documents. SHUFFLE the order. Return ONLY the JSON array, nothing else.`;
 
       console.log("Starting quiz generation for", questionsToGenerate, "questions");
 

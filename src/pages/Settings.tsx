@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Shield, Palette, Loader2, Moon, Sun, Save } from "lucide-react";
+import { User, Shield, Palette, Loader2, Moon, Sun, Save, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -128,10 +128,17 @@ const Settings = () => {
               <p className="text-xs text-muted-foreground">Email cannot be changed.</p>
             </div>
 
-            <div className="pt-2">
-              <Button onClick={handleUpdateProfile} disabled={loading}>
+            <div className="pt-2 flex flex-wrap gap-3">
+              <Button 
+                onClick={handleUpdateProfile} 
+                disabled={loading || name === (user?.user_metadata?.full_name || "")}
+              >
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 Save Changes
+              </Button>
+              <Button variant="outline" onClick={signOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
               </Button>
             </div>
           </div>
