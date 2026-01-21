@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserFiles, useDeleteFile } from "@/hooks/useFileUpload";
 import { useStorageQuota, formatBytes } from "@/hooks/useStorageQuota";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Search, FileText, HardDrive } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { detectHorizontalOverflow } from "@/lib/detectHorizontalOverflow";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,6 +44,38 @@ export default function Documents() {
   const [searchQuery, setSearchQuery] = useState("");
   const [previewFile, setPreviewFile] = useState<UserFile | null>(null);
   const [deleteConfirmFile, setDeleteConfirmFile] = useState<UserFile | null>(null);
+
+  // DEV-ONLY: Horizontal overflow detector.
+  // Enable via DevTools console: localStorage.setItem('sf_debug_overflow','1'); then refresh.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    if (localStorage.getItem("sf_debug_overflow") !== "1") return;
+
+    const run = (reason: string) => {
+      // Two RAFs to let layout settle after React + browser paint.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          detectHorizontalOverflow({ reason, maxOffenders: 20 });
+        });
+      });
+    };
+
+    run("Documents mount");
+
+    const onResize = () => run("window resize");
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    if (localStorage.getItem("sf_debug_overflow") !== "1") return;
+    // When uploads finish, React Query refetches and files list changes.
+    detectHorizontalOverflow({ reason: `files changed (${files.length})`, maxOffenders: 20 });
+  }, [files.length]);
 
   const filteredFiles = files.filter((file) =>
     file.file_name.toLowerCase().includes(searchQuery.toLowerCase())
