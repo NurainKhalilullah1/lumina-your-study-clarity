@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AddAssignmentDialog } from "@/components/AddAssignmentDialog";
 import { StudyStatsDashboard } from "@/components/dashboard/StudyStatsDashboard";
+import { QuizAnalytics } from "@/components/dashboard/QuizAnalytics";
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -95,6 +96,11 @@ const Dashboard = () => {
         {/* Study Statistics Dashboard */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
           <StudyStatsDashboard />
+        </motion.div>
+
+        {/* Quiz Performance Analytics */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
+          <QuizAnalytics />
         </motion.div>
 
         {/* Assignment Stats Cards */}
