@@ -165,7 +165,7 @@ export function DocumentUploadZone() {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`
-          relative border-2 border-dashed rounded-lg p-8 text-center transition-colors
+          relative border-2 border-dashed rounded-lg p-6 sm:p-8 text-center transition-colors max-w-full
           ${isStorageFull
             ? "border-muted bg-muted/50 cursor-not-allowed"
             : isDragging
