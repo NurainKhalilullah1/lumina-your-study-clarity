@@ -115,6 +115,25 @@
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   }
+
+  #root {
+    overflow-x: hidden;
+  }
+}
+
+/* Force desktop sidebar container to have no width on mobile viewports */
+@media (max-width: 767px) {
+  [data-sidebar="sidebar"]:not([data-mobile="true"]) {
+    width: 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+  
+  /* Target the sidebar wrapper spacer div */
+  [data-variant="sidebar"] > div:first-child {
+    width: 0 !important;
+    min-width: 0 !important;
+  }
 }
 
 @layer utilities {
