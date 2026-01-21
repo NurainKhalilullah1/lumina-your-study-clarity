@@ -5,10 +5,16 @@ import { ProblemSection } from "@/components/ProblemSection";
 import { SolutionSection } from "@/components/SolutionSection";
 import { CTASection } from "@/components/CTASection";
 import { Footer } from "@/components/Footer";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Index = () => {
   return (
     <main className="min-h-screen bg-background">
+      {/* Standalone Theme Toggle - Fixed Position */}
+      <div className="fixed top-4 right-4 z-[60]">
+        <ThemeToggle />
+      </div>
+      
       <Navbar />
       <HeroSection />
       <SocialProof />
