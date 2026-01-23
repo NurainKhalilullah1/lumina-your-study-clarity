@@ -27,28 +27,36 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 const Settings = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  // State variables
+  // Profile state
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isClearingHistory, setIsClearingHistory] = useState(false);
-  const [defaultQuizQuestions, setDefaultQuizQuestions] = useState("10");
-  const [pomodoroDuration, setPomodoroDuration] = useState("25");
 
-  // 1. Load current name when page opens
+  // Study preferences hook
+  const {
+    preferences,
+    saving: savingPreferences,
+    hasChanges: hasPreferenceChanges,
+    updatePreference,
+    savePreferences,
+  } = useUserPreferences();
+
+  // Load current name when page opens
   useEffect(() => {
     if (user?.user_metadata?.full_name) {
       setName(user.user_metadata.full_name);
     }
   }, [user]);
 
-  // 2. Function to Save Name
+  // Function to Save Name
   const handleUpdateProfile = async () => {
     if (!user) return;
     setLoading(true);
@@ -76,7 +84,7 @@ const Settings = () => {
     }
   };
 
-  // 3. Function to Clear Chat History
+  // Function to Clear Chat History
   const handleClearChatHistory = async () => {
     if (!user) return;
     setIsClearingHistory(true);
@@ -105,12 +113,13 @@ const Settings = () => {
     }
   };
 
-  // 4. Function to COMPLETELY Delete Account
+  // Function to COMPLETELY Delete Account
   const handleDeleteAccount = async () => {
     if (!user) return;
     setIsDeleting(true);
     try {
-      // Call the secure database function we created in Step 1
+      // Call the secure database function - this deletes from auth.users
+      // All related data is automatically deleted via ON DELETE CASCADE
       const { error } = await supabase.rpc('delete_own_account');
       
       if (error) throw error;
@@ -184,9 +193,23 @@ const Settings = () => {
 
         {/* Study Preferences Section */}
         <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
-          <div className="flex items-center gap-2 mb-6">
-            <BookOpen className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Study Preferences</h2>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-semibold text-foreground">Study Preferences</h2>
+            </div>
+            <Button
+              size="sm"
+              onClick={savePreferences}
+              disabled={savingPreferences || !hasPreferenceChanges}
+            >
+              {savingPreferences ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Save
+            </Button>
           </div>
           
           <div className="space-y-4">
@@ -195,7 +218,10 @@ const Settings = () => {
                 <p className="font-medium text-foreground">Default Quiz Questions</p>
                 <p className="text-sm text-muted-foreground">Number of questions per quiz</p>
               </div>
-              <Select value={defaultQuizQuestions} onValueChange={setDefaultQuizQuestions}>
+              <Select
+                value={String(preferences.default_quiz_questions)}
+                onValueChange={(val) => updatePreference("default_quiz_questions", parseInt(val))}
+              >
                 <SelectTrigger className="w-24">
                   <SelectValue />
                 </SelectTrigger>
@@ -213,7 +239,10 @@ const Settings = () => {
                 <p className="font-medium text-foreground">Pomodoro Duration</p>
                 <p className="text-sm text-muted-foreground">Default focus session length</p>
               </div>
-              <Select value={pomodoroDuration} onValueChange={setPomodoroDuration}>
+              <Select
+                value={String(preferences.pomodoro_duration)}
+                onValueChange={(val) => updatePreference("pomodoro_duration", parseInt(val))}
+              >
                 <SelectTrigger className="w-24">
                   <SelectValue />
                 </SelectTrigger>
@@ -315,7 +344,7 @@ const Settings = () => {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete your account, courses, assignments, and chat history.
+                    This action cannot be undone. This will permanently delete your account, all documents, courses, assignments, quizzes, flashcards, and chat history.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
