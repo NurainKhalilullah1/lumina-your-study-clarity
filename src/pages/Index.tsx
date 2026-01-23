@@ -10,8 +10,8 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 const Index = () => {
   return (
     <main className="min-h-screen bg-background">
-      {/* Standalone Theme Toggle - Fixed Position */}
-      <div className="fixed top-4 right-4 z-[60]">
+      {/* Standalone Theme Toggle - Fixed Position, before nav links */}
+      <div className="fixed top-4 right-32 md:right-48 z-[60]">
         <ThemeToggle />
       </div>
       
