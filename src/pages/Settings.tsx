@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { User, Shield, Loader2, Save, LogOut, BookOpen, Database, Info, Trash2, Download } from "lucide-react";
+import { exportUserDataAsPDF } from "@/utils/exportUserData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +40,7 @@ const Settings = () => {
   const [loading, setLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isClearingHistory, setIsClearingHistory] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Study preferences hook
   const {
@@ -142,6 +144,26 @@ const Settings = () => {
   };
 
   const hasNameChanged = name !== (user?.user_metadata?.full_name || "");
+
+  const handleExportData = async () => {
+    if (!user) return;
+    setIsExporting(true);
+    try {
+      await exportUserDataAsPDF(user.id, user.user_metadata?.full_name || user.email || 'User');
+      toast({
+        title: "Export Ready",
+        description: "Your data export is ready. Use your browser's print dialog to save as PDF."
+      });
+    } catch (error: any) {
+      toast({
+        title: "Export Failed",
+        description: error.message || "Could not export your data. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -297,11 +319,16 @@ const Settings = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-foreground">Export My Data</p>
-                <p className="text-sm text-muted-foreground">Download all your data as JSON</p>
+                <p className="text-sm text-muted-foreground">Download all your data as PDF</p>
               </div>
-              <Button variant="outline" size="sm" disabled>
-                <Download className="mr-2 h-4 w-4" />
-                Export
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleExportData}
+                disabled={isExporting}
+              >
+                {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                {isExporting ? "Exporting..." : "Export"}
               </Button>
             </div>
           </div>
