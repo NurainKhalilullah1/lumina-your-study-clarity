@@ -14,7 +14,7 @@ interface UserData {
 
 export const fetchAllUserData = async (userId: string): Promise<UserData> => {
   const [profile, courses, assignments, documents, flashcards, quizSessions, studyEvents, weeklyGoals] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', userId).single(),
+    supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
     supabase.from('courses').select('*').eq('user_id', userId),
     supabase.from('assignments').select('*').eq('user_id', userId),
     supabase.from('user_files').select('*').eq('user_id', userId),
