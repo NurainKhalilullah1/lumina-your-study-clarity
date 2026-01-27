@@ -42,7 +42,7 @@ export const SocialProof = () => {
               <img
                 src={logo.src}
                 alt={logo.alt}
-                className="h-16 sm:h-20 w-auto object-contain grayscale opacity-50 transition-all duration-300 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-110"
+                className="h-16 sm:h-20 w-auto object-contain grayscale opacity-50 transition-all duration-300 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-110 dark:invert"
               />
             </div>
           ))}
