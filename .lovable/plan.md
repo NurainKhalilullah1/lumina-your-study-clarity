@@ -1,246 +1,142 @@
 
-
-## Plan: Export My Data as Professional PDF
+## Plan: Global Pomodoro Timer with Auto-Start and Dashboard Integration
 
 ### Overview
 
-Implement a comprehensive "Export My Data" feature that fetches all user data from the database and generates a beautifully formatted, professional PDF document using the browser's print functionality.
+Transform the Pomodoro timer from a component-level state to a **global context** that persists across page navigation, auto-starts 10 seconds after login, and displays on the dashboard.
 
 ---
 
-### Data to Export
+### Current State
 
-Based on the database schema, we'll export:
-
-| Category | Table | Key Fields |
-|----------|-------|------------|
-| **Profile** | `profiles` | name, email, storage usage, account created date |
-| **Courses** | `courses` | title, code, color, created date |
-| **Assignments** | `assignments` | title, course, due date, priority, status |
-| **Documents** | `user_files` | file name, size, upload date |
-| **Flashcards** | `flashcards` | front, back, deck name |
-| **Quiz History** | `quiz_sessions` + `quiz_questions` | document name, score, questions, date |
-| **Study Stats** | `study_events` | event type, metadata, timestamps |
-| **Weekly Goals** | `weekly_goals` | targets and progress |
+- Pomodoro timer lives in `src/components/tutor/PomodoroTimer.tsx`
+- Uses `usePomodoroTimer` hook which creates local state
+- Only shown on the Tutor page
+- Timer resets when navigating away
 
 ---
 
 ### Implementation
 
-#### File 1: `src/utils/exportUserData.ts` (NEW)
+#### File 1: `src/contexts/PomodoroContext.tsx` (NEW)
 
-Create a new utility file with two main functions:
+Create a global context that manages timer state across the entire app:
 
 ```typescript
-// 1. fetchAllUserData - Fetches all data from Supabase
-export const fetchAllUserData = async (userId: string) => {
-  // Parallel fetch all tables for performance
-  const [profile, courses, assignments, documents, flashcards, quizSessions, studyEvents, weeklyGoals] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', userId).single(),
-    supabase.from('courses').select('*').eq('user_id', userId),
-    supabase.from('assignments').select('*').eq('user_id', userId),
-    supabase.from('user_files').select('*').eq('user_id', userId),
-    supabase.from('flashcards').select('*').eq('user_id', userId),
-    supabase.from('quiz_sessions').select('*, quiz_questions(*)').eq('user_id', userId),
-    supabase.from('study_events').select('*').eq('user_id', userId),
-    supabase.from('weekly_goals').select('*').eq('user_id', userId),
-  ]);
-  
-  return { profile, courses, assignments, documents, flashcards, quizSessions, studyEvents, weeklyGoals };
-};
-
-// 2. exportUserDataAsPDF - Generates professional PDF
-export const exportUserDataAsPDF = async (userId: string, userName: string) => {
-  const data = await fetchAllUserData(userId);
-  
-  // Generate styled HTML with sections for each data type
-  const htmlContent = generatePDFHTML(data, userName);
-  
-  // Open in new window and trigger print
-  const printWindow = window.open('', '_blank');
-  printWindow.document.write(htmlContent);
-  printWindow.document.close();
-  printWindow.onload = () => printWindow.print();
-};
+// Provides global timer state that persists across page navigation
+// - Auto-starts 10 seconds after user logs in
+// - Exposes timer controls (start, pause, reset, skip)
+// - Tracks session completion for study stats
 ```
 
-**PDF Design (Professional Styling):**
+**Key Features:**
+- Wraps the `usePomodoroTimer` logic but at the context level
+- Uses `useEffect` with 10-second timeout after auth to auto-start
+- Tracks `hasAutoStarted` to only trigger once per session
+- Provides all timer state and controls via context
 
-- **Header**: StudyFlow logo, user name, export date
-- **Color scheme**: Purple accent (#7C3AED) matching brand
-- **Typography**: Clean system fonts, proper hierarchy
-- **Sections**: Clear dividers, icons, organized tables
-- **Print optimization**: Page breaks, margins, avoiding orphan content
+---
 
-**Section Layout:**
+#### File 2: `src/App.tsx` (UPDATE)
+
+Wrap the app with the new `PomodoroProvider`:
+
+```tsx
+<AuthProvider>
+  <PomodoroProvider>  {/* NEW - wraps all protected routes */}
+    <TooltipProvider>
+      ...
+    </TooltipProvider>
+  </PomodoroProvider>
+</AuthProvider>
+```
+
+---
+
+#### File 3: `src/components/tutor/PomodoroTimer.tsx` (UPDATE)
+
+Update to use the global context instead of local hook:
+
+```tsx
+// Before: const timer = usePomodoroTimer({}, callbacks);
+// After:  const timer = usePomodoro(); // from context
+```
+
+All UI stays the same, just the state source changes.
+
+---
+
+#### File 4: `src/components/dashboard/DashboardPomodoroCard.tsx` (NEW)
+
+Create a dashboard card that displays the Pomodoro timer with controls:
 
 ```text
 ┌─────────────────────────────────────────────┐
-│  📚 StudyFlow Data Export                   │
-│  [User Name] • Exported on [Date]           │
-├─────────────────────────────────────────────┤
-│                                             │
-│  👤 PROFILE                                 │
+│  🍅 Focus Timer                             │
 │  ─────────────────────────────────────────  │
-│  Email: user@example.com                    │
-│  Member since: Jan 2024                     │
-│  Storage: 25MB / 50MB                       │
 │                                             │
-├─────────────────────────────────────────────┤
+│           [Progress Ring]                   │
+│              24:35                          │
+│              Focus                          │
 │                                             │
-│  📖 COURSES (3)                             │
-│  ─────────────────────────────────────────  │
-│  • CS101 - Introduction to Programming      │
-│  • MATH201 - Linear Algebra                 │
-│  • PHYS101 - Physics Fundamentals           │
+│     [Reset] [Play/Pause] [Skip]             │
 │                                             │
-├─────────────────────────────────────────────┤
-│                                             │
-│  📝 ASSIGNMENTS (5)                         │
-│  ─────────────────────────────────────────  │
-│  [Table with title, course, due, status]    │
-│                                             │
-├─────────────────────────────────────────────┤
-│                                             │
-│  📄 DOCUMENTS (8)                           │
-│  ─────────────────────────────────────────  │
-│  [Table with file name, size, date]         │
-│                                             │
-├─────────────────────────────────────────────┤
-│                                             │
-│  🎴 FLASHCARDS (24)                         │
-│  ─────────────────────────────────────────  │
-│  [Grouped by deck, showing front/back]      │
-│                                             │
-├─────────────────────────────────────────────┤
-│                                             │
-│  📊 QUIZ HISTORY (6)                        │
-│  ─────────────────────────────────────────  │
-│  [Table with quiz name, score, date]        │
-│                                             │
-├─────────────────────────────────────────────┤
-│                                             │
-│  📈 STUDY STATISTICS                        │
-│  ─────────────────────────────────────────  │
-│  Total study events: 45                     │
-│  Pomodoros completed: 12                    │
-│  Documents analyzed: 8                      │
-│                                             │
+│     Session 2 • 1 completed                 │
 └─────────────────────────────────────────────┘
 ```
 
+Features:
+- Large, visible timer display
+- Mode indicator (Focus/Short Break/Long Break)
+- Progress ring visualization
+- Play/Pause, Reset, Skip controls
+- Session counter
+
 ---
 
-#### File 2: `src/pages/Settings.tsx` (UPDATE)
+#### File 5: `src/pages/Dashboard.tsx` (UPDATE)
 
-Update the Settings page to wire up the Export button:
+Add the Pomodoro card to the dashboard layout:
 
 ```tsx
-// Add import
-import { exportUserDataAsPDF } from "@/utils/exportUserData";
+// Add to imports
+import { DashboardPomodoroCard } from "@/components/dashboard/DashboardPomodoroCard";
 
-// Add state
-const [isExporting, setIsExporting] = useState(false);
-
-// Add handler
-const handleExportData = async () => {
-  if (!user) return;
-  setIsExporting(true);
-  try {
-    await exportUserDataAsPDF(user.id, user.user_metadata?.full_name || user.email || 'User');
-    toast({
-      title: "Export Ready",
-      description: "Your data export is ready. Use your browser's print dialog to save as PDF."
-    });
-  } catch (error) {
-    toast({
-      title: "Export Failed",
-      description: "Could not export your data. Please try again.",
-      variant: "destructive"
-    });
-  } finally {
-    setIsExporting(false);
-  }
-};
-
-// Update the Export button (line 302-305)
-<Button 
-  variant="outline" 
-  size="sm" 
-  onClick={handleExportData}
-  disabled={isExporting}
->
-  {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-  {isExporting ? "Exporting..." : "Export"}
-</Button>
+// Add to the grid layout (after greeting, before Weekly Goals)
+<div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+  <motion.div>
+    <DashboardPomodoroCard />
+  </motion.div>
+  <motion.div className="lg:col-span-3">
+    <WeeklyGoals />
+  </motion.div>
+</div>
 ```
 
 ---
 
-### Technical Details
+### Auto-Start Logic (in PomodoroContext)
 
-#### PDF Styling (CSS in generated HTML)
+```typescript
+// 10 seconds after login, auto-start the timer
+useEffect(() => {
+  if (user && !hasAutoStarted) {
+    const timeout = setTimeout(() => {
+      start();
+      setHasAutoStarted(true);
+      toast.info("Focus timer started! 🍅");
+    }, 10000); // 10 seconds
+    
+    return () => clearTimeout(timeout);
+  }
+}, [user, hasAutoStarted]);
 
-```css
-/* Professional print styles */
-body { 
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  color: #1f2937;
-  line-height: 1.6;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 40px;
-}
-
-.header {
-  text-align: center;
-  border-bottom: 3px solid #7C3AED;
-  padding-bottom: 20px;
-  margin-bottom: 30px;
-}
-
-.section {
-  margin-bottom: 30px;
-  page-break-inside: avoid;
-}
-
-.section-title {
-  color: #7C3AED;
-  font-size: 18px;
-  font-weight: 600;
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 8px;
-  margin-bottom: 16px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th, td {
-  text-align: left;
-  padding: 10px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-th {
-  background: #f9fafb;
-  font-weight: 600;
-}
-
-.flashcard {
-  background: #f3f4f6;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 8px;
-}
-
-@media print {
-  body { padding: 20px; }
-  .section { page-break-inside: avoid; }
-  .no-print { display: none; }
-}
+// Reset auto-start flag on logout
+useEffect(() => {
+  if (!user) {
+    setHasAutoStarted(false);
+  }
+}, [user]);
 ```
 
 ---
@@ -249,28 +145,50 @@ th {
 
 | File | Action |
 |------|--------|
-| `src/utils/exportUserData.ts` | **CREATE** - New utility with fetch + PDF generation |
-| `src/pages/Settings.tsx` | **UPDATE** - Wire up Export button with loading state |
+| `src/contexts/PomodoroContext.tsx` | **CREATE** - Global timer context with auto-start |
+| `src/App.tsx` | **UPDATE** - Wrap with PomodoroProvider |
+| `src/components/tutor/PomodoroTimer.tsx` | **UPDATE** - Use context instead of local hook |
+| `src/components/dashboard/DashboardPomodoroCard.tsx` | **CREATE** - Dashboard timer card |
+| `src/pages/Dashboard.tsx` | **UPDATE** - Add Pomodoro card to layout |
 
 ---
 
-### User Flow
+### Technical Details
 
-1. User clicks "Export" button in Settings > Data & Privacy
-2. Button shows loading spinner
-3. All user data is fetched from Supabase in parallel
-4. Professional HTML document is generated with all data
-5. New browser tab opens with the formatted document
-6. Browser print dialog appears (user can save as PDF or print)
-7. Toast notification confirms export is ready
+#### Context State Shape
+
+```typescript
+interface PomodoroContextType {
+  // State
+  timeRemaining: number;
+  isRunning: boolean;
+  mode: 'work' | 'shortBreak' | 'longBreak';
+  completedSessions: number;
+  formattedTime: string;
+  progress: number;
+  
+  // Controls
+  start: () => void;
+  pause: () => void;
+  reset: () => void;
+  skip: () => void;
+}
+```
+
+#### Timer Persistence
+
+The timer runs in the context at the app level, so:
+- Navigating between Dashboard, Tutor, Settings, etc. keeps timer running
+- Timer only resets on page refresh or logout
+- Progress is visible on both Dashboard (card) and Tutor (header button)
 
 ---
 
-### Edge Cases Handled
+### User Experience Flow
 
-- **Empty data**: Sections show "No [items] yet" instead of empty tables
-- **Large datasets**: Flashcards grouped by deck, quizzes summarized
-- **Missing profile**: Graceful fallback to email/default values
-- **Export failure**: Error toast with retry option
-- **Print cancellation**: No issues, window can be closed
-
+1. User logs in
+2. After 10 seconds, timer auto-starts with toast notification
+3. User sees timer counting on Dashboard card
+4. User navigates to Tutor page - timer still visible in header, still counting
+5. User goes back to Dashboard - card shows same progress
+6. When session completes, notification + study event tracked
