@@ -2,11 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Timer, Play, Pause, RotateCcw, SkipForward, Coffee, BookOpen } from "lucide-react";
-import { usePomodoroTimer, TimerMode } from "@/hooks/usePomodoroTimer";
-import { useTrackStudyEvent } from "@/hooks/useStudyStats";
-import { useAuth } from "@/contexts/AuthContext";
+import { usePomodoro, TimerMode } from "@/contexts/PomodoroContext";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
 const modeConfig: Record<TimerMode, { label: string; icon: React.ElementType; color: string }> = {
   work: { label: 'Focus', icon: BookOpen, color: 'text-primary' },
@@ -16,21 +13,7 @@ const modeConfig: Record<TimerMode, { label: string; icon: React.ElementType; co
 
 export const PomodoroTimer = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { user } = useAuth();
-  const trackEvent = useTrackStudyEvent();
-
-  const handleSessionComplete = (duration: number) => {
-    if (user) {
-      trackEvent.mutate({
-        userId: user.id,
-        eventType: 'pomodoro_completed',
-        metadata: { duration }
-      });
-      toast.success("Pomodoro session completed! 🍅");
-    }
-  };
-
-  const timer = usePomodoroTimer({}, { onSessionComplete: handleSessionComplete });
+  const timer = usePomodoro();
   
   const currentModeConfig = modeConfig[timer.mode];
   const ModeIcon = currentModeConfig.icon;
@@ -115,14 +98,14 @@ export const PomodoroTimer = () => {
               onClick={timer.isRunning ? timer.pause : timer.start}
               className={cn(
                 "h-12 w-12 rounded-full",
-                timer.mode === 'work' ? "gradient-primary" : 
+                timer.mode === 'work' ? "bg-primary hover:bg-primary/90" : 
                 timer.mode === 'shortBreak' ? "bg-green-500 hover:bg-green-600" : "bg-blue-500 hover:bg-blue-600"
               )}
             >
               {timer.isRunning ? (
-                <Pause className="h-5 w-5" />
+                <Pause className="h-5 w-5 text-primary-foreground" />
               ) : (
-                <Play className="h-5 w-5 ml-0.5" />
+                <Play className="h-5 w-5 ml-0.5 text-primary-foreground" />
               )}
             </Button>
 

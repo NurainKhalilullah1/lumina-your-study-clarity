@@ -10,6 +10,7 @@ import { AddAssignmentDialog } from "@/components/AddAssignmentDialog";
 import { StudyStatsDashboard } from "@/components/dashboard/StudyStatsDashboard";
 import { QuizAnalytics } from "@/components/dashboard/QuizAnalytics";
 import { WeeklyGoals } from "@/components/dashboard/WeeklyGoals";
+import { DashboardPomodoroCard } from "@/components/dashboard/DashboardPomodoroCard";
 const getGreeting = () => {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
@@ -93,12 +94,15 @@ const Dashboard = () => {
           <p className="text-muted-foreground mt-1">Here is your academic overview.</p>
         </motion.div>
 
-        {/* Weekly Goals and Study Statistics */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Pomodoro Timer, Weekly Goals and Study Statistics */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+            <DashboardPomodoroCard />
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.07 }}>
             <WeeklyGoals />
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.07 }} className="lg:col-span-2">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }} className="lg:col-span-2">
             <StudyStatsDashboard />
           </motion.div>
         </div>
