@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { PomodoroProvider } from "@/contexts/PomodoroContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { SplashScreen } from "@/components/SplashScreen";
 import Index from "./pages/Index";
@@ -47,9 +48,10 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
+          <PomodoroProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
           
           {/* Splash Screen - only on first load per session */}
           {showSplash && !hasSeenSplash && (
@@ -137,7 +139,8 @@ const App = () => {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-          </TooltipProvider>
+            </TooltipProvider>
+          </PomodoroProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
