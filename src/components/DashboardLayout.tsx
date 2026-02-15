@@ -1,5 +1,6 @@
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import DashboardSidebar from "@/components/DashboardSidebar";
+import BottomNav from "@/components/BottomNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Menu } from "lucide-react";
 
@@ -31,10 +32,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
 
           {/* Main Content */}
-          <main className="flex-1 overflow-y-auto overflow-x-hidden">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden pb-16 md:pb-0">
             {children}
           </main>
         </SidebarInset>
+        <BottomNav />
       </div>
     </SidebarProvider>
   );
