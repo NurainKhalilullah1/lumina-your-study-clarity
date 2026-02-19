@@ -412,6 +412,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_xp: {
+        Row: {
+          achievements: Json
+          created_at: string
+          display_name: string | null
+          id: string
+          last_calculated_at: string
+          level: number
+          total_xp: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          achievements?: Json
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          last_calculated_at?: string
+          level?: number
+          total_xp?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          achievements?: Json
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          last_calculated_at?: string
+          level?: number
+          total_xp?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       weekly_goals: {
         Row: {
           created_at: string
@@ -447,7 +483,16 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      leaderboard_view: {
+        Row: {
+          avatar_url: string | null
+          level: number | null
+          name: string | null
+          total_xp: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       delete_own_account: { Args: never; Returns: undefined }
