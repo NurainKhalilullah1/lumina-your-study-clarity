@@ -1,65 +1,157 @@
-## Plan: Fix AI Tutor Scroll, Flashcard Generation, and API Usage
 
-### Issues Identified
 
-1. **Auto-scroll on page load**: The Tutor page has a `useEffect` that scrolls to `messagesEndRef` whenever `messages` or `isLoading` changes. On initial load, this triggers a scroll to the bottom of the StarterCards view, pushing the page down.
-2. **Flashcard generation shows text first**: The `FlashcardGenerator` component is a button in the header toolbar that only appears when `messages.length > 0`. When triggered from StarterCards (before any messages exist), the button isn't rendered, so the `triggerGenerate` prop has no effect. The flashcard generation needs to work even with zero messages.
-3. **Pomodoro auto-start**: Already fixed in the codebase. If still happening, it's a browser cache issue.
-4. **API rate limit concerns**: The app calls Google Gemini directly from the frontend using `VITE_GEMINI_API_KEY`. Every feature (chat, flashcard gen, title gen) makes separate API calls. This is both a security risk (exposed key) and a rate limit concern.
+## Plan: Add Gamification System with XP, Achievements, and Leaderboard
+
+### Overview
+
+Build a complete gamification layer on top of existing `study_events` and `quiz_sessions` data. All XP calculations are pure math -- no AI calls. Includes a public leaderboard so users can see how they rank against other StudyFlow users.
 
 ---
 
-### Changes
+### Database Changes
 
-#### 1. Fix Auto-Scroll on Tutor Page Load
+**New table: `user_xp`**
 
-**File: `src/pages/Tutor.tsx**`
+| Column | Type | Default | Notes |
+|--------|------|---------|-------|
+| id | uuid | gen_random_uuid() | PK |
+| user_id | uuid | auth.uid() | unique, not null |
+| total_xp | integer | 0 | |
+| level | integer | 1 | |
+| achievements | jsonb | '[]' | Array of `{ id, unlockedAt }` |
+| display_name | text | null | For leaderboard (optional, falls back to profile name) |
+| last_calculated_at | timestamptz | now() | |
+| created_at | timestamptz | now() | |
+| updated_at | timestamptz | now() | |
 
-- Modify the scroll `useEffect` to only scroll when there are actual messages, preventing the unwanted scroll on initial page load with StarterCards.
+**RLS policies:**
+- Users can SELECT their own row (full access)
+- Users can INSERT/UPDATE their own row
+- **Leaderboard read**: All authenticated users can SELECT `display_name`, `total_xp`, `level`, and `user_id` from ALL rows (limited columns only -- achieved via a database view)
 
-#### 2. Fix Flashcard Generator Visibility
+**New view: `leaderboard_view`** (for safe public ranking)
+```sql
+CREATE VIEW leaderboard_view AS
+SELECT
+  ux.user_id,
+  COALESCE(ux.display_name, p.full_name, 'Anonymous') AS name,
+  ux.total_xp,
+  ux.level,
+  p.avatar_url
+FROM user_xp ux
+LEFT JOIN profiles p ON p.id = ux.user_id
+ORDER BY ux.total_xp DESC;
+```
 
-**File: `src/pages/Tutor.tsx**`
+RLS on `user_xp`: All authenticated users can SELECT (leaderboard needs this). Only own row for INSERT/UPDATE.
 
-- Remove the `messages.length > 0` condition that gates the `FlashcardGenerator` rendering. The component should always be rendered so it can respond to the `triggerGenerate` prop from StarterCards.
-- When triggered from StarterCards without a document loaded, show a toast asking the user to upload a document first.
+---
 
-#### 3. Fix Flashcard StarterCard Behavior
+### Generous XP Rewards
 
-**File: `src/components/tutor/FlashcardGenerator.tsx**`
+| Activity | XP Earned | Notes |
+|----------|-----------|-------|
+| Pomodoro session completed | **25 XP** | Core study reward |
+| Flashcard reviewed | **5 XP** | Per card |
+| Document analyzed | **20 XP** | Engaging with material |
+| Quiz completed (any score) | **20 XP** | Rewards practice |
+| Quiz score 70%+ | **+20 bonus** | Competence |
+| Quiz score 90%+ | **+40 bonus** | Excellence (stacks with 70% bonus) |
+| Quiz improvement (beat previous best) | **+30 bonus** | Growth in weak areas |
+| Daily login/activity | **10 XP** | Just for showing up |
 
-- Ensure the component checks for `activeDocument` content when triggered externally, and prompts the user to load a document if none is available.
+**Leveling System (generous curve):**
+- Level 1: 0 XP
+- Level 2: 75 XP
+- Level 3: 175 XP
+- Level 4: 325 XP
+- Level 5: 550 XP
+- Formula: `XP needed = 35 * level^1.4` (rounded)
+- Titles: Freshman, Learner, Scholar, Expert, Master, Sage, Legend, Grandmaster
 
-#### 4. Improve ChatInput Sync
+---
 
-**File: `src/components/tutor/ChatInput.tsx**`
+### Achievements
 
-- Fix the controlled input sync issue where `onValueChange` isn't called in `handleMessageChange` during typing (line 143 uses `setMessage` directly instead of `handleMessageChange`).
+| Achievement | Condition | XP Bonus |
+|-------------|-----------|----------|
+| First Focus | 1 pomodoro completed | 15 |
+| Focus Warrior | 25 pomodoros | 75 |
+| Focus Legend | 100 pomodoros | 200 |
+| Card Collector | 50 flashcards reviewed | 40 |
+| Card Master | 500 flashcards reviewed | 150 |
+| Quiz Ace | Score 90%+ on any quiz | 50 |
+| Quiz Streak | Score 70%+ on 5 quizzes in a row | 75 |
+| 100 Questions Mastered | 100 correct answers | 100 |
+| 3-Day Streak | 3 consecutive days | 40 |
+| 7-Day Streak | 7 consecutive days | 100 |
+| 14-Day Streak | 14 consecutive days | 200 |
+| 30-Day Streak | 30 consecutive days | 400 |
+| Comeback Kid | Improve quiz score on a previously failed topic | 60 |
+| Bookworm | Analyze 10 documents | 50 |
+| Scholar | Reach Level 5 | 100 |
 
-#### 5. API Usage Management Strategy
+---
 
-**No code changes needed for now**, but here's the approach:
+### Leaderboard
 
-- The current setup uses `gemini-2.5-flash` which has generous free-tier limits (15 RPM, 1M TPM for free).
-- **Title generation** is the most wasteful call -- it makes a second API call after every new chat. We can reduce this by generating titles from the first message/response locally instead of using AI.
-- **Flashcard generation** truncates content to 8K chars which is reasonable.
-- **Chat context** truncates to 25K chars and uses last 6 messages -- also reasonable.
-- Long-term, moving to Supabase Edge Functions with the Lovable AI Gateway would be more secure and manageable, but that's a bigger migration.
+- New page at `/leaderboard` showing top users ranked by XP
+- Shows rank, name/avatar, level, total XP
+- Highlights the current user's position
+- Top 3 users get gold/silver/bronze styling
+- Accessible from sidebar navigation
+- Users can optionally set a display name (defaults to profile name)
+
+---
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `src/lib/gamification.ts` | Pure functions: XP calc, level thresholds, achievement definitions |
+| `src/hooks/useGamification.ts` | Core hook: computes XP from events + quiz data, syncs to user_xp |
+| `src/components/dashboard/XPProgressCard.tsx` | Dashboard card: level, XP bar, title |
+| `src/components/dashboard/AchievementsCard.tsx` | Dashboard card: achievement badges grid |
+| `src/components/gamification/LevelUpToast.tsx` | Toast notification for level-ups |
+| `src/components/gamification/AchievementUnlockedToast.tsx` | Toast for new achievements |
+| `src/pages/Leaderboard.tsx` | Full leaderboard page with rankings |
+
+### Modified Files
+
+| File | Change |
+|------|--------|
+| `src/pages/Dashboard.tsx` | Add XPProgressCard and AchievementsCard |
+| `src/components/DashboardSidebar.tsx` | Add "Leaderboard" menu item with Trophy icon |
+| `src/components/BottomNav.tsx` | Add Leaderboard to mobile nav |
+| `src/App.tsx` | Add `/leaderboard` route |
 
 ---
 
 ### Technical Details
 
+**`src/lib/gamification.ts`** -- Pure functions, no side effects:
+- `XP_VALUES` constant with all XP amounts
+- `ACHIEVEMENTS` array with id, name, description, icon, condition function, bonus XP
+- `LEVEL_THRESHOLDS` array and `getLevelFromXP(xp)` function
+- `calculateXPFromEvents(studyEvents, quizSessions)` -- returns total XP breakdown
+- `checkAchievements(studyEvents, quizSessions, streakDays)` -- returns earned achievement IDs
 
-| File                                 | Change                                                                                                                 |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| `src/pages/Tutor.tsx`                | Guard scroll effect with `messages.length > 0`; always render FlashcardGenerator                                       |
-| `src/components/tutor/ChatInput.tsx` | Fix input onChange to use `handleMessageChange`                                                                        |
-| `src/pages/Tutor.tsx`                | Optimize title generation to avoid extra API call (use first message substring as title instead of AI-generated title) |
+**`src/hooks/useGamification.ts`**:
+- Fetches `study_events` (90 days) and `quiz_sessions` using existing hooks/queries
+- Computes XP and achievements client-side using pure functions
+- Reads stored `user_xp` row, compares, detects new level-ups/achievements
+- Upserts `user_xp` on changes
+- Shows toast notifications for new achievements and level-ups
+- Returns `{ level, totalXP, xpProgress, achievements, newAchievements, isLoading }`
 
+**`src/pages/Leaderboard.tsx`**:
+- Queries `leaderboard_view` for top 50 users
+- Also queries current user's rank
+- Table layout with rank, avatar, name, level badge, XP
+- Current user row highlighted
+- Responsive design matching existing dashboard style
 
-### API Optimization Summary
+**Dashboard integration**:
+- XPProgressCard goes in the top grid row (making it 5 columns on large screens, or reorganizing to 2 rows)
+- AchievementsCard goes as a new section below study stats
 
-- Keep chat, flashcard, and vision calls as-is (core features)
-- The Gemini 2.5 Flash free tier supports 15 requests/minute and 1 million tokens/minute, which should be sufficient for normal study usage
-- If limits are hit, the app already shows error toasts via the catch block
