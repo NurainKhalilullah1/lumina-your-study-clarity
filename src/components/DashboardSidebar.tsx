@@ -7,6 +7,7 @@ import {
   Sparkles, 
   ClipboardList,
   FolderOpen,
+  Trophy,
   Settings, 
   LogOut 
 } from "lucide-react";
@@ -34,6 +35,7 @@ const menuItems = [
   { title: "Assignments", url: "/assignments", icon: CalendarCheck },
   { title: "AI Tutor", url: "/tutor", icon: Sparkles },
   { title: "Quiz History", url: "/quiz-history", icon: ClipboardList },
+  { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 

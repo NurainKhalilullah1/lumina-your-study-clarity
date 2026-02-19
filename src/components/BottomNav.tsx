@@ -1,12 +1,12 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, FolderOpen, Sparkles, CalendarCheck, Settings } from "lucide-react";
+import { LayoutDashboard, FolderOpen, Sparkles, Trophy, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { title: "Home", url: "/dashboard", icon: LayoutDashboard },
   { title: "Docs", url: "/documents", icon: FolderOpen },
   { title: "AI Tutor", url: "/tutor", icon: Sparkles },
-  { title: "Tasks", url: "/assignments", icon: CalendarCheck },
+  { title: "Ranks", url: "/leaderboard", icon: Trophy },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
