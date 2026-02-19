@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Loader2, Sparkles, Check } from "lucide-react";
@@ -13,6 +13,8 @@ interface FlashcardGeneratorProps {
   sessionId?: string;
   deckName?: string;
   onComplete?: () => void;
+  triggerGenerate?: boolean;
+  onTriggerHandled?: () => void;
 }
 
 interface GeneratedCard {
@@ -25,6 +27,8 @@ export const FlashcardGenerator = ({
   sessionId,
   deckName = "Study Session",
   onComplete,
+  triggerGenerate,
+  onTriggerHandled,
 }: FlashcardGeneratorProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -33,6 +37,14 @@ export const FlashcardGenerator = ({
 
   const { user } = useAuth();
   const createFlashcards = useCreateFlashcards();
+
+  // Handle external trigger
+  useEffect(() => {
+    if (triggerGenerate) {
+      generateFlashcards();
+      onTriggerHandled?.();
+    }
+  }, [triggerGenerate]);
 
   const generateFlashcards = async () => {
     if (!content.trim()) {

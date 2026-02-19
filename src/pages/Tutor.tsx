@@ -32,6 +32,7 @@ export default function Tutor() {
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [pendingInput, setPendingInput] = useState("");
   const [showDocumentSelector, setShowDocumentSelector] = useState(false);
+  const [triggerFlashcards, setTriggerFlashcards] = useState(false);
 
   const { toast } = useToast();
   const { user } = useAuth();
@@ -355,6 +356,8 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
                   content={getAllContent()}
                   sessionId={sessionId || undefined}
                   deckName={activeDocumentName || "Chat Session"}
+                  triggerGenerate={triggerFlashcards}
+                  onTriggerHandled={() => setTriggerFlashcards(false)}
                 />
               )}
               <ExportButton messages={messages} title={activeDocumentName || "StudyFlow Chat"} />
@@ -367,6 +370,7 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
             {messages.length === 0 ? (
               <StarterCards
                 onSetInputText={setPendingInput}
+                onGenerateFlashcards={() => setTriggerFlashcards(true)}
                 documentContext={activeDocument}
                 documentName={activeDocumentName}
               />
