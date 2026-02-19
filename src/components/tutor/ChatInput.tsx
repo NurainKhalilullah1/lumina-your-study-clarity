@@ -140,7 +140,7 @@ export const ChatInput = ({ onSendMessage, isLoading, value, onValueChange }: Ch
           {/* Text input */}
           <Input
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={(e) => handleMessageChange(e.target.value)}
             placeholder={
               selectedFile 
                 ? isImage 

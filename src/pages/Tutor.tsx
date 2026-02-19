@@ -40,7 +40,11 @@ export default function Tutor() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  useEffect(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), [messages, isLoading]);
+  useEffect(() => {
+    if (messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isLoading]);
 
   useEffect(() => {
     if (!sessionId) {
@@ -226,26 +230,10 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
         });
 
         if (isNewSession) {
-          (async () => {
-            try {
-              const titlePrompt = `
-                Generate a very short, specific 3-5 word title for a chat about this.
-                User asked: "${inputMessage}"
-                Document context: "${contextText ? contextText.slice(0, 100) : "None"}"
-                AI replied: "${responseText.slice(0, 100)}"
-                Return ONLY the title. No quotes.
-              `;
-              const titleResult = await model.generateContent(titlePrompt);
-              const newTitle = titleResult.response.text().trim().replace(/['"]/g, "");
-
-              if (newTitle) {
-                await supabase.from("chat_sessions").update({ title: newTitle }).eq("id", currentSession);
-                setSidebarRefresh((prev) => prev + 1);
-              }
-            } catch (e) {
-              console.error("Title gen failed", e);
-            }
-          })();
+          // Use first message as title instead of AI call to save API quota
+          const newTitle = inputMessage.slice(0, 50).trim() || (file ? file.name : "New Chat");
+          await supabase.from("chat_sessions").update({ title: newTitle }).eq("id", currentSession);
+          setSidebarRefresh((prev) => prev + 1);
         }
       }
     } catch (error) {
@@ -351,15 +339,13 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
 
             {/* Right: Tools */}
             <div className="flex items-center gap-1">
-              {messages.length > 0 && (
-                <FlashcardGenerator
-                  content={getAllContent()}
-                  sessionId={sessionId || undefined}
-                  deckName={activeDocumentName || "Chat Session"}
-                  triggerGenerate={triggerFlashcards}
-                  onTriggerHandled={() => setTriggerFlashcards(false)}
-                />
-              )}
+              <FlashcardGenerator
+                content={getAllContent()}
+                sessionId={sessionId || undefined}
+                deckName={activeDocumentName || "Chat Session"}
+                triggerGenerate={triggerFlashcards}
+                onTriggerHandled={() => setTriggerFlashcards(false)}
+              />
               <ExportButton messages={messages} title={activeDocumentName || "StudyFlow Chat"} />
               <PomodoroTimer />
             </div>

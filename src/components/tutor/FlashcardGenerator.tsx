@@ -48,7 +48,7 @@ export const FlashcardGenerator = ({
 
   const generateFlashcards = async () => {
     if (!content.trim()) {
-      toast.error("No content to generate flashcards from");
+      toast.error("Please upload or select a document first to generate flashcards.");
       return;
     }
 
