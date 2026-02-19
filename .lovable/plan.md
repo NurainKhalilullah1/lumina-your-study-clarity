@@ -1,194 +1,54 @@
 
-## Plan: Global Pomodoro Timer with Auto-Start and Dashboard Integration
 
-### Overview
+## Plan: Fix Flashcard Generation and Remove Auto-Start Timer
 
-Transform the Pomodoro timer from a component-level state to a **global context** that persists across page navigation, auto-starts 10 seconds after login, and displays on the dashboard.
+### 1. Fix Flashcard Generation (Starter Card)
 
----
+**Problem**: Clicking the "Flashcards" starter card sends a text prompt to the AI chat, which responds with plain text flashcards in the chat bubble. The user expects visual, interactive flashcard cards.
 
-### Current State
+**Solution**: When the "Flashcards" starter card is clicked, instead of sending a chat message, directly trigger the `FlashcardGenerator` component to generate proper visual flip-cards with front/back sides.
 
-- Pomodoro timer lives in `src/components/tutor/PomodoroTimer.tsx`
-- Uses `usePomodoroTimer` hook which creates local state
-- Only shown on the Tutor page
-- Timer resets when navigating away
+**Files to change:**
 
----
+- **`src/components/tutor/StarterCards.tsx`**: Change the Flashcards card to call a new callback (e.g., `onGenerateFlashcards`) instead of populating the input field with text.
+- **`src/pages/Tutor.tsx`**: Add a ref or state to programmatically trigger the `FlashcardGenerator` when the Flashcards starter card is clicked. Pass the trigger callback down to `StarterCards`.
 
-### Implementation
+**How it works:**
+- The Flashcards starter card will call `onGenerateFlashcards()` instead of `onSetInputText(prompt)`
+- `Tutor.tsx` will handle this by triggering the `FlashcardGenerator`'s generate function using the active document content
+- The `FlashcardGenerator` already has the proper UI with a dialog showing visual flip-cards
 
-#### File 1: `src/contexts/PomodoroContext.tsx` (NEW)
+### 2. Remove Auto-Start Timer
 
-Create a global context that manages timer state across the entire app:
+**Problem**: The Pomodoro timer automatically starts 10 seconds after login, which the user doesn't want.
 
-```typescript
-// Provides global timer state that persists across page navigation
-// - Auto-starts 10 seconds after user logs in
-// - Exposes timer controls (start, pause, reset, skip)
-// - Tracks session completion for study stats
-```
+**File to change:**
 
-**Key Features:**
-- Wraps the `usePomodoroTimer` logic but at the context level
-- Uses `useEffect` with 10-second timeout after auth to auto-start
-- Tracks `hasAutoStarted` to only trigger once per session
-- Provides all timer state and controls via context
-
----
-
-#### File 2: `src/App.tsx` (UPDATE)
-
-Wrap the app with the new `PomodoroProvider`:
-
-```tsx
-<AuthProvider>
-  <PomodoroProvider>  {/* NEW - wraps all protected routes */}
-    <TooltipProvider>
-      ...
-    </TooltipProvider>
-  </PomodoroProvider>
-</AuthProvider>
-```
-
----
-
-#### File 3: `src/components/tutor/PomodoroTimer.tsx` (UPDATE)
-
-Update to use the global context instead of local hook:
-
-```tsx
-// Before: const timer = usePomodoroTimer({}, callbacks);
-// After:  const timer = usePomodoro(); // from context
-```
-
-All UI stays the same, just the state source changes.
-
----
-
-#### File 4: `src/components/dashboard/DashboardPomodoroCard.tsx` (NEW)
-
-Create a dashboard card that displays the Pomodoro timer with controls:
-
-```text
-┌─────────────────────────────────────────────┐
-│  🍅 Focus Timer                             │
-│  ─────────────────────────────────────────  │
-│                                             │
-│           [Progress Ring]                   │
-│              24:35                          │
-│              Focus                          │
-│                                             │
-│     [Reset] [Play/Pause] [Skip]             │
-│                                             │
-│     Session 2 • 1 completed                 │
-└─────────────────────────────────────────────┘
-```
-
-Features:
-- Large, visible timer display
-- Mode indicator (Focus/Short Break/Long Break)
-- Progress ring visualization
-- Play/Pause, Reset, Skip controls
-- Session counter
-
----
-
-#### File 5: `src/pages/Dashboard.tsx` (UPDATE)
-
-Add the Pomodoro card to the dashboard layout:
-
-```tsx
-// Add to imports
-import { DashboardPomodoroCard } from "@/components/dashboard/DashboardPomodoroCard";
-
-// Add to the grid layout (after greeting, before Weekly Goals)
-<div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-  <motion.div>
-    <DashboardPomodoroCard />
-  </motion.div>
-  <motion.div className="lg:col-span-3">
-    <WeeklyGoals />
-  </motion.div>
-</div>
-```
-
----
-
-### Auto-Start Logic (in PomodoroContext)
-
-```typescript
-// 10 seconds after login, auto-start the timer
-useEffect(() => {
-  if (user && !hasAutoStarted) {
-    const timeout = setTimeout(() => {
-      start();
-      setHasAutoStarted(true);
-      toast.info("Focus timer started! 🍅");
-    }, 10000); // 10 seconds
-    
-    return () => clearTimeout(timeout);
-  }
-}, [user, hasAutoStarted]);
-
-// Reset auto-start flag on logout
-useEffect(() => {
-  if (!user) {
-    setHasAutoStarted(false);
-  }
-}, [user]);
-```
-
----
-
-### Files to be Modified/Created
-
-| File | Action |
-|------|--------|
-| `src/contexts/PomodoroContext.tsx` | **CREATE** - Global timer context with auto-start |
-| `src/App.tsx` | **UPDATE** - Wrap with PomodoroProvider |
-| `src/components/tutor/PomodoroTimer.tsx` | **UPDATE** - Use context instead of local hook |
-| `src/components/dashboard/DashboardPomodoroCard.tsx` | **CREATE** - Dashboard timer card |
-| `src/pages/Dashboard.tsx` | **UPDATE** - Add Pomodoro card to layout |
+- **`src/contexts/PomodoroContext.tsx`**: Remove the auto-start `useEffect` (lines ~148-158) that triggers `start()` after a 10-second timeout. Keep all other functionality (manual start, persistence across pages, etc.) intact.
 
 ---
 
 ### Technical Details
 
-#### Context State Shape
+**StarterCards changes:**
+- Add `onGenerateFlashcards` optional prop
+- Flashcards card calls `onGenerateFlashcards()` instead of `onSetInputText(prompt)`
+- Other starter cards remain unchanged
 
-```typescript
-interface PomodoroContextType {
-  // State
-  timeRemaining: number;
-  isRunning: boolean;
-  mode: 'work' | 'shortBreak' | 'longBreak';
-  completedSessions: number;
-  formattedTime: string;
-  progress: number;
-  
-  // Controls
-  start: () => void;
-  pause: () => void;
-  reset: () => void;
-  skip: () => void;
-}
-```
+**Tutor.tsx changes:**
+- Lift FlashcardGenerator's generate logic: add state like `triggerFlashcardGen` to programmatically open the generator
+- Pass `handleGenerateFlashcards` callback to `StarterCards`
 
-#### Timer Persistence
+**PomodoroContext changes:**
+- Remove the auto-start `useEffect` block and `hasAutoStarted` state
+- Timer will only start when user manually clicks play
 
-The timer runs in the context at the app level, so:
-- Navigating between Dashboard, Tutor, Settings, etc. keeps timer running
-- Timer only resets on page refresh or logout
-- Progress is visible on both Dashboard (card) and Tutor (header button)
+### Files Summary
 
----
+| File | Action |
+|------|--------|
+| `src/components/tutor/StarterCards.tsx` | UPDATE - Flashcards card triggers generation callback |
+| `src/pages/Tutor.tsx` | UPDATE - Handle flashcard generation trigger |
+| `src/components/tutor/FlashcardGenerator.tsx` | UPDATE - Support external trigger via prop |
+| `src/contexts/PomodoroContext.tsx` | UPDATE - Remove auto-start logic |
 
-### User Experience Flow
-
-1. User logs in
-2. After 10 seconds, timer auto-starts with toast notification
-3. User sees timer counting on Dashboard card
-4. User navigates to Tutor page - timer still visible in header, still counting
-5. User goes back to Dashboard - card shows same progress
-6. When session completes, notification + study event tracked
