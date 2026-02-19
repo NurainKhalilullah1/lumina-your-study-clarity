@@ -1,5 +1,47 @@
 // Pure gamification functions — no side effects, no API calls
 
+export const LEAGUE_NAMES = [
+  'Bronze I', 'Bronze II', 'Bronze III',
+  'Silver I', 'Silver II', 'Silver III',
+  'Gold I', 'Gold II', 'Gold III',
+  'Platinum I', 'Platinum II', 'Platinum III',
+  'Diamond I', 'Diamond II', 'Diamond III',
+  'Ruby I', 'Ruby II', 'Ruby III',
+  'Emerald I', 'Emerald II', 'Emerald III',
+  'Champion I', 'Champion II', 'Champion III',
+  'Legend',
+] as const;
+
+export function getLeagueName(league: number): string {
+  if (league < 1 || league > 25) return 'Unknown';
+  return LEAGUE_NAMES[league - 1];
+}
+
+export function getLeagueColor(league: number): string {
+  if (league <= 3) return 'text-amber-700';
+  if (league <= 6) return 'text-slate-400';
+  if (league <= 9) return 'text-yellow-500';
+  if (league <= 12) return 'text-cyan-400';
+  if (league <= 15) return 'text-blue-400';
+  if (league <= 18) return 'text-red-500';
+  if (league <= 21) return 'text-emerald-500';
+  if (league <= 24) return 'text-purple-500';
+  return 'text-amber-400'; // Legend
+}
+
+export function getCurrentWeekStart(): Date {
+  const now = new Date();
+  const day = now.getUTCDay(); // 0=Sun
+  const diff = day === 0 ? 6 : day - 1; // Monday = 0
+  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - diff));
+  return monday;
+}
+
+export function getWeekEndDate(): Date {
+  const start = getCurrentWeekStart();
+  return new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
+}
+
 export const XP_VALUES = {
   pomodoro_completed: 25,
   flashcard_reviewed: 5,

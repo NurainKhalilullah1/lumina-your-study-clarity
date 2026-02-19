@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,6 +8,7 @@ import {
   checkAchievements,
   calculateStreakDays,
   getLevelFromXP,
+  getCurrentWeekStart,
   ACHIEVEMENTS,
   type StudyEventData,
   type QuizSessionData,
@@ -29,6 +30,9 @@ interface UserXPRow {
   achievements: StoredAchievement[];
   display_name: string | null;
   last_calculated_at: string;
+  current_league: number;
+  weekly_xp: number;
+  week_start: string;
 }
 
 export function useGamification() {
@@ -122,6 +126,20 @@ export function useGamification() {
     earnedAchievementIds.push('scholar');
   }
 
+  // Compute weekly XP from events this week
+  const weekStart = getCurrentWeekStart();
+  const weeklyEvents = events.filter(e => new Date(e.created_at) >= weekStart);
+  const weeklyQuizzes = quizzes.filter(q => q.completed_at && new Date(q.completed_at) >= weekStart);
+  const weeklyXPBreakdown = calculateXPFromEvents(weeklyEvents, weeklyQuizzes, questions, 0);
+  const weeklyXP = weeklyXPBreakdown.totalXP;
+
+  // Current league from DB (default 2)
+  const currentLeague = storedXP?.current_league ?? 2;
+
+  // Check if DB week_start is stale
+  const dbWeekStart = storedXP?.week_start ? new Date(storedXP.week_start) : null;
+  const isStaleWeek = dbWeekStart ? dbWeekStart.getTime() < weekStart.getTime() : false;
+
   // Sync to database and show notifications
   useEffect(() => {
     if (!user || !studyEvents || !quizSessions) return;
@@ -135,7 +153,6 @@ export function useGamification() {
 
       // Only notify after first load
       if (hasInitializedRef.current) {
-        // Level up notification
         if (previousLevelRef.current !== null && levelInfo.level > previousLevelRef.current) {
           toast({
             title: `🎉 Level Up! Level ${levelInfo.level}`,
@@ -143,7 +160,6 @@ export function useGamification() {
           });
         }
 
-        // Achievement notifications
         newAchievementIds.forEach(id => {
           const achievement = ACHIEVEMENTS.find(a => a.id === id);
           if (achievement) {
@@ -159,12 +175,15 @@ export function useGamification() {
       previousAchievementsRef.current = new Set(earnedAchievementIds);
       hasInitializedRef.current = true;
 
-      // Check if we need to update the database
+      const weekStartStr = weekStart.toISOString().split('T')[0];
+
       const needsUpdate =
         !storedXP ||
         storedXP.total_xp !== xpBreakdown.totalXP ||
         storedXP.level !== levelInfo.level ||
-        newAchievementIds.length > 0;
+        newAchievementIds.length > 0 ||
+        (storedXP.weekly_xp ?? 0) !== weeklyXP ||
+        isStaleWeek;
 
       if (!needsUpdate) return;
 
@@ -179,11 +198,14 @@ export function useGamification() {
         level: levelInfo.level,
         achievements: allAchievements as unknown as Record<string, unknown>[],
         last_calculated_at: new Date().toISOString(),
+        weekly_xp: weeklyXP,
+        week_start: weekStartStr,
       } as any;
 
       if (storedXP) {
         await supabase.from('user_xp').update(payload).eq('user_id', user.id);
       } else {
+        payload.current_league = 2;
         await supabase.from('user_xp').insert(payload);
       }
 
@@ -192,13 +214,15 @@ export function useGamification() {
     };
 
     syncXP();
-  }, [user, studyEvents, quizSessions, xpBreakdown.totalXP]);
+  }, [user, studyEvents, quizSessions, xpBreakdown.totalXP, weeklyXP]);
 
   return {
     levelInfo,
     xpBreakdown,
     earnedAchievementIds,
     streakDays,
+    weeklyXP,
+    currentLeague,
     isLoading: isLoadingXP || !studyEvents || !quizSessions,
   };
 }

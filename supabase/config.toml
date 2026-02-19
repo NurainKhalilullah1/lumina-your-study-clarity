@@ -1,1 +1,4 @@
 project_id = "qecpaduxewgnumrjrroo"
+
+[functions.process-leagues]
+verify_jwt = false
