@@ -188,6 +188,7 @@ export function useGamification() {
       }
 
       queryClient.invalidateQueries({ queryKey: ['user-xp'] });
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
     };
 
     syncXP();
