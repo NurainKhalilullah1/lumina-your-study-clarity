@@ -1,54 +1,65 @@
+## Plan: Fix AI Tutor Scroll, Flashcard Generation, and API Usage
 
+### Issues Identified
 
-## Plan: Fix Flashcard Generation and Remove Auto-Start Timer
+1. **Auto-scroll on page load**: The Tutor page has a `useEffect` that scrolls to `messagesEndRef` whenever `messages` or `isLoading` changes. On initial load, this triggers a scroll to the bottom of the StarterCards view, pushing the page down.
+2. **Flashcard generation shows text first**: The `FlashcardGenerator` component is a button in the header toolbar that only appears when `messages.length > 0`. When triggered from StarterCards (before any messages exist), the button isn't rendered, so the `triggerGenerate` prop has no effect. The flashcard generation needs to work even with zero messages.
+3. **Pomodoro auto-start**: Already fixed in the codebase. If still happening, it's a browser cache issue.
+4. **API rate limit concerns**: The app calls Google Gemini directly from the frontend using `VITE_GEMINI_API_KEY`. Every feature (chat, flashcard gen, title gen) makes separate API calls. This is both a security risk (exposed key) and a rate limit concern.
 
-### 1. Fix Flashcard Generation (Starter Card)
+---
 
-**Problem**: Clicking the "Flashcards" starter card sends a text prompt to the AI chat, which responds with plain text flashcards in the chat bubble. The user expects visual, interactive flashcard cards.
+### Changes
 
-**Solution**: When the "Flashcards" starter card is clicked, instead of sending a chat message, directly trigger the `FlashcardGenerator` component to generate proper visual flip-cards with front/back sides.
+#### 1. Fix Auto-Scroll on Tutor Page Load
 
-**Files to change:**
+**File: `src/pages/Tutor.tsx**`
 
-- **`src/components/tutor/StarterCards.tsx`**: Change the Flashcards card to call a new callback (e.g., `onGenerateFlashcards`) instead of populating the input field with text.
-- **`src/pages/Tutor.tsx`**: Add a ref or state to programmatically trigger the `FlashcardGenerator` when the Flashcards starter card is clicked. Pass the trigger callback down to `StarterCards`.
+- Modify the scroll `useEffect` to only scroll when there are actual messages, preventing the unwanted scroll on initial page load with StarterCards.
 
-**How it works:**
-- The Flashcards starter card will call `onGenerateFlashcards()` instead of `onSetInputText(prompt)`
-- `Tutor.tsx` will handle this by triggering the `FlashcardGenerator`'s generate function using the active document content
-- The `FlashcardGenerator` already has the proper UI with a dialog showing visual flip-cards
+#### 2. Fix Flashcard Generator Visibility
 
-### 2. Remove Auto-Start Timer
+**File: `src/pages/Tutor.tsx**`
 
-**Problem**: The Pomodoro timer automatically starts 10 seconds after login, which the user doesn't want.
+- Remove the `messages.length > 0` condition that gates the `FlashcardGenerator` rendering. The component should always be rendered so it can respond to the `triggerGenerate` prop from StarterCards.
+- When triggered from StarterCards without a document loaded, show a toast asking the user to upload a document first.
 
-**File to change:**
+#### 3. Fix Flashcard StarterCard Behavior
 
-- **`src/contexts/PomodoroContext.tsx`**: Remove the auto-start `useEffect` (lines ~148-158) that triggers `start()` after a 10-second timeout. Keep all other functionality (manual start, persistence across pages, etc.) intact.
+**File: `src/components/tutor/FlashcardGenerator.tsx**`
+
+- Ensure the component checks for `activeDocument` content when triggered externally, and prompts the user to load a document if none is available.
+
+#### 4. Improve ChatInput Sync
+
+**File: `src/components/tutor/ChatInput.tsx**`
+
+- Fix the controlled input sync issue where `onValueChange` isn't called in `handleMessageChange` during typing (line 143 uses `setMessage` directly instead of `handleMessageChange`).
+
+#### 5. API Usage Management Strategy
+
+**No code changes needed for now**, but here's the approach:
+
+- The current setup uses `gemini-2.5-flash` which has generous free-tier limits (15 RPM, 1M TPM for free).
+- **Title generation** is the most wasteful call -- it makes a second API call after every new chat. We can reduce this by generating titles from the first message/response locally instead of using AI.
+- **Flashcard generation** truncates content to 8K chars which is reasonable.
+- **Chat context** truncates to 25K chars and uses last 6 messages -- also reasonable.
+- Long-term, moving to Supabase Edge Functions with the Lovable AI Gateway would be more secure and manageable, but that's a bigger migration.
 
 ---
 
 ### Technical Details
 
-**StarterCards changes:**
-- Add `onGenerateFlashcards` optional prop
-- Flashcards card calls `onGenerateFlashcards()` instead of `onSetInputText(prompt)`
-- Other starter cards remain unchanged
 
-**Tutor.tsx changes:**
-- Lift FlashcardGenerator's generate logic: add state like `triggerFlashcardGen` to programmatically open the generator
-- Pass `handleGenerateFlashcards` callback to `StarterCards`
+| File                                 | Change                                                                                                                 |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `src/pages/Tutor.tsx`                | Guard scroll effect with `messages.length > 0`; always render FlashcardGenerator                                       |
+| `src/components/tutor/ChatInput.tsx` | Fix input onChange to use `handleMessageChange`                                                                        |
+| `src/pages/Tutor.tsx`                | Optimize title generation to avoid extra API call (use first message substring as title instead of AI-generated title) |
 
-**PomodoroContext changes:**
-- Remove the auto-start `useEffect` block and `hasAutoStarted` state
-- Timer will only start when user manually clicks play
 
-### Files Summary
+### API Optimization Summary
 
-| File | Action |
-|------|--------|
-| `src/components/tutor/StarterCards.tsx` | UPDATE - Flashcards card triggers generation callback |
-| `src/pages/Tutor.tsx` | UPDATE - Handle flashcard generation trigger |
-| `src/components/tutor/FlashcardGenerator.tsx` | UPDATE - Support external trigger via prop |
-| `src/contexts/PomodoroContext.tsx` | UPDATE - Remove auto-start logic |
-
+- Keep chat, flashcard, and vision calls as-is (core features)
+- The Gemini 2.5 Flash free tier supports 15 requests/minute and 1 million tokens/minute, which should be sufficient for normal study usage
+- If limits are hit, the app already shows error toasts via the catch block
