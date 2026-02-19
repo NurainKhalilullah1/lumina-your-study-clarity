@@ -6,11 +6,12 @@ import { useNavigate } from "react-router-dom";
 
 interface StarterCardsProps {
   onSetInputText: (text: string) => void;
+  onGenerateFlashcards?: () => void;
   documentContext?: string;
   documentName?: string;
 }
 
-export const StarterCards = ({ onSetInputText, documentContext, documentName }: StarterCardsProps) => {
+export const StarterCards = ({ onSetInputText, onGenerateFlashcards, documentContext, documentName }: StarterCardsProps) => {
   const navigate = useNavigate();
 
   // Cards that populate the input (require document upload)
@@ -101,7 +102,7 @@ export const StarterCards = ({ onSetInputText, documentContext, documentName }: 
                 "hover:shadow-xl hover:scale-[1.02] hover:-translate-y-1",
                 card.hoverBorder
               )}
-              onClick={() => onSetInputText(card.prompt)}
+              onClick={() => card.title === "Flashcards" && onGenerateFlashcards ? onGenerateFlashcards() : onSetInputText(card.prompt)}
               style={{ animationDelay: `${i * 100}ms` }}
             >
               {/* Gradient background on hover */}

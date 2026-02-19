@@ -45,7 +45,6 @@ export const usePomodoro = () => {
 export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const trackEvent = useTrackStudyEvent();
-  const [hasAutoStarted, setHasAutoStarted] = useState(false);
   
   const [timeRemaining, setTimeRemaining] = useState(DEFAULT_SETTINGS.workDuration * 60);
   const [isRunning, setIsRunning] = useState(false);
@@ -163,25 +162,9 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return () => clearInterval(interval);
   }, [isRunning, completedSessions, getDurationForMode, mode, playNotification, trackEvent, user]);
 
-  // Auto-start 10 seconds after login
-  useEffect(() => {
-    if (user && !hasAutoStarted) {
-      const timeout = setTimeout(() => {
-        start();
-        setHasAutoStarted(true);
-        toast.info("Focus timer started! 🍅", {
-          description: "Stay focused on your studies"
-        });
-      }, 10000);
-      
-      return () => clearTimeout(timeout);
-    }
-  }, [user, hasAutoStarted, start]);
-
-  // Reset auto-start flag on logout
+  // Reset on logout
   useEffect(() => {
     if (!user) {
-      setHasAutoStarted(false);
       setIsRunning(false);
       setTimeRemaining(DEFAULT_SETTINGS.workDuration * 60);
       setMode('work');
