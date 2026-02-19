@@ -22,11 +22,7 @@ const Leaderboard = () => {
   const { data: entries, isLoading } = useQuery({
     queryKey: ["leaderboard"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("leaderboard_view" as any)
-        .select("*")
-        .order("total_xp", { ascending: false })
-        .limit(50);
+      const { data, error } = await supabase.rpc("get_leaderboard" as any);
       if (error) throw error;
       return (data || []) as unknown as LeaderboardEntry[];
     },

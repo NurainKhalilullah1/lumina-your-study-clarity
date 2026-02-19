@@ -483,19 +483,20 @@ export type Database = {
       }
     }
     Views: {
-      leaderboard_view: {
-        Row: {
-          avatar_url: string | null
-          level: number | null
-          name: string | null
-          total_xp: number | null
-          user_id: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       delete_own_account: { Args: never; Returns: undefined }
+      get_leaderboard: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          level: number
+          name: string
+          total_xp: number
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
