@@ -47,6 +47,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const trackEvent = useTrackStudyEvent();
   
   const [timeRemaining, setTimeRemaining] = useState(DEFAULT_SETTINGS.workDuration * 60);
+  // Timer must only start via manual user action - never auto-start
   const [isRunning, setIsRunning] = useState(false);
   const [mode, setMode] = useState<TimerMode>('work');
   const [completedSessions, setCompletedSessions] = useState(0);
