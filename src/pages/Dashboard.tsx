@@ -11,6 +11,8 @@ import { StudyStatsDashboard } from "@/components/dashboard/StudyStatsDashboard"
 import { QuizAnalytics } from "@/components/dashboard/QuizAnalytics";
 import { WeeklyGoals } from "@/components/dashboard/WeeklyGoals";
 import { DashboardPomodoroCard } from "@/components/dashboard/DashboardPomodoroCard";
+import { XPProgressCard } from "@/components/dashboard/XPProgressCard";
+import { AchievementsCard } from "@/components/dashboard/AchievementsCard";
 const getGreeting = () => {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
@@ -95,20 +97,28 @@ const Dashboard = () => {
         </motion.div>
 
         {/* Pomodoro Timer, Weekly Goals and Study Statistics */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
             <DashboardPomodoroCard />
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.07 }}>
             <WeeklyGoals />
           </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
+            <XPProgressCard />
+          </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }} className="lg:col-span-2">
             <StudyStatsDashboard />
           </motion.div>
         </div>
 
-        {/* Quiz Performance Analytics */}
+        {/* Achievements */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <AchievementsCard />
+        </motion.div>
+
+        {/* Quiz Performance Analytics */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
           <QuizAnalytics />
         </motion.div>
 
