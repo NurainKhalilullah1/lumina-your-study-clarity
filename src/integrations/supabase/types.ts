@@ -201,6 +201,39 @@ export type Database = {
           },
         ]
       }
+      league_history: {
+        Row: {
+          created_at: string | null
+          id: string
+          league: number
+          outcome: string | null
+          rank_in_league: number | null
+          user_id: string
+          week_start: string
+          weekly_xp: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          league: number
+          outcome?: string | null
+          rank_in_league?: number | null
+          user_id: string
+          week_start: string
+          weekly_xp?: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          league?: number
+          outcome?: string | null
+          rank_in_league?: number | null
+          user_id?: string
+          week_start?: string
+          weekly_xp?: number
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -416,6 +449,7 @@ export type Database = {
         Row: {
           achievements: Json
           created_at: string
+          current_league: number
           display_name: string | null
           id: string
           last_calculated_at: string
@@ -423,10 +457,13 @@ export type Database = {
           total_xp: number
           updated_at: string
           user_id: string
+          week_start: string
+          weekly_xp: number
         }
         Insert: {
           achievements?: Json
           created_at?: string
+          current_league?: number
           display_name?: string | null
           id?: string
           last_calculated_at?: string
@@ -434,10 +471,13 @@ export type Database = {
           total_xp?: number
           updated_at?: string
           user_id?: string
+          week_start?: string
+          weekly_xp?: number
         }
         Update: {
           achievements?: Json
           created_at?: string
+          current_league?: number
           display_name?: string | null
           id?: string
           last_calculated_at?: string
@@ -445,6 +485,8 @@ export type Database = {
           total_xp?: number
           updated_at?: string
           user_id?: string
+          week_start?: string
+          weekly_xp?: number
         }
         Relationships: []
       }
@@ -497,6 +539,18 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_league_leaderboard: {
+        Args: { p_league: number }
+        Returns: {
+          avatar_url: string
+          current_league: number
+          level: number
+          name: string
+          user_id: string
+          weekly_xp: number
+        }[]
+      }
+      process_league_week: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
