@@ -266,8 +266,8 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
   };
 
   return (
-    <DashboardLayout>
-      <div className="flex h-[calc(100vh-2rem)] bg-background overflow-hidden">
+    <DashboardLayout hideMobileHeader>
+      <div className="flex h-[calc(100vh-4rem)] md:h-[calc(100vh-3.5rem)] bg-background overflow-hidden">
         {/* Desktop Sidebar */}
         <div className="hidden md:block">
           <ChatSidebar
