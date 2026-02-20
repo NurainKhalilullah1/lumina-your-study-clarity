@@ -1,12 +1,11 @@
+import { Link } from "react-router-dom";
 import { StudyFlowLogo } from "./StudyFlowLogo";
 
 const footerLinks = [
-  { label: "Features", href: "#" },
-  { label: "Pricing", href: "#" },
-  { label: "About", href: "#" },
-  { label: "Contact", href: "#" },
-  { label: "Privacy Policy", href: "#" },
-  { label: "Terms of Service", href: "#" },
+  { label: "Features", href: "/features" },
+  { label: "About", href: "/about" },
+  { label: "Privacy Policy", href: "/privacy" },
+  { label: "Terms of Service", href: "/terms" },
 ];
 
 export const Footer = () => {
@@ -15,21 +14,21 @@ export const Footer = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-8">
           {/* Logo */}
-          <a href="#" className="flex items-center gap-2 group">
+          <Link to="/" className="flex items-center gap-2 group">
             <StudyFlowLogo size="md" variant="purple" className="transition-transform group-hover:scale-110" />
             <span className="text-lg font-bold text-foreground">StudyFlow</span>
-          </a>
+          </Link>
 
           {/* Links */}
           <nav className="flex flex-wrap items-center justify-center gap-6 text-sm">
             {footerLinks.map((link) => (
-              <a
+              <Link
                 key={link.label}
-                href={link.href}
+                to={link.href}
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </nav>
         </div>
