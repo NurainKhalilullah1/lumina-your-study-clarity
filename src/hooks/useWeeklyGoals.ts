@@ -85,6 +85,7 @@ export const useUpsertWeeklyGoals = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['weekly-goals'] });
+      queryClient.invalidateQueries({ queryKey: ['goal-progress'] });
     },
   });
 };

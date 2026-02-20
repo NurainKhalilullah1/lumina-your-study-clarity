@@ -60,7 +60,7 @@ export function useGamification() {
       return (data || []) as StudyEventData[];
     },
     enabled: !!user,
-    staleTime: 60_000,
+    staleTime: 0,
   });
 
   // Fetch quiz sessions
@@ -77,7 +77,7 @@ export function useGamification() {
       return (data || []) as QuizSessionData[];
     },
     enabled: !!user,
-    staleTime: 60_000,
+    staleTime: 0,
   });
 
   // Fetch quiz questions for correct answer counting
@@ -92,7 +92,7 @@ export function useGamification() {
       return (data || []) as QuizQuestionData[];
     },
     enabled: !!user,
-    staleTime: 60_000,
+    staleTime: 0,
   });
 
   // Fetch stored user_xp
