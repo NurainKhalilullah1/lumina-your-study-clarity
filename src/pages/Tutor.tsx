@@ -310,11 +310,11 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
             </div>
 
             {/* Center: Document context indicator */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0 overflow-hidden max-w-[140px] sm:max-w-[220px] md:max-w-xs">
               {activeDocumentName ? (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full border border-primary/20 text-sm">
-                  <FileText className="w-4 h-4 text-primary" />
-                  <span className="text-foreground font-medium max-w-[120px] sm:max-w-[200px] truncate">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full border border-primary/20 text-sm min-w-0 overflow-hidden w-full">
+                  <FileText className="w-4 h-4 text-primary shrink-0" />
+                  <span className="text-foreground font-medium truncate min-w-0 flex-1">
                     {activeDocumentName}
                   </span>
                   <button
