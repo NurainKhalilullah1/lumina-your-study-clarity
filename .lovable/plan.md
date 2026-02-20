@@ -1,82 +1,96 @@
 
-## Fix: AI Tutor Layout Height on Mobile
+## Fix: AI Tutor Mobile Layout + Dashboard Sync Issues
 
-### Root Cause
+---
 
-The Tutor page sets its flex container height to `h-[calc(100vh-2rem)]`. This works on desktop because the DashboardLayout's desktop header is hidden in favour of the sidebar. But on mobile, DashboardLayout adds:
+### Issue 1: AI Tutor Mobile Layout (Still Broken)
 
-- A **mobile top header** of `h-14` (56px)
-- A **BottomNav** of `h-16` (64px) with `pb-16` padding on `<main>`
+**Root Cause (Deeper Analysis)**
 
-So the actual available height for the Tutor on mobile is:
-```text
-100vh - 56px (mobile header) - 64px (bottom nav) - 32px (2rem offset in calc) = overflows by ~120px
+The `BottomNav` is `position: fixed; bottom: 0` — it floats **over** content and is completely outside the flex layout flow. This means giving any container `pb-16` creates visual padding-bottom space.
+
+However, the current inner content column has both `overflow-hidden` on its parent AND `pb-16`. When a container is `overflow-hidden`, any `padding-bottom` is clipped — content gets cut off instead of being spaced above the nav bar.
+
+The actual fix: the main flex container in `Tutor.tsx` must **not** be `overflow-hidden` at the outer level. Only the messages scroll area should be `overflow-y-auto`. The `pb-16 md:pb-0` must live on a container that is **not** overflow-clipped.
+
+**Fix:**
+
+In `src/pages/Tutor.tsx`, change the outer flex wrapper from `overflow-hidden` to just control overflow only on the messages region. The inner column with `pb-16 md:pb-0` already does this — but the outer parent must not clip it.
+
 ```
-
-This overflow forces the browser to expand the layout horizontally, stretching the `ChatInput` across the full width and disrupting the entire layout.
-
-Additionally, the Tutor page renders its **own internal header** (the one with the hamburger menu, branding, and tool buttons). This means on mobile there are actually **two stacked headers** — the DashboardLayout mobile header AND the Tutor's own header. The Tutor's own header is self-contained and sufficient on mobile, so the DashboardLayout mobile header should not be shown on the Tutor page.
-
-### The Fix
-
-**Two-part solution:**
-
-**Part 1 — Correct the height calculation in `src/pages/Tutor.tsx`**
-
-Replace `h-[calc(100vh-2rem)]` with a height that properly accounts for the mobile header and bottom nav:
-- On mobile: subtract `h-14` (top header) + `h-16` (bottom nav) = `h-[calc(100vh-7.5rem)]`
-- On desktop (md+): keep the current `h-[calc(100vh-3.5rem)]` (just the desktop top bar)
-
-Using responsive Tailwind classes:
-```tsx
 // Before
-<div className="flex h-[calc(100vh-2rem)] bg-background overflow-hidden">
-
-// After
-<div className="flex h-[calc(100vh-7.5rem)] md:h-[calc(100vh-3.5rem)] bg-background overflow-hidden">
-```
-
-**Part 2 — Hide the DashboardLayout mobile header on the Tutor route**
-
-The Tutor page has its own complete header (hamburger menu, branding, document pill, tools). The DashboardLayout's mobile header is redundant and wastes vertical space. The cleanest fix is to give `DashboardLayout` an optional `hideMobileHeader` prop so Tutor can suppress it:
-
-```tsx
-// DashboardLayout.tsx
-interface DashboardLayoutProps {
-  children: React.ReactNode;
-  hideMobileHeader?: boolean;
-}
-
-// Conditionally render the mobile header:
-{!hideMobileHeader && (
-  <header className="flex items-center justify-between h-14 ...">
-    ...
-  </header>
-)}
-```
-
-And in `Tutor.tsx`:
-```tsx
-<DashboardLayout hideMobileHeader>
+<div className="flex flex-1 bg-background overflow-hidden min-h-0">
   ...
-</DashboardLayout>
+  <div className="flex-1 flex flex-col min-w-0 pb-16 md:pb-0">
+
+// After  
+<div className="flex flex-1 bg-background min-h-0">
+  ...
+  <div className="flex-1 flex flex-col min-w-0 pb-16 md:pb-0">
 ```
 
-With the DashboardLayout mobile header hidden on the Tutor page, the height calc becomes simpler — only the BottomNav needs to be subtracted on mobile:
-```tsx
-// Final height after hiding mobile header:
-h-[calc(100vh-4rem)]   // mobile: just bottom nav (h-16)
-md:h-[calc(100vh-3.5rem)]  // desktop: just the top bar
+Also verify that `DashboardLayout` with `hideMobileHeader` sets `h-screen overflow-hidden` on the root, which already correctly constrains the overall height. No `overflow-hidden` is needed on the Tutor's inner row div — it just needs to be `flex flex-1 min-h-0`.
+
+---
+
+### Issue 2: Dashboard Components Not Syncing
+
+**Root Cause Analysis**
+
+Multiple interconnected syncing problems were found across the codebase:
+
+**Problem A — Study event tracking doesn't cascade to goal progress or XP:**
+`useTrackStudyEvent` (in `useStudyStats.ts`) only invalidates `['study-events']` after inserting a new event. It does NOT invalidate:
+- `['goal-progress']` — so Weekly Goals doesn't update when a Pomodoro session completes or flashcards are reviewed
+- `['gamification-events']` — so XP and Achievements don't recalculate
+
+**Problem B — Gamification queries have 60-second stale time:**
+In `useGamification.ts`, all queries (`gamification-events`, `gamification-quizzes`, `gamification-questions`) have `staleTime: 60_000`. This means XP and achievements won't reflect new events for up to 60 seconds even after cache invalidation.
+
+**Problem C — Dashboard.tsx uses no React Query:**
+The `fetchData()` function in `Dashboard.tsx` uses raw `supabase` calls inside a plain `useEffect`. When assignments are added via the Quick Actions button, `onAssignmentAdded={fetchData}` re-runs, but:
+- No loading state while refetching
+- Stats momentarily show 0 before the new fetch resolves
+
+**Problem D — Quiz completion doesn't invalidate goal progress:**
+When a quiz is completed in `useQuiz.ts`, `goal-progress` is not invalidated, so the Weekly Goals "Quizzes" counter doesn't update until the user refreshes.
+
+**The Fixes:**
+
+**Fix A — `useTrackStudyEvent` must invalidate all dependent queries:**
+
+```typescript
+// In src/hooks/useStudyStats.ts
+onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ['study-events'] });
+  queryClient.invalidateQueries({ queryKey: ['goal-progress'] });
+  queryClient.invalidateQueries({ queryKey: ['gamification-events'] });
+},
 ```
+
+**Fix B — Reduce or remove staleTime on gamification queries:**
+Reduce `staleTime` from `60_000` to `0` on `gamification-events`, `gamification-quizzes`, and `gamification-questions` so they always refetch when invalidated.
+
+**Fix C — Invalidate quiz-related queries after quiz completion:**
+In `src/hooks/useQuiz.ts`, find where quiz sessions are completed/submitted and add:
+```typescript
+queryClient.invalidateQueries({ queryKey: ['goal-progress'] });
+queryClient.invalidateQueries({ queryKey: ['gamification-quizzes'] });
+```
+
+**Fix D — Weekly Goals invalidation after upserting:**
+Already done in `useUpsertWeeklyGoals` (`onSuccess` invalidates `['weekly-goals']`), but `['goal-progress']` should also be invalidated since its internal fetch of goals needs to be refreshed.
+
+---
 
 ### Files to Change
 
-1. **`src/components/DashboardLayout.tsx`** — Add `hideMobileHeader?: boolean` prop and conditionally render the mobile `<header>` element.
-2. **`src/pages/Tutor.tsx`** — Pass `hideMobileHeader` to `DashboardLayout` and update the flex container height to `h-[calc(100vh-4rem)] md:h-[calc(100vh-3.5rem)]`.
+1. **`src/pages/Tutor.tsx`** — Remove `overflow-hidden` from the outer flex row container (keep it only on the messages scroll area).
 
-### What Will Look Correct After This Fix
+2. **`src/hooks/useStudyStats.ts`** — In `useTrackStudyEvent`'s `onSuccess`, also invalidate `['goal-progress']` and `['gamification-events']`.
 
-- The Tutor page on mobile will occupy exactly the right height: full viewport minus only the bottom navigation bar.
-- No double header on mobile — only the Tutor's own internal header shows.
-- The `ChatInput` will render at its natural width (constrained to the chat column), not stretched.
-- The starter cards and chat area will have proper vertical room to scroll without overflowing.
+3. **`src/hooks/useGamification.ts`** — Reduce `staleTime` from `60_000` to `0` on the three gamification queries so they reflect changes immediately when invalidated.
+
+4. **`src/hooks/useQuiz.ts`** — After quiz completion, invalidate `['goal-progress']` and `['gamification-quizzes']`.
+
+5. **`src/hooks/useWeeklyGoals.ts`** — In `useUpsertWeeklyGoals`'s `onSuccess`, also invalidate `['goal-progress']` so the progress display updates immediately after saving new targets.
