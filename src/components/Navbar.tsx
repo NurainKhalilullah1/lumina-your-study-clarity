@@ -32,6 +32,12 @@ export const Navbar = () => {
             transition={{ duration: 0.5, delay: 0.1 }}
           >
             <Button variant="ghost" size="sm" asChild>
+              <Link to="/features">Features</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/about">About</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
               <Link to="/auth">Login</Link>
             </Button>
             <Button variant="glow" size="sm" asChild>
@@ -64,6 +70,12 @@ export const Navbar = () => {
               className="md:hidden border-t border-white/10 dark:border-white/5 py-4"
             >
               <div className="flex flex-col gap-3">
+                <Button variant="ghost" className="justify-start" asChild onClick={() => setIsOpen(false)}>
+                  <Link to="/features">Features</Link>
+                </Button>
+                <Button variant="ghost" className="justify-start" asChild onClick={() => setIsOpen(false)}>
+                  <Link to="/about">About</Link>
+                </Button>
                 <Button variant="ghost" className="justify-start" asChild onClick={() => setIsOpen(false)}>
                   <Link to="/auth">Login</Link>
                 </Button>

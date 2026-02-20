@@ -22,6 +22,10 @@ import Quiz from "./pages/Quiz";
 import QuizHistory from "./pages/QuizHistory";
 import Settings from "./pages/Settings";
 import Leaderboard from "./pages/Leaderboard";
+import Features from "./pages/Features";
+import About from "./pages/About";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,6 +66,10 @@ const App = () => {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/features" element={<Features />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<TermsOfService />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route
