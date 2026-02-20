@@ -267,7 +267,7 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
 
   return (
     <DashboardLayout hideMobileHeader>
-      <div className="flex h-[calc(100vh-4rem)] md:h-[calc(100vh-3.5rem)] bg-background overflow-hidden">
+      <div className="flex flex-1 bg-background overflow-hidden min-h-0">
         {/* Desktop Sidebar */}
         <div className="hidden md:block">
           <ChatSidebar
@@ -279,7 +279,7 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 pb-16 md:pb-0">
           {/* Header */}
           <header className="flex items-center justify-between px-4 py-3 border-b bg-background/80 backdrop-blur-sm">
             <div className="flex items-center gap-3">
