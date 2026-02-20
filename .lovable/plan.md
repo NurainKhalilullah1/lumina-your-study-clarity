@@ -1,59 +1,82 @@
 
-## Fix: Create Missing `user_preferences` Table & Resolve Settings Errors
+## Fix: AI Tutor Layout Height on Mobile
 
 ### Root Cause
 
-The `user_preferences` table was never created in the database. All 18 migration files have been audited — this table does not exist anywhere. When you click "Save" on the Pomodoro Duration or Default Quiz Questions, the hook calls `.upsert()` against a non-existent table, which returns a PostgREST error that triggers the failure toast.
+The Tutor page sets its flex container height to `h-[calc(100vh-2rem)]`. This works on desktop because the DashboardLayout's desktop header is hidden in favour of the sidebar. But on mobile, DashboardLayout adds:
 
-The `useUserPreferences` hook already has `(supabase as any)` type-casting workarounds which are a clear sign it was written anticipating a table that was never actually migrated.
+- A **mobile top header** of `h-14` (56px)
+- A **BottomNav** of `h-16` (64px) with `pb-16` padding on `<main>`
 
-### Fix 1: Database Migration — Create `user_preferences` table
-
-A new migration will create the missing table with the exact columns the hook expects:
-
-```sql
-CREATE TABLE public.user_preferences (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL UNIQUE,
-  default_quiz_questions INTEGER NOT NULL DEFAULT 10,
-  pomodoro_duration INTEGER NOT NULL DEFAULT 25,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-ALTER TABLE public.user_preferences ENABLE ROW LEVEL SECURITY;
-
--- Users can only read/write their own preferences
-CREATE POLICY "Users can manage their own preferences"
-  ON public.user_preferences
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
-
--- Auto-update updated_at on changes
-CREATE TRIGGER update_user_preferences_updated_at
-  BEFORE UPDATE ON public.user_preferences
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-NOTIFY pgrst, 'reload schema';
+So the actual available height for the Tutor on mobile is:
+```text
+100vh - 56px (mobile header) - 64px (bottom nav) - 32px (2rem offset in calc) = overflows by ~120px
 ```
 
-### Fix 2: Clean up `useUserPreferences.ts`
+This overflow forces the browser to expand the layout horizontally, stretching the `ChatInput` across the full width and disrupting the entire layout.
 
-Once the table exists in the database and TypeScript types are regenerated, remove the `as any` type-casting workarounds so the hook uses the typed Supabase client properly. This eliminates the runtime risk from bypassing type safety.
+Additionally, the Tutor page renders its **own internal header** (the one with the hamburger menu, branding, and tool buttons). This means on mobile there are actually **two stacked headers** — the DashboardLayout mobile header AND the Tutor's own header. The Tutor's own header is self-contained and sufficient on mobile, so the DashboardLayout mobile header should not be shown on the Tutor page.
 
-### Fix 3: Settings Page — Minor Cleanup
+### The Fix
 
-The Settings page `src/pages/Settings.tsx` has a minor issue in the profile section: the `hasNameChanged` check compares against `user?.user_metadata?.full_name || ""`, but when the name field is first populated from `user_metadata`, a user who hasn't changed anything would still see the "Save Changes" button as disabled correctly. However, if the user clears the field to empty string, the button incorrectly stays disabled. This will be corrected so a blank name (removing the name) also counts as a change.
+**Two-part solution:**
+
+**Part 1 — Correct the height calculation in `src/pages/Tutor.tsx`**
+
+Replace `h-[calc(100vh-2rem)]` with a height that properly accounts for the mobile header and bottom nav:
+- On mobile: subtract `h-14` (top header) + `h-16` (bottom nav) = `h-[calc(100vh-7.5rem)]`
+- On desktop (md+): keep the current `h-[calc(100vh-3.5rem)]` (just the desktop top bar)
+
+Using responsive Tailwind classes:
+```tsx
+// Before
+<div className="flex h-[calc(100vh-2rem)] bg-background overflow-hidden">
+
+// After
+<div className="flex h-[calc(100vh-7.5rem)] md:h-[calc(100vh-3.5rem)] bg-background overflow-hidden">
+```
+
+**Part 2 — Hide the DashboardLayout mobile header on the Tutor route**
+
+The Tutor page has its own complete header (hamburger menu, branding, document pill, tools). The DashboardLayout's mobile header is redundant and wastes vertical space. The cleanest fix is to give `DashboardLayout` an optional `hideMobileHeader` prop so Tutor can suppress it:
+
+```tsx
+// DashboardLayout.tsx
+interface DashboardLayoutProps {
+  children: React.ReactNode;
+  hideMobileHeader?: boolean;
+}
+
+// Conditionally render the mobile header:
+{!hideMobileHeader && (
+  <header className="flex items-center justify-between h-14 ...">
+    ...
+  </header>
+)}
+```
+
+And in `Tutor.tsx`:
+```tsx
+<DashboardLayout hideMobileHeader>
+  ...
+</DashboardLayout>
+```
+
+With the DashboardLayout mobile header hidden on the Tutor page, the height calc becomes simpler — only the BottomNav needs to be subtracted on mobile:
+```tsx
+// Final height after hiding mobile header:
+h-[calc(100vh-4rem)]   // mobile: just bottom nav (h-16)
+md:h-[calc(100vh-3.5rem)]  // desktop: just the top bar
+```
 
 ### Files to Change
 
-1. **Database migration** (new file) — creates `user_preferences` table with RLS
-2. **`src/hooks/useUserPreferences.ts`** — remove `as any` workarounds, use proper typed queries
-3. **`src/pages/Settings.tsx`** — fix the `hasNameChanged` edge case logic
+1. **`src/components/DashboardLayout.tsx`** — Add `hideMobileHeader?: boolean` prop and conditionally render the mobile `<header>` element.
+2. **`src/pages/Tutor.tsx`** — Pass `hideMobileHeader` to `DashboardLayout` and update the flex container height to `h-[calc(100vh-4rem)] md:h-[calc(100vh-3.5rem)]`.
 
-### What Will Work After This Fix
+### What Will Look Correct After This Fix
 
-- Changing Pomodoro Duration and clicking Save → shows "Preferences Saved" success toast
-- Changing Default Quiz Questions and clicking Save → shows "Preferences Saved" success toast  
-- Preferences persist across sessions (loaded from DB on next visit)
-- Profile name save button correctly responds to all edits
+- The Tutor page on mobile will occupy exactly the right height: full viewport minus only the bottom navigation bar.
+- No double header on mobile — only the Tutor's own internal header shows.
+- The `ChatInput` will render at its natural width (constrained to the chat column), not stretched.
+- The starter cards and chat area will have proper vertical room to scroll without overflowing.
