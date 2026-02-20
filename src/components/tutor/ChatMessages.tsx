@@ -19,19 +19,19 @@ interface ChatMessagesProps {
 
 export const ChatMessages = ({ messages, isLoading }: ChatMessagesProps) => {
   return (
-    <div className="space-y-6 pb-4 max-w-4xl mx-auto">
+    <div className="space-y-6 pb-4 max-w-4xl mx-auto w-full overflow-hidden">
       {messages.map((msg, idx) => (
         <div 
           key={idx} 
           className={cn(
-            "flex gap-4 animate-fade-in",
+            "flex gap-2 sm:gap-4 animate-fade-in w-full min-w-0",
             msg.role === 'user' ? "flex-row-reverse" : "flex-row"
           )}
           style={{ animationDelay: `${idx * 50}ms` }}
         >
           {/* Avatar */}
           <Avatar className={cn(
-            "w-9 h-9 shrink-0 border-2 shadow-sm",
+            "w-8 h-8 sm:w-9 sm:h-9 shrink-0 border-2 shadow-sm",
             msg.role === 'assistant' 
               ? "border-primary/20 bg-gradient-to-br from-primary/10 to-accent/10" 
               : "border-border"
@@ -48,7 +48,7 @@ export const ChatMessages = ({ messages, isLoading }: ChatMessagesProps) => {
 
           {/* Message content */}
           <div className={cn(
-            "flex flex-col max-w-[80%]",
+            "flex flex-col min-w-0 max-w-[calc(100%-2.5rem)] sm:max-w-[80%]",
             msg.role === 'user' ? "items-end" : "items-start"
           )}>
             {/* Image preview */}
@@ -72,17 +72,17 @@ export const ChatMessages = ({ messages, isLoading }: ChatMessagesProps) => {
             
             {/* Message bubble */}
             <div className={cn(
-              "px-4 py-3 rounded-2xl text-sm leading-relaxed",
+              "px-3 sm:px-4 py-3 rounded-2xl text-sm leading-relaxed w-full min-w-0 overflow-hidden",
               msg.role === 'user' 
                 ? "gradient-primary text-primary-foreground rounded-br-md shadow-lg" 
                 : "bg-muted/50 text-foreground rounded-bl-md border border-border/50"
             )}>
               {msg.role === 'assistant' ? (
-                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-ul:my-2 prose-li:my-0.5">
+                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-ul:my-2 prose-li:my-0.5 break-words overflow-wrap-anywhere">
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
               ) : (
-                <p className="whitespace-pre-wrap">{msg.content}</p>
+                <p className="whitespace-pre-wrap break-words">{msg.content}</p>
               )}
             </div>
           </div>
