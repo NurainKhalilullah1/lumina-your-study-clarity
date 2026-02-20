@@ -8,29 +8,19 @@ interface UserPreferences {
   pomodoro_duration: number;
 }
 
-interface UserPreferencesRow {
-  id: string;
-  user_id: string;
-  default_quiz_questions: number;
-  pomodoro_duration: number;
-  created_at: string;
-  updated_at: string;
-}
+const DEFAULT_PREFERENCES: UserPreferences = {
+  default_quiz_questions: 10,
+  pomodoro_duration: 25,
+};
 
 export const useUserPreferences = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [preferences, setPreferences] = useState<UserPreferences>({
-    default_quiz_questions: 10,
-    pomodoro_duration: 25,
-  });
+  const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-  const [originalPreferences, setOriginalPreferences] = useState<UserPreferences>({
-    default_quiz_questions: 10,
-    pomodoro_duration: 25,
-  });
+  const [originalPreferences, setOriginalPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
 
   // Load preferences on mount
   useEffect(() => {
@@ -41,20 +31,18 @@ export const useUserPreferences = () => {
       }
 
       try {
-        // Use type assertion since table was just created
         const { data, error } = await supabase
           .from("user_preferences" as any)
-          .select("*")
+          .select("default_quiz_questions, pomodoro_duration")
           .eq("user_id", user.id)
           .maybeSingle();
 
         if (error) throw error;
 
         if (data) {
-          const row = data as unknown as UserPreferencesRow;
-          const loaded = {
-            default_quiz_questions: row.default_quiz_questions,
-            pomodoro_duration: row.pomodoro_duration,
+          const loaded: UserPreferences = {
+            default_quiz_questions: (data as any).default_quiz_questions,
+            pomodoro_duration: (data as any).pomodoro_duration,
           };
           setPreferences(loaded);
           setOriginalPreferences(loaded);
@@ -89,7 +77,6 @@ export const useUserPreferences = () => {
     setSaving(true);
 
     try {
-      // Use type assertion since table was just created
       const { error } = await (supabase as any)
         .from("user_preferences")
         .upsert(
