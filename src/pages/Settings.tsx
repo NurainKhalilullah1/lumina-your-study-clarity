@@ -203,7 +203,8 @@ const Settings = () => {
     }
   };
 
-  const hasNameChanged = name !== (user?.user_metadata?.full_name || "");
+  const originalName = user?.user_metadata?.full_name ?? "";
+  const hasNameChanged = name !== originalName;
 
   const handleExportData = async () => {
     if (!user) return;

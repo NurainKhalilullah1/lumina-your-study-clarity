@@ -445,6 +445,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_preferences: {
+        Row: {
+          created_at: string
+          default_quiz_questions: number
+          id: string
+          pomodoro_duration: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          default_quiz_questions?: number
+          id?: string
+          pomodoro_duration?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          default_quiz_questions?: number
+          id?: string
+          pomodoro_duration?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_xp: {
         Row: {
           achievements: Json
