@@ -325,6 +325,12 @@ export function calculateStreakDays(events: StudyEventData[]): number {
   
   let streak = 0;
   const checkDate = new Date();
+
+  // If no activity today, start counting from yesterday (streak still alive until end of day)
+  if (!uniqueDays.has(checkDate.toDateString())) {
+    checkDate.setDate(checkDate.getDate() - 1);
+  }
+
   while (uniqueDays.has(checkDate.toDateString())) {
     streak++;
     checkDate.setDate(checkDate.getDate() - 1);
