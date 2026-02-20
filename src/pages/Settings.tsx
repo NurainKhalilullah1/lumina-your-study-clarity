@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { User, Shield, Loader2, Save, LogOut, BookOpen, Database, Info, Trash2, Download } from "lucide-react";
+import { User, Shield, Loader2, Save, LogOut, BookOpen, Database, Info, Trash2, Download, Camera } from "lucide-react";
 import { exportUserDataAsPDF } from "@/utils/exportUserData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,10 +34,13 @@ const Settings = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Profile state
   const [name, setName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isClearingHistory, setIsClearingHistory] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -51,12 +54,69 @@ const Settings = () => {
     savePreferences,
   } = useUserPreferences();
 
-  // Load current name when page opens
+  // Load current name and avatar when page opens
   useEffect(() => {
     if (user?.user_metadata?.full_name) {
       setName(user.user_metadata.full_name);
     }
+    if (user?.user_metadata?.avatar_url) {
+      setAvatarUrl(user.user_metadata.avatar_url);
+    } else {
+      // Also check the profiles table
+      supabase
+        .from("profiles")
+        .select("avatar_url")
+        .eq("id", user?.id ?? "")
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.avatar_url) setAvatarUrl(data.avatar_url);
+        });
+    }
   }, [user]);
+
+  // Function to Upload Avatar
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
+      toast({ title: "Invalid file type", description: "Please upload a JPG, PNG, WEBP, or GIF image.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Avatar must be under 5MB.", variant: "destructive" });
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const filePath = `${user.id}/avatar.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(filePath);
+
+      // Update auth metadata
+      await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
+
+      // Update profiles table
+      await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", user.id);
+
+      setAvatarUrl(publicUrl);
+      toast({ title: "Profile picture updated!", description: "Your new profile picture has been saved." });
+    } catch (error: any) {
+      toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+    } finally {
+      setIsUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   // Function to Save Name
   const handleUpdateProfile = async () => {
@@ -181,6 +241,50 @@ const Settings = () => {
           </div>
           
           <div className="space-y-4">
+            {/* Avatar Upload */}
+            <div className="flex items-center gap-4">
+              <div className="relative group">
+                <div className="w-20 h-20 rounded-full bg-muted border-2 border-border overflow-hidden flex items-center justify-center">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-8 h-8 text-muted-foreground" />
+                  )}
+                </div>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingAvatar}
+                  className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                >
+                  {isUploadingAvatar ? (
+                    <Loader2 className="w-5 h-5 text-white animate-spin" />
+                  ) : (
+                    <Camera className="w-5 h-5 text-white" />
+                  )}
+                </button>
+              </div>
+              <div>
+                <p className="font-medium text-foreground text-sm">Profile Picture</p>
+                <p className="text-xs text-muted-foreground mb-2">JPG, PNG, WEBP or GIF · Max 5MB</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingAvatar}
+                >
+                  {isUploadingAvatar ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Camera className="mr-2 h-3 w-3" />}
+                  {isUploadingAvatar ? "Uploading..." : avatarUrl ? "Change Photo" : "Upload Photo"}
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={handleAvatarUpload}
+                />
+              </div>
+            </div>
+
             <div className="grid gap-2">
               <Label htmlFor="name">Display Name</Label>
               <Input 
