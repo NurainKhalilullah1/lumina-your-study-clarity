@@ -92,6 +92,8 @@ export const useUserPreferences = () => {
 
       setOriginalPreferences(preferences);
       setHasChanges(false);
+      // Notify PomodoroContext to re-sync its work duration
+      window.dispatchEvent(new CustomEvent('preferencesUpdated', { detail: preferences }));
       toast({
         title: "Preferences Saved",
         description: "Your study preferences have been updated.",
