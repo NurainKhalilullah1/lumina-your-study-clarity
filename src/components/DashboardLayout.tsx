@@ -11,9 +11,10 @@ import { useToast } from "@/hooks/use-toast";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
+  hideMobileHeader?: boolean;
 }
 
-const DashboardLayout = ({ children }: DashboardLayoutProps) => {
+const DashboardLayout = ({ children, hideMobileHeader }: DashboardLayoutProps) => {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -34,16 +35,18 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
         <SidebarInset className="flex flex-col">
           {/* Mobile Header */}
-          <header className="flex items-center justify-between h-14 px-4 border-b border-border bg-card md:hidden">
-            <div className="flex items-center gap-2">
-              <button onClick={handleSignOut} className="p-2 -ml-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors">
-                <LogOut className="w-5 h-5" />
-              </button>
-              <StudyFlowLogo size="md" variant="purple" />
-              <span className="text-lg font-bold text-foreground">StudyFlow</span>
-            </div>
-            <ThemeToggle />
-          </header>
+          {!hideMobileHeader && (
+            <header className="flex items-center justify-between h-14 px-4 border-b border-border bg-card md:hidden">
+              <div className="flex items-center gap-2">
+                <button onClick={handleSignOut} className="p-2 -ml-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors">
+                  <LogOut className="w-5 h-5" />
+                </button>
+                <StudyFlowLogo size="md" variant="purple" />
+                <span className="text-lg font-bold text-foreground">StudyFlow</span>
+              </div>
+              <ThemeToggle />
+            </header>
+          )}
           
           {/* Desktop Header */}
           <div className="hidden md:flex items-center justify-between h-14 px-4 border-b border-border bg-card">
