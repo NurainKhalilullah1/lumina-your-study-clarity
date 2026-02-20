@@ -135,6 +135,8 @@ export const useTrackStudyEvent = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['study-events'] });
+      queryClient.invalidateQueries({ queryKey: ['goal-progress'] });
+      queryClient.invalidateQueries({ queryKey: ['gamification-events'] });
     },
   });
 };

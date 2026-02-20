@@ -316,6 +316,9 @@ export const useSubmitQuiz = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["quiz-session"] });
       queryClient.invalidateQueries({ queryKey: ["quiz-questions"] });
+      queryClient.invalidateQueries({ queryKey: ["goal-progress"] });
+      queryClient.invalidateQueries({ queryKey: ["gamification-quizzes"] });
+      queryClient.invalidateQueries({ queryKey: ["gamification-questions"] });
     },
   });
 };
