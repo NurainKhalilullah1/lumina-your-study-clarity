@@ -2,7 +2,7 @@ import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/s
 import DashboardSidebar from "@/components/DashboardSidebar";
 import BottomNav from "@/components/BottomNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { LogOut } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 import { StudyFlowLogo } from "@/components/StudyFlowLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -44,7 +44,12 @@ const DashboardLayout = ({ children, hideMobileHeader }: DashboardLayoutProps) =
                 <StudyFlowLogo size="md" variant="purple" />
                 <span className="text-lg font-bold text-foreground">StudyFlow</span>
               </div>
-              <ThemeToggle />
+              <div className="flex items-center gap-1">
+                <button onClick={() => navigate("/settings")} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
+                  <Settings className="w-5 h-5" />
+                </button>
+                <ThemeToggle />
+              </div>
             </header>
           )}
           
