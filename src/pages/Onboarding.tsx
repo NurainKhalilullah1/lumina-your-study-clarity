@@ -3,30 +3,39 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile, createProfile } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, UserPlus } from "lucide-react";
-import { motion } from "framer-motion";
+import { Sparkles, UserPlus, GraduationCap, BookOpen, ChevronRight, ChevronLeft } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { UNIVERSITIES } from "@/constants/universities";
+import { supabase } from "@/integrations/supabase/client";
 
 const Onboarding = () => {
   const { user, loading: authLoading } = useAuth();
   const { data: profile, isLoading: profileLoading, refetch } = useProfile(user?.id);
   const [isCreating, setIsCreating] = useState(false);
+  const [step, setStep] = useState(0);
+  const [university, setUniversity] = useState("");
+  const [customUniversity, setCustomUniversity] = useState("");
+  const [courseOfStudy, setCourseOfStudy] = useState("");
+  const [uniSearch, setUniSearch] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth", { replace: true });
     }
   }, [authLoading, user, navigate]);
 
-  // Redirect if profile already exists
   useEffect(() => {
     if (!profileLoading && profile) {
       navigate("/dashboard", { replace: true });
     }
   }, [profileLoading, profile, navigate]);
+
+  const selectedUniversity = university === "Other" ? customUniversity : university;
 
   const handleCompleteSignup = async () => {
     if (!user) return;
@@ -37,8 +46,18 @@ const Onboarding = () => {
         user.id,
         user.email,
         user.user_metadata?.full_name || user.user_metadata?.name,
-        user.user_metadata?.avatar_url
+        user.user_metadata?.avatar_url,
+        selectedUniversity || undefined,
+        courseOfStudy || undefined
       );
+
+      // Auto-join group if both fields are set
+      if (selectedUniversity && courseOfStudy) {
+        await supabase.rpc("upsert_user_group", {
+          p_university: selectedUniversity,
+          p_course_of_study: courseOfStudy,
+        });
+      }
       
       toast({
         title: "Welcome to StudyFlow!",
@@ -59,7 +78,6 @@ const Onboarding = () => {
     }
   };
 
-  // Show loading while checking auth or profile
   if (authLoading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -71,53 +89,169 @@ const Onboarding = () => {
     );
   }
 
+  const filteredUniversities = UNIVERSITIES.filter((u) =>
+    u.toLowerCase().includes(uniSearch.toLowerCase())
+  );
+
+  const steps = [
+    // Step 0: Welcome
+    <div key="welcome" className="text-center">
+      <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+        <UserPlus className="w-8 h-8 text-primary" />
+      </div>
+      <h1 className="text-2xl font-bold text-foreground mb-2">Welcome to StudyFlow</h1>
+      <p className="text-muted-foreground mb-6">
+        Let's set up your account. We'll ask a couple of quick questions to personalize your experience.
+      </p>
+      {user && (
+        <div className="mb-6 p-4 bg-muted/50 rounded-lg">
+          <p className="text-sm text-muted-foreground">Signing up as</p>
+          <p className="font-medium text-foreground">{user.email}</p>
+        </div>
+      )}
+      <Button onClick={() => setStep(1)} className="w-full" size="lg">
+        Get Started <ChevronRight className="w-4 h-4 ml-2" />
+      </Button>
+    </div>,
+
+    // Step 1: University
+    <div key="university">
+      <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+        <GraduationCap className="w-6 h-6 text-primary" />
+      </div>
+      <h2 className="text-xl font-bold text-foreground mb-1 text-center">Select Your University</h2>
+      <p className="text-sm text-muted-foreground text-center mb-4">This helps us connect you with classmates.</p>
+
+      <Input
+        placeholder="Search universities..."
+        value={uniSearch}
+        onChange={(e) => setUniSearch(e.target.value)}
+        className="mb-3"
+      />
+
+      <div className="max-h-48 overflow-y-auto space-y-1 mb-3 border border-border rounded-lg p-2">
+        {filteredUniversities.map((u) => (
+          <button
+            key={u}
+            onClick={() => { setUniversity(u); setUniSearch(""); }}
+            className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+              university === u
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-muted text-foreground"
+            }`}
+          >
+            {u}
+          </button>
+        ))}
+        <button
+          onClick={() => { setUniversity("Other"); setUniSearch(""); }}
+          className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+            university === "Other"
+              ? "bg-primary text-primary-foreground"
+              : "hover:bg-muted text-foreground"
+          }`}
+        >
+          Other (type your own)
+        </button>
+      </div>
+
+      {university === "Other" && (
+        <Input
+          placeholder="Enter your university name"
+          value={customUniversity}
+          onChange={(e) => setCustomUniversity(e.target.value)}
+          className="mb-3"
+        />
+      )}
+
+      <div className="flex gap-3">
+        <Button variant="outline" onClick={() => setStep(0)} className="flex-1">
+          <ChevronLeft className="w-4 h-4 mr-1" /> Back
+        </Button>
+        <Button
+          onClick={() => setStep(2)}
+          disabled={!selectedUniversity}
+          className="flex-1"
+        >
+          Next <ChevronRight className="w-4 h-4 ml-1" />
+        </Button>
+      </div>
+    </div>,
+
+    // Step 2: Course
+    <div key="course">
+      <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+        <BookOpen className="w-6 h-6 text-primary" />
+      </div>
+      <h2 className="text-xl font-bold text-foreground mb-1 text-center">Your Course of Study</h2>
+      <p className="text-sm text-muted-foreground text-center mb-4">e.g. Computer Science, Mechanical Engineering</p>
+
+      <div className="mb-2">
+        <Label htmlFor="course">Course of Study</Label>
+        <Input
+          id="course"
+          placeholder="Enter your course"
+          value={courseOfStudy}
+          onChange={(e) => setCourseOfStudy(e.target.value)}
+        />
+      </div>
+
+      <div className="p-3 bg-muted/50 rounded-lg mb-4 text-sm text-muted-foreground">
+        <p><strong>University:</strong> {selectedUniversity}</p>
+        {courseOfStudy && <p><strong>Course:</strong> {courseOfStudy}</p>}
+      </div>
+
+      <div className="flex gap-3">
+        <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
+          <ChevronLeft className="w-4 h-4 mr-1" /> Back
+        </Button>
+        <Button
+          onClick={handleCompleteSignup}
+          disabled={isCreating || !courseOfStudy}
+          className="flex-1"
+        >
+          {isCreating ? (
+            <><Sparkles className="w-4 h-4 mr-2 animate-spin" /> Creating...</>
+          ) : (
+            <><UserPlus className="w-4 h-4 mr-2" /> Complete Signup</>
+          )}
+        </Button>
+      </div>
+    </div>,
+  ];
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md text-center"
+        className="w-full max-w-md"
       >
         <div className="bg-card border border-border rounded-2xl p-8 shadow-lg">
-          <div className="mb-6">
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <UserPlus className="w-8 h-8 text-primary" />
-            </div>
-            <h1 className="text-2xl font-bold text-foreground mb-2">
-              Complete Your Signup
-            </h1>
-            <p className="text-muted-foreground">
-              We couldn't find an existing StudyFlow account for this login. 
-              Click below to create your account and get started.
-            </p>
+          {/* Progress dots */}
+          <div className="flex justify-center gap-2 mb-6">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  i <= step ? "bg-primary" : "bg-muted"
+                }`}
+              />
+            ))}
           </div>
 
-          {user && (
-            <div className="mb-6 p-4 bg-muted/50 rounded-lg">
-              <p className="text-sm text-muted-foreground">Signing up as</p>
-              <p className="font-medium text-foreground">{user.email}</p>
-            </div>
-          )}
-
-          <Button
-            onClick={handleCompleteSignup}
-            disabled={isCreating}
-            className="w-full"
-            size="lg"
-          >
-            {isCreating ? (
-              <>
-                <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-                Creating Account...
-              </>
-            ) : (
-              <>
-                <UserPlus className="w-4 h-4 mr-2" />
-                Complete Signup
-              </>
-            )}
-          </Button>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              {steps[step]}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </motion.div>
     </div>

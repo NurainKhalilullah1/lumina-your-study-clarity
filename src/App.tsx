@@ -22,6 +22,7 @@ import Quiz from "./pages/Quiz";
 import QuizHistory from "./pages/QuizHistory";
 import Settings from "./pages/Settings";
 import Leaderboard from "./pages/Leaderboard";
+import Community from "./pages/Community";
 import Features from "./pages/Features";
 import About from "./pages/About";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -149,6 +150,14 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <Leaderboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/community"
+                element={
+                  <ProtectedRoute>
+                    <Community />
                   </ProtectedRoute>
                 }
               />

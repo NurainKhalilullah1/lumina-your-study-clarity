@@ -8,6 +8,8 @@ export interface Profile {
   avatar_url: string | null;
   storage_limit_bytes: number;
   storage_used_bytes: number;
+  university: string | null;
+  course_of_study: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -35,7 +37,14 @@ export const useProfile = (userId: string | undefined) => {
   });
 };
 
-export const createProfile = async (userId: string, email?: string, fullName?: string, avatarUrl?: string) => {
+export const createProfile = async (
+  userId: string,
+  email?: string,
+  fullName?: string,
+  avatarUrl?: string,
+  university?: string,
+  courseOfStudy?: string
+) => {
   const { data, error } = await supabase
     .from("profiles")
     .insert({
@@ -43,6 +52,8 @@ export const createProfile = async (userId: string, email?: string, fullName?: s
       email: email || null,
       full_name: fullName || null,
       avatar_url: avatarUrl || null,
+      university: university || null,
+      course_of_study: courseOfStudy || null,
     })
     .select()
     .single();
