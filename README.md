@@ -1,73 +1,169 @@
-# Welcome to your Lovable project
+# StudyFlow 📚
 
-## Project info
+**StudyFlow** is an AI-powered study companion built for Nigerian university students. It brings together everything you need to study smarter — from an AI tutor and quiz generator to flashcards, a Pomodoro timer, and a university-based community — all in one app.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## ✨ Features
 
-## How can I edit this code?
+### 🤖 AI Tutor
+- Chat-based AI tutor powered by Google Gemini
+- Upload documents and images for context-aware help
+- Conversation history with multiple sessions
+- Export chat conversations
 
-There are several ways of editing your application.
+### 📝 Quiz Generator
+- Auto-generate quizzes from your uploaded documents
+- Configurable number of questions and time limits
+- Flagging, review, and detailed results with score tracking
+- Full quiz history and analytics
 
-**Use Lovable**
+### 🃏 Flashcards
+- AI-generated flashcards from your study materials
+- Flip-card viewer with deck management
+- Create flashcards directly from tutor conversations
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### 📄 Document Management
+- Upload and manage PDFs and study materials
+- Automatic text extraction for AI features
+- Storage quota tracking per user
 
-Changes made via Lovable will be committed automatically to this repo.
+### ⏱️ Pomodoro Timer
+- Built-in Pomodoro timer with customizable durations
+- Persistent across pages via global context
+- Tracks study time for gamification
 
-**Use your preferred IDE**
+### 📊 Dashboard & Analytics
+- Study stats: time studied, quizzes taken, flashcards created
+- Weekly goals with progress tracking
+- XP system with levels and achievements
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 🏆 Gamification & Leaderboard
+- Earn XP for studying, completing quizzes, and more
+- Weekly leagues with promotion/demotion system
+- Global and league-specific leaderboards
+- Achievement badges
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 👥 Community
+- University and course-based study groups (auto-joined)
+- Create posts, upvote, and comment
+- Filter by category: Questions, Resources, Discussion, Tips
 
-Follow these steps:
+### 📅 Assignments
+- Track assignments with due dates, priority, and status
+- Filter by course and type
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+### 📚 Courses
+- Add and manage your university courses
+- Color-coded course cards
+
+### ⚙️ Settings
+- Profile management (name, avatar, university, course of study)
+- Customizable Pomodoro duration and default quiz questions
+- Theme toggle (light/dark/system)
+- Data export and account deletion
+
+## 🏫 Supported Universities
+
+- University of Lagos (UNILAG)
+- University of Ibadan (UI)
+- Obafemi Awolowo University (OAU)
+- University of Ilorin (UNILORIN)
+- Lagos State University (LASU)
+- Ahmadu Bello University (ABU)
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18, TypeScript, Vite |
+| Styling | Tailwind CSS, shadcn/ui |
+| State Management | TanStack React Query, React Context |
+| Routing | React Router v6 |
+| Animation | Framer Motion |
+| Backend | Supabase (Auth, Database, Storage, Edge Functions) |
+| AI | Google Generative AI (Gemini) |
+| Mobile | Capacitor (Android) |
+
+## 📱 Mobile App (Android)
+
+StudyFlow can be built as a native Android app using Capacitor. After cloning the repo:
+
+```bash
+# Install dependencies
+npm install
+
+# Add Android platform
+npx cap add android
+
+# Update native dependencies
+npx cap update android
+
+# Build the web app
+npm run build
+
+# Sync web assets to Android
+npx cap sync
+
+# Open in Android Studio
+npx cap open android
+```
+
+Then hit **Run** in Android Studio to launch on your emulator or device.
+
+> **Live Reload:** During development, the app connects to the Lovable preview server so changes appear instantly on your device.
+
+## 🚀 Getting Started (Web)
+
+```bash
+# Clone the repository
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Navigate to project directory
+cd studyflow
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The app will be available at `http://localhost:8080`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 📁 Project Structure
 
-**Use GitHub Codespaces**
+```
+src/
+├── assets/          # Logos and static images
+├── components/      # Reusable UI components
+│   ├── community/   # Community feature components
+│   ├── dashboard/   # Dashboard widgets
+│   ├── documents/   # Document management components
+│   ├── quiz/        # Quiz interface components
+│   ├── tutor/       # AI tutor components
+│   └── ui/          # shadcn/ui primitives
+├── constants/       # App constants (universities, etc.)
+├── contexts/        # React contexts (Auth, Pomodoro)
+├── hooks/           # Custom React hooks
+├── integrations/    # Supabase client and types
+├── lib/             # Utility libraries
+├── pages/           # Route page components
+└── utils/           # Helper utilities
+supabase/
+├── functions/       # Edge functions
+└── migrations/      # Database migrations
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 🔐 Authentication
 
-## What technologies are used for this project?
+- Email/password signup and login
+- Onboarding flow for university and course selection
+- Protected routes with automatic redirect
+- Profile creation on first sign-up
 
-This project is built with:
+## 📄 License
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+This project is proprietary. All rights reserved.
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Built with ❤️ using [Lovable](https://lovable.dev)
