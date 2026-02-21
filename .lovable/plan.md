@@ -1,233 +1,58 @@
 
 
-## Community Feature with University and Course Onboarding
+## Convert StudyFlow Web App to Native Android App with Capacitor
 
-### Overview
+This plan sets up your StudyFlow web app as a native Android application using Capacitor, so you can build and run it in Android Studio.
 
-This plan adds a full community system to StudyFlow where students are automatically grouped by their university and course of study. New users select these during onboarding; existing users set them in Settings. The community feed shows posts from everyone, but each user also belongs to an automatic group for their university + course combination.
+### What Will Happen
 
----
+1. **Install Capacitor** -- A bridge layer that wraps your web app into a native Android shell
+2. **Configure the project** -- Set up the app ID, name, and live-reload connection to Lovable's preview server
+3. **You build locally** -- After setup, you'll pull the code to your computer, open it in Android Studio, and run it on your phone or emulator
 
-### Part 1: Database Changes
+### Steps
 
-**A. Add `university` and `course_of_study` columns to `profiles` table**
+#### Step 1: Install Capacitor Dependencies
 
-```sql
-ALTER TABLE profiles
-  ADD COLUMN university text,
-  ADD COLUMN course_of_study text;
-```
+The following packages will be added to the project:
+- `@capacitor/core`
+- `@capacitor/cli` (dev dependency)
+- `@capacitor/android`
 
-These two fields determine automatic group membership. When a user saves both, they are auto-added to the matching group (created if it does not exist).
+#### Step 2: Initialize Capacitor
 
-**B. Create 5 new tables**
+A `capacitor.config.ts` file will be created in the project root with:
+- **App ID**: `app.lovable.27168b78f9c4486c84cd8eab9a4eb6e7`
+- **App Name**: `StudyFlow`
+- **Web Dir**: `dist`
+- **Live-reload server URL**: Points to your Lovable preview so you can see changes instantly on your device during development
 
-| Table | Purpose |
-|---|---|
-| `community_posts` | All posts in the feed (questions, tips, discussions, achievements) |
-| `community_comments` | Flat comment threads on posts |
-| `community_upvotes` | One upvote per user per post |
-| `study_groups` | Auto-created groups based on university + course_of_study |
-| `study_group_members` | Tracks which users belong to which groups |
+#### Step 3: What You Do on Your Computer
 
-**`community_posts`**
-- id (uuid, PK)
-- user_id (uuid, FK to profiles, NOT NULL)
-- content (text, NOT NULL)
-- category (text: 'question', 'tip', 'discussion', 'achievement')
-- group_id (uuid, FK to study_groups, nullable -- for group-specific posts)
-- upvote_count (integer, default 0)
-- comment_count (integer, default 0)
-- created_at (timestamptz)
+Once the code changes are made in Lovable, you will need to:
 
-**`community_comments`**
-- id (uuid, PK)
-- post_id (uuid, FK to community_posts)
-- user_id (uuid, FK to profiles)
-- content (text)
-- created_at (timestamptz)
+1. **Export to GitHub** -- Click the GitHub button in Lovable settings to push the code to your own repository
+2. **Clone and install** -- Pull the repo to your computer and run `npm install`
+3. **Add Android platform** -- Run `npx cap add android`
+4. **Update native dependencies** -- Run `npx cap update android`
+5. **Build the web app** -- Run `npm run build`
+6. **Sync to Android** -- Run `npx cap sync`
+7. **Open in Android Studio** -- Run `npx cap open android`
+8. **Run the app** -- Click the Run button in Android Studio to launch on your emulator or connected phone
 
-**`community_upvotes`**
-- id (uuid, PK)
-- post_id (uuid, FK to community_posts)
-- user_id (uuid, FK to profiles)
-- UNIQUE(post_id, user_id)
-
-**`study_groups`**
-- id (uuid, PK)
-- university (text, NOT NULL)
-- course_of_study (text, NOT NULL)
-- member_count (integer, default 0)
-- created_at (timestamptz)
-- UNIQUE(university, course_of_study)
-
-**`study_group_members`**
-- id (uuid, PK)
-- group_id (uuid, FK to study_groups)
-- user_id (uuid, FK to profiles)
-- joined_at (timestamptz)
-- UNIQUE(group_id, user_id)
-
-**C. RLS Policies**
-
-- All authenticated users can **read** all posts, comments, groups, and members (community is public within the app)
-- Users can only **insert/update/delete** their own posts and comments
-- Users can only **insert/delete** their own upvotes
-- Group membership is managed automatically (insert/delete own only)
-- `study_groups` are created by a database function, not directly by users
-
-**D. Database function: `upsert_user_group`**
-
-A `SECURITY DEFINER` function that:
-1. Takes `p_university` and `p_course_of_study` as parameters
-2. Creates the study_group if it does not exist (using `ON CONFLICT DO NOTHING`)
-3. Removes the user from any previous group
-4. Inserts the user into the matching group
-5. Updates `member_count` on both the old and new groups
-
-This function is called whenever a user saves their university + course in onboarding or settings.
-
-**E. Update `profiles` RLS**
-
-The existing SELECT policy only allows users to view their own profile. For the community to work (showing post author names and avatars), we need an additional SELECT policy:
-
-```sql
-CREATE POLICY "Authenticated users can view all profiles"
-ON profiles FOR SELECT
-USING (auth.uid() IS NOT NULL);
-```
-
-This replaces (or supplements) the existing self-only SELECT policies so that community post cards can display author info.
-
----
-
-### Part 2: Onboarding Flow Update
-
-**File: `src/pages/Onboarding.tsx`**
-
-Currently the onboarding page just has a single "Complete Signup" button. It will be expanded to a multi-step form:
-
-- **Step 1**: Welcome message (existing)
-- **Step 2**: Select University (searchable dropdown with a predefined list of Nigerian universities, plus an "Other" option with a text input)
-- **Step 3**: Enter Course of Study (text input, e.g. "Computer Science", "Mechanical Engineering")
-- **Step 4**: Confirm and create profile
-
-When the user clicks "Complete Signup":
-1. `createProfile()` is called with the university and course_of_study
-2. The `upsert_user_group` RPC is called to auto-add them to their group
-
-The Profile interface in `useProfile.ts` will be updated to include `university` and `course_of_study` fields.
-
----
-
-### Part 3: Settings Page Update
-
-**File: `src/pages/Settings.tsx`**
-
-A new "University & Course" section is added between Profile and Study Preferences:
-
-- University dropdown (same list as onboarding)
-- Course of Study text input
-- Save button
-
-When saved:
-1. Updates `profiles` table with new university and course_of_study
-2. Calls `upsert_user_group` RPC to move the user to the correct group
-3. Shows a success toast
-
-If the user already has a university and course set, the fields are pre-filled. Changing them moves them to a different group automatically.
-
----
-
-### Part 4: Community Pages and Components
-
-**New route: `/community`**
-
-Sub-routes:
-- `/community` -- Main feed (all posts from all users)
-- `/community/my-group` -- Posts from the user's own university + course group
-
-**New files:**
-
-| File | Purpose |
-|---|---|
-| `src/pages/Community.tsx` | Main community page with tabs: "All Posts" and "My Group" |
-| `src/components/community/PostCard.tsx` | Displays a single post with author avatar/name, content, category badge, upvote button, comment count |
-| `src/components/community/CreatePostDialog.tsx` | Dialog to write a new post (content textarea, category selector, optional "post to my group" toggle) |
-| `src/components/community/CommentSection.tsx` | Expandable list of comments under a post, with input to add a new comment |
-| `src/components/community/GroupInfo.tsx` | Card showing the user's current group (university + course), member count |
-| `src/hooks/useCommunity.ts` | React Query hooks for fetching posts, comments, upvotes; mutations for creating posts, commenting, toggling upvotes |
-
-**Feed behavior:**
-- "All Posts" tab: shows all `community_posts` ordered by `created_at DESC`, paginated
-- "My Group" tab: filters posts where `group_id` matches the user's group
-- Each post card shows the author's name, avatar, university badge, category label, content, upvote count, and comment count
-- Clicking a post expands the comment section inline
-- Floating action button to create a new post
-
-**Upvote logic:**
-- Toggle: if the user has already upvoted, clicking again removes the upvote
-- `upvote_count` on `community_posts` is updated via a trigger or optimistic UI + server sync
-
----
-
-### Part 5: Navigation Updates
-
-**`src/components/DashboardSidebar.tsx`**
-- Add "Community" item with `Users` icon between "Quiz History" and "Leaderboard"
-
-**`src/components/BottomNav.tsx`**
-- Replace "Settings" with "Community" (`Users` icon) since Settings is accessible from the sidebar on desktop and can be reached via the sidebar hamburger menu on mobile
-
-**`src/App.tsx`**
-- Add route: `/community` wrapped in `ProtectedRoute`
-
----
-
-### Part 6: Implementation Order
-
-1. **Migration**: Add columns to `profiles`, create 5 new tables, RLS policies, `upsert_user_group` function, update profiles SELECT policy
-2. **Profile hook**: Update `useProfile.ts` interface and `createProfile` to include university + course_of_study
-3. **Onboarding**: Expand `Onboarding.tsx` with university/course selection steps
-4. **Settings**: Add university/course section to `Settings.tsx`
-5. **Community hook**: Create `useCommunity.ts` with all React Query hooks
-6. **Community page**: Build `Community.tsx` with feed tabs
-7. **Community components**: Build `PostCard`, `CreatePostDialog`, `CommentSection`, `GroupInfo`
-8. **Navigation**: Update sidebar, bottom nav, and router
+After any future changes you pull from GitHub, just run `npx cap sync` again to update the Android project.
 
 ---
 
 ### Technical Details
 
-**University list** (hardcoded constant, expandable):
-A predefined array of Nigerian universities (UNILAG, OAU, UI, LASU, ABU, UNILORIN, etc.) matching the logos already in `src/assets/logos/`. Includes an "Other" option where the user types the name.
+**New file:**
+- `capacitor.config.ts` -- Capacitor configuration
 
-**Auto-group flow:**
-```text
-User saves university + course
-  --> UPDATE profiles SET university=..., course_of_study=...
-  --> RPC upsert_user_group(university, course_of_study)
-      --> INSERT INTO study_groups ON CONFLICT DO NOTHING
-      --> DELETE FROM study_group_members WHERE user_id = auth.uid()
-      --> INSERT INTO study_group_members (group_id, user_id)
-      --> UPDATE member_count on old and new groups
-```
+**Modified file:**
+- `package.json` -- Add Capacitor dependencies
 
-**Files to create:**
-- `src/pages/Community.tsx`
-- `src/components/community/PostCard.tsx`
-- `src/components/community/CreatePostDialog.tsx`
-- `src/components/community/CommentSection.tsx`
-- `src/components/community/GroupInfo.tsx`
-- `src/hooks/useCommunity.ts`
+**No existing functionality is changed** -- this only adds the native wrapper layer on top of your existing web app.
 
-**Files to modify:**
-- `src/hooks/useProfile.ts` -- add university, course_of_study to interface
-- `src/pages/Onboarding.tsx` -- multi-step form with university/course selection
-- `src/pages/Settings.tsx` -- new University and Course section
-- `src/components/DashboardSidebar.tsx` -- add Community menu item
-- `src/components/BottomNav.tsx` -- replace Settings with Community
-- `src/App.tsx` -- add /community route
-
-**Database migration:** 1 migration file with all schema changes, RLS policies, and the `upsert_user_group` function.
+For more details, refer to the Lovable blog post on building native apps with Capacitor.
 
