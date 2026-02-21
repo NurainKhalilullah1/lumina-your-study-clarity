@@ -106,6 +106,108 @@ export type Database = {
         }
         Relationships: []
       }
+      community_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_posts: {
+        Row: {
+          category: string
+          comment_count: number
+          content: string
+          created_at: string
+          group_id: string | null
+          id: string
+          upvote_count: number
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          comment_count?: number
+          content: string
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          upvote_count?: number
+          user_id: string
+        }
+        Update: {
+          category?: string
+          comment_count?: number
+          content?: string
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          upvote_count?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_posts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_upvotes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_upvotes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           context_file_path: string | null
@@ -269,32 +371,38 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          course_of_study: string | null
           created_at: string
           email: string | null
           full_name: string | null
           id: string
           storage_limit_bytes: number
           storage_used_bytes: number
+          university: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
+          course_of_study?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id: string
           storage_limit_bytes?: number
           storage_used_bytes?: number
+          university?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
+          course_of_study?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
           storage_limit_bytes?: number
           storage_used_bytes?: number
+          university?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -406,6 +514,59 @@ export type Database = {
           id?: string
           metadata?: Json | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      study_group_members: {
+        Row: {
+          group_id: string
+          id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_groups: {
+        Row: {
+          course_of_study: string
+          created_at: string
+          id: string
+          member_count: number
+          university: string
+        }
+        Insert: {
+          course_of_study: string
+          created_at?: string
+          id?: string
+          member_count?: number
+          university: string
+        }
+        Update: {
+          course_of_study?: string
+          created_at?: string
+          id?: string
+          member_count?: number
+          university?: string
         }
         Relationships: []
       }
@@ -578,6 +739,10 @@ export type Database = {
         }[]
       }
       process_league_week: { Args: never; Returns: undefined }
+      upsert_user_group: {
+        Args: { p_course_of_study: string; p_university: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

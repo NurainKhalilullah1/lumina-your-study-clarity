@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { User, Shield, Loader2, Save, LogOut, BookOpen, Database, Info, Trash2, Download, Camera } from "lucide-react";
+import { User, Shield, Loader2, Save, LogOut, BookOpen, Database, Info, Trash2, Download, Camera, GraduationCap } from "lucide-react";
 import { exportUserDataAsPDF } from "@/utils/exportUserData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { useProfile } from "@/hooks/useProfile";
+import { UNIVERSITIES } from "@/constants/universities";
 
 const Settings = () => {
   const { user, signOut } = useAuth();
@@ -44,6 +46,13 @@ const Settings = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isClearingHistory, setIsClearingHistory] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  
+  // University & Course state
+  const { data: profile, refetch: refetchProfile } = useProfile(user?.id);
+  const [university, setUniversity] = useState("");
+  const [customUniversity, setCustomUniversity] = useState("");
+  const [courseOfStudy, setCourseOfStudy] = useState("");
+  const [savingUniCourse, setSavingUniCourse] = useState(false);
 
   // Study preferences hook
   const {
@@ -73,6 +82,43 @@ const Settings = () => {
         });
     }
   }, [user]);
+
+  // Load university/course from profile
+  useEffect(() => {
+    if (profile) {
+      if (profile.university) {
+        const isPreset = UNIVERSITIES.includes(profile.university as any);
+        setUniversity(isPreset ? profile.university : "Other");
+        if (!isPreset) setCustomUniversity(profile.university);
+      }
+      if (profile.course_of_study) setCourseOfStudy(profile.course_of_study);
+    }
+  }, [profile]);
+
+  const selectedUniversity = university === "Other" ? customUniversity : university;
+
+  const handleSaveUniCourse = async () => {
+    if (!user || !selectedUniversity || !courseOfStudy) return;
+    setSavingUniCourse(true);
+    try {
+      await supabase.from("profiles").update({
+        university: selectedUniversity,
+        course_of_study: courseOfStudy,
+      }).eq("id", user.id);
+
+      await supabase.rpc("upsert_user_group", {
+        p_university: selectedUniversity,
+        p_course_of_study: courseOfStudy,
+      });
+
+      await refetchProfile();
+      toast({ title: "Saved!", description: "Your university and course have been updated." });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setSavingUniCourse(false);
+    }
+  };
 
   // Function to Upload Avatar
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -314,6 +360,55 @@ const Settings = () => {
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
               </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* University & Course Section */}
+        <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <GraduationCap className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-semibold text-foreground">University & Course</h2>
+            </div>
+            <Button
+              size="sm"
+              onClick={handleSaveUniCourse}
+              disabled={savingUniCourse || !selectedUniversity || !courseOfStudy}
+            >
+              {savingUniCourse ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Save
+            </Button>
+          </div>
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label>University</Label>
+              <Select value={university} onValueChange={(val) => { setUniversity(val); if (val !== "Other") setCustomUniversity(""); }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your university" />
+                </SelectTrigger>
+                <SelectContent>
+                  {UNIVERSITIES.map((u) => (
+                    <SelectItem key={u} value={u}>{u}</SelectItem>
+                  ))}
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+              {university === "Other" && (
+                <Input
+                  placeholder="Enter your university name"
+                  value={customUniversity}
+                  onChange={(e) => setCustomUniversity(e.target.value)}
+                />
+              )}
+            </div>
+            <div className="grid gap-2">
+              <Label>Course of Study</Label>
+              <Input
+                placeholder="e.g. Computer Science"
+                value={courseOfStudy}
+                onChange={(e) => setCourseOfStudy(e.target.value)}
+              />
             </div>
           </div>
         </div>
