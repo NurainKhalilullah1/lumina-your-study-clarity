@@ -1,58 +1,46 @@
 
 
-## Convert StudyFlow Web App to Native Android App with Capacitor
+## Fix npm Install and Build Issues
 
-This plan sets up your StudyFlow web app as a native Android application using Capacitor, so you can build and run it in Android Studio.
+### Problems Found
 
-### What Will Happen
+1. **Conflicting lock files** -- The project has both `bun.lockb`/`bun.lock` (from Bun) and `package-lock.json` (from npm). This causes npm to fail during install, which means dev tools like Vite never get set up.
 
-1. **Install Capacitor** -- A bridge layer that wraps your web app into a native Android shell
-2. **Configure the project** -- Set up the app ID, name, and live-reload connection to Lovable's preview server
-3. **You build locally** -- After setup, you'll pull the code to your computer, open it in Android Studio, and run it on your phone or emulator
+2. **"vite is not recognized"** -- This error happens because `npm install` failed before it could install `vite` (which lives in devDependencies). Once the lock file conflict is resolved and install succeeds, Vite will work.
 
-### Steps
+3. **`@capacitor/cli` in wrong section** -- It's a build tool and should be in devDependencies, not dependencies.
 
-#### Step 1: Install Capacitor Dependencies
+### What Will Be Done
 
-The following packages will be added to the project:
-- `@capacitor/core`
-- `@capacitor/cli` (dev dependency)
-- `@capacitor/android`
+1. **Delete `bun.lockb` and `bun.lock`** -- Remove the Bun lock files that conflict with npm
+2. **Delete `package-lock.json`** -- Remove the stale lock file so a fresh one is generated
+3. **Fix `package.json`** -- Move `@capacitor/cli` from `dependencies` to `devDependencies`
 
-#### Step 2: Initialize Capacitor
+### After Pulling the Updated Code
 
-A `capacitor.config.ts` file will be created in the project root with:
-- **App ID**: `app.lovable.27168b78f9c4486c84cd8eab9a4eb6e7`
-- **App Name**: `StudyFlow`
-- **Web Dir**: `dist`
-- **Live-reload server URL**: Points to your Lovable preview so you can see changes instantly on your device during development
+Run these commands on your computer:
 
-#### Step 3: What You Do on Your Computer
+```
+rm -rf node_modules
+npm install
+npx cap add android
+npm run build
+npx cap sync
+npx cap open android
+```
 
-Once the code changes are made in Lovable, you will need to:
-
-1. **Export to GitHub** -- Click the GitHub button in Lovable settings to push the code to your own repository
-2. **Clone and install** -- Pull the repo to your computer and run `npm install`
-3. **Add Android platform** -- Run `npx cap add android`
-4. **Update native dependencies** -- Run `npx cap update android`
-5. **Build the web app** -- Run `npm run build`
-6. **Sync to Android** -- Run `npx cap sync`
-7. **Open in Android Studio** -- Run `npx cap open android`
-8. **Run the app** -- Click the Run button in Android Studio to launch on your emulator or connected phone
-
-After any future changes you pull from GitHub, just run `npx cap sync` again to update the Android project.
-
----
+If `npm install` still gives issues, try:
+```
+npm install --legacy-peer-deps
+```
 
 ### Technical Details
 
-**New file:**
-- `capacitor.config.ts` -- Capacitor configuration
+**Files to delete:**
+- `bun.lockb`
+- `bun.lock`
+- `package-lock.json` (regenerated automatically by `npm install`)
 
-**Modified file:**
-- `package.json` -- Add Capacitor dependencies
-
-**No existing functionality is changed** -- this only adds the native wrapper layer on top of your existing web app.
-
-For more details, refer to the Lovable blog post on building native apps with Capacitor.
+**File to modify:**
+- `package.json` -- Move `@capacitor/cli` from `dependencies` to `devDependencies`
 
