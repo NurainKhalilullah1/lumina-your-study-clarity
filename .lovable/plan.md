@@ -1,46 +1,26 @@
 
 
-## Fix npm Install and Build Issues
+## Fix Dashboard Layout and Build Error
 
-### Problems Found
+### Problem 1: Dashboard Layout Overflow
+The dashboard uses a 5-column grid (`lg:grid-cols-5`) for the top row, cramming 3 small cards + a 2-column-span StudyStatsDashboard. The StudyStatsDashboard itself uses a 6-column grid for stat cards. On typical laptop screens (~1024-1440px), this causes the stat cards to overflow and get cut off.
 
-1. **Conflicting lock files** -- The project has both `bun.lockb`/`bun.lock` (from Bun) and `package-lock.json` (from npm). This causes npm to fail during install, which means dev tools like Vite never get set up.
+**Fix:** Restructure the layout so the top widgets (Pomodoro, Weekly Goals, XP) sit in a 3-column grid on their own row, and StudyStatsDashboard gets its own full-width row below. Inside StudyStatsDashboard, change the stat cards grid from 6 columns to a responsive 2/3-column layout.
 
-2. **"vite is not recognized"** -- This error happens because `npm install` failed before it could install `vite` (which lives in devDependencies). Once the lock file conflict is resolved and install succeeds, Vite will work.
+### Changes
 
-3. **`@capacitor/cli` in wrong section** -- It's a build tool and should be in devDependencies, not dependencies.
+**`src/pages/Dashboard.tsx`** (lines 100-113):
+- Change from single 5-column grid to two separate rows:
+  - Row 1: `grid-cols-1 md:grid-cols-3` for Pomodoro, Weekly Goals, XP Progress
+  - Row 2: Full-width StudyStatsDashboard
 
-### What Will Be Done
+**`src/components/dashboard/StudyStatsDashboard.tsx`** (lines 48, 85):
+- Loading skeleton grid: change `xl:grid-cols-6` to `lg:grid-cols-3`
+- Stat cards grid: change `xl:grid-cols-6` to `lg:grid-cols-3`
 
-1. **Delete `bun.lockb` and `bun.lock`** -- Remove the Bun lock files that conflict with npm
-2. **Delete `package-lock.json`** -- Remove the stale lock file so a fresh one is generated
-3. **Fix `package.json`** -- Move `@capacitor/cli` from `dependencies` to `devDependencies`
+### Problem 2: Build Error in Edge Function
+`error.message` fails because `error` is typed as `unknown` in the catch block.
 
-### After Pulling the Updated Code
-
-Run these commands on your computer:
-
-```
-rm -rf node_modules
-npm install
-npx cap add android
-npm run build
-npx cap sync
-npx cap open android
-```
-
-If `npm install` still gives issues, try:
-```
-npm install --legacy-peer-deps
-```
-
-### Technical Details
-
-**Files to delete:**
-- `bun.lockb`
-- `bun.lock`
-- `package-lock.json` (regenerated automatically by `npm install`)
-
-**File to modify:**
-- `package.json` -- Move `@capacitor/cli` from `dependencies` to `devDependencies`
+**`supabase/functions/process-leagues/index.ts`** (line 25):
+- Change `error.message` to `(error as Error).message`
 
