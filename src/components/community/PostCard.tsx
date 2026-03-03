@@ -22,19 +22,25 @@ interface PostCardProps {
 const PostCard = ({ post, isUpvoted, onToggleUpvote }: PostCardProps) => {
   const [showComments, setShowComments] = useState(false);
 
+  // Extract optional title from first line
+  const lines = post.content.split("\n");
+  const hasTitle = lines.length > 1 && lines[0].length <= 80;
+  const title = hasTitle ? lines[0] : null;
+  const body = hasTitle ? lines.slice(1).join("\n").trim() : post.content;
+
   return (
-    <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+    <div className="bg-card border border-border rounded-xl p-4 space-y-3 hover:bg-accent/30 transition-colors">
       {/* Author row */}
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
+        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
           {post.profiles?.avatar_url ? (
             <img src={post.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
           ) : (
-            <User className="w-4 h-4 text-muted-foreground" />
+            <User className="w-5 h-5 text-muted-foreground" />
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">
+          <p className="text-sm font-semibold text-foreground truncate">
             {post.profiles?.full_name || "Anonymous"}
           </p>
           <p className="text-xs text-muted-foreground">
@@ -48,10 +54,15 @@ const PostCard = ({ post, isUpvoted, onToggleUpvote }: PostCardProps) => {
       </div>
 
       {/* Content */}
-      <p className="text-sm text-foreground whitespace-pre-wrap">{post.content}</p>
+      <div>
+        {title && (
+          <p className="font-semibold text-foreground mb-1">{title}</p>
+        )}
+        <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{body}</p>
+      </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-4 pt-1">
+      <div className="flex items-center gap-4 pt-1 border-t border-border/50">
         <Button
           variant="ghost"
           size="sm"
