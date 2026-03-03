@@ -1,26 +1,44 @@
 
 
-## Fix Dashboard Layout and Build Error
+## Community Tab Improvements
 
-### Problem 1: Dashboard Layout Overflow
-The dashboard uses a 5-column grid (`lg:grid-cols-5`) for the top row, cramming 3 small cards + a 2-column-span StudyStatsDashboard. The StudyStatsDashboard itself uses a 6-column grid for stat cards. On typical laptop screens (~1024-1440px), this causes the stat cards to overflow and get cut off.
+Here are the improvements I recommend, covering usability, engagement, and visual polish:
 
-**Fix:** Restructure the layout so the top widgets (Pomodoro, Weekly Goals, XP) sit in a 3-column grid on their own row, and StudyStatsDashboard gets its own full-width row below. Inside StudyStatsDashboard, change the stat cards grid from 6 columns to a responsive 2/3-column layout.
+### 1. Category Filter Chips
+Add horizontal scrollable filter chips (All, Question, Tip, Discussion, Achievement) above the post feed so users can quickly filter by category without scrolling through irrelevant posts.
 
-### Changes
+**Changes:** `src/pages/Community.tsx` -- Add a `useState` for active category filter, render a row of `Badge`-style buttons, filter posts client-side before rendering.
 
-**`src/pages/Dashboard.tsx`** (lines 100-113):
-- Change from single 5-column grid to two separate rows:
-  - Row 1: `grid-cols-1 md:grid-cols-3` for Pomodoro, Weekly Goals, XP Progress
-  - Row 2: Full-width StudyStatsDashboard
+### 2. Sort Options (Newest / Most Upvoted)
+Add a dropdown or toggle to sort posts by "Newest" (default) or "Most Upvoted" so high-quality content surfaces.
 
-**`src/components/dashboard/StudyStatsDashboard.tsx`** (lines 48, 85):
-- Loading skeleton grid: change `xl:grid-cols-6` to `lg:grid-cols-3`
-- Stat cards grid: change `xl:grid-cols-6` to `lg:grid-cols-3`
+**Changes:** `src/pages/Community.tsx` -- Add sort state, sort the posts array before mapping. No backend changes needed since we already fetch `upvote_count`.
 
-### Problem 2: Build Error in Edge Function
-`error.message` fails because `error` is typed as `unknown` in the catch block.
+### 3. Search Bar
+Add a search input above posts to filter by keyword in post content.
 
-**`supabase/functions/process-leagues/index.ts`** (line 25):
-- Change `error.message` to `(error as Error).message`
+**Changes:** `src/pages/Community.tsx` -- Add a search `Input` with a `Search` icon, filter posts client-side using `.includes()` on content.
+
+### 4. Richer Post Cards
+- Larger author avatar (10x10 instead of 9x9)
+- Post title support (optional bold first line)
+- Better visual hierarchy with subtle hover effect
+- Show relative time more prominently
+
+**Changes:** `src/components/community/PostCard.tsx` -- Update sizing, add `hover:bg-accent/50 transition-colors`, improve typography.
+
+### 5. Illustrated Empty States
+Replace plain text empty states with an icon + heading + subtitle layout for both "No posts yet" and "Set your university" states.
+
+**Changes:** `src/pages/Community.tsx` -- Add `MessageCircle` icon and styled empty state containers.
+
+### 6. Trending Sidebar Section
+Add a "Trending Posts" section in the sidebar (desktop) showing the top 3 most-upvoted posts of the week as compact links.
+
+**Changes:** `src/components/community/GroupInfo.tsx` -- Add a trending section below the group info card, pulling from existing `allPosts` data sorted by upvote_count.
+
+### Files to Modify
+- `src/pages/Community.tsx` -- Filter chips, search bar, sort dropdown, empty states
+- `src/components/community/PostCard.tsx` -- Visual polish, hover effects
+- `src/components/community/GroupInfo.tsx` -- Add trending posts sidebar section
 
