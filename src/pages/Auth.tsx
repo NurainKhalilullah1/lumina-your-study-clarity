@@ -289,7 +289,7 @@ const Auth = () => {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-foreground">Email</Label>
               <div className="relative">
@@ -297,6 +297,8 @@ const Auth = () => {
                 <Input
                   id="email"
                   type="email"
+                  name="email_field"
+                  autoComplete="off"
                   placeholder="you@university.edu"
                   value={email}
                   onChange={(e) => {
@@ -320,6 +322,8 @@ const Auth = () => {
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
+                  name="password_field"
+                  autoComplete="new-password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => {
