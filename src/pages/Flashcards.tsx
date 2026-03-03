@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,7 +52,7 @@ export default function Flashcards() {
     <DashboardLayout>
       <div className="p-6 max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-8">
           <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center">
             <Layers className="w-6 h-6 text-primary-foreground" />
           </div>
@@ -61,7 +62,7 @@ export default function Flashcards() {
               {flashcards?.length || 0} cards across {deckNames.length} deck{deckNames.length !== 1 ? 's' : ''}
             </p>
           </div>
-        </div>
+        </motion.div>
 
         {deckNames.length === 0 ? (
           /* Empty state */

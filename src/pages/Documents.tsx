@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserFiles, useDeleteFile } from "@/hooks/useFileUpload";
 import { useStorageQuota, formatBytes } from "@/hooks/useStorageQuota";
@@ -109,7 +110,7 @@ export default function Documents() {
     <DashboardLayout>
       <div className="p-4 md:p-6 space-y-6 max-w-full min-w-0">
         {/* Header */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between min-w-0">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between min-w-0">
           <div className="min-w-0">
             <h1 className="text-2xl font-bold text-foreground truncate">My Documents</h1>
             <p className="text-muted-foreground">
@@ -143,7 +144,7 @@ export default function Documents() {
               </p>
             </div>
           )}
-        </div>
+        </motion.div>
 
         {/* Upload Zone */}
         <DocumentUploadZone />

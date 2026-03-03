@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { ClipboardList, TrendingUp, Award, BookOpen, Trash2 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -111,7 +112,7 @@ export default function QuizHistory() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <ClipboardList className="w-7 h-7 text-primary" />
@@ -125,7 +126,7 @@ export default function QuizHistory() {
             <BookOpen className="w-4 h-4 mr-2" />
             Take New Quiz
           </Button>
-        </div>
+        </motion.div>
 
         {/* Stats Cards */}
         {totalQuizzes > 0 && (
