@@ -1,5 +1,6 @@
-import { motion } from "framer-motion";
-import { FolderOpen, MessageCircle, Bell, ArrowRight, HelpCircle, Layers, Timer } from "lucide-react";
+import { useRef } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { FolderOpen, MessageCircle, Bell, HelpCircle, Layers, Timer, ChevronLeft, ChevronRight } from "lucide-react";
 
 const features = [
   {
@@ -7,71 +8,73 @@ const features = [
     title: "Document Library",
     subtitle: "Your Study Vault",
     description: "Upload PDFs, text files, and notes once. Access them anywhere—in the AI Tutor, Quiz Generator, or Flashcard Creator.",
-    color: "primary",
+    gradient: "from-primary/80 to-accent/60",
+    iconBg: "bg-primary/15",
+    iconColor: "text-primary",
   },
   {
     icon: MessageCircle,
     title: "AI Tutor",
     subtitle: "Chat With Your Materials",
     description: "Upload a lecture slide and ask 'Explain this like I'm 5.' Get instant, contextual answers powered by AI.",
-    color: "accent",
+    gradient: "from-accent/80 to-primary/60",
+    iconBg: "bg-accent/15",
+    iconColor: "text-accent",
   },
   {
     icon: HelpCircle,
     title: "CBT Quiz Generator",
     subtitle: "Test Yourself Instantly",
     description: "Generate timed multiple-choice quizzes from your documents. Track performance and review mistakes.",
-    color: "primary",
+    gradient: "from-primary/70 to-blue-500/60",
+    iconBg: "bg-primary/15",
+    iconColor: "text-primary",
   },
   {
     icon: Layers,
     title: "Flashcard Studio",
     subtitle: "Learn Through Repetition",
     description: "Create AI-generated flashcards from any document. Flip, review, and master your material.",
-    color: "accent",
+    gradient: "from-accent/70 to-purple-500/60",
+    iconBg: "bg-accent/15",
+    iconColor: "text-accent",
   },
   {
     icon: Timer,
     title: "Focus Mode",
     subtitle: "Built-in Pomodoro Timer",
     description: "Stay focused with timed study sessions. Track your productivity and build consistent study habits.",
-    color: "primary",
+    gradient: "from-blue-500/70 to-primary/60",
+    iconBg: "bg-primary/15",
+    iconColor: "text-primary",
   },
   {
     icon: Bell,
     title: "Assignment Tracker",
     subtitle: "Never Miss a Deadline",
     description: "Add your assignments and get timely reminders. See what's due at a glance from your dashboard.",
-    color: "accent",
+    gradient: "from-purple-500/70 to-accent/60",
+    iconBg: "bg-accent/15",
+    iconColor: "text-accent",
   },
 ];
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-    },
-  },
-};
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 40 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.5,
-    },
-  },
-};
-
 export const SolutionSection = () => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (direction: "left" | "right") => {
+    if (!scrollRef.current) return;
+    const scrollAmount = 340;
+    scrollRef.current.scrollBy({
+      left: direction === "left" ? -scrollAmount : scrollAmount,
+      behavior: "smooth",
+    });
+  };
+
   return (
-    <section className="py-24 bg-muted/20 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+    <section className="py-24 relative overflow-hidden">
+      {/* Background glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div
@@ -79,7 +82,7 @@ export const SolutionSection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-16"
+          className="text-center mb-14"
         >
           <span className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
             Your Complete Study Toolkit
@@ -93,54 +96,84 @@ export const SolutionSection = () => {
           </p>
         </motion.div>
 
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8"
+        {/* Scroll navigation buttons */}
+        <div className="flex justify-end gap-2 mb-4 pr-2">
+          <button
+            onClick={() => scroll("left")}
+            className="p-2 rounded-full border border-border bg-card/80 backdrop-blur-sm hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
+            aria-label="Scroll left"
+          >
+            <ChevronLeft className="w-5 h-5 text-foreground" />
+          </button>
+          <button
+            onClick={() => scroll("right")}
+            className="p-2 rounded-full border border-border bg-card/80 backdrop-blur-sm hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
+            aria-label="Scroll right"
+          >
+            <ChevronRight className="w-5 h-5 text-foreground" />
+          </button>
+        </div>
+
+        {/* Scrollable cards container */}
+        <div
+          ref={scrollRef}
+          className="flex gap-5 overflow-x-auto pb-6 snap-x snap-mandatory scrollbar-hide"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {features.map((feature, index) => (
             <motion.div
               key={index}
-              variants={cardVariants}
-              className="group relative bg-card rounded-2xl p-6 lg:p-8 border border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5"
+              initial={{ opacity: 0, x: 60 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.5, delay: index * 0.08 }}
+              className="snap-start shrink-0 w-[300px] sm:w-[320px]"
             >
-              <div className="flex flex-col h-full">
-                <div className={`flex items-center justify-center w-12 h-12 lg:w-14 lg:h-14 rounded-2xl mb-5 ${
-                  feature.color === "accent" 
-                    ? "bg-accent/10 group-hover:bg-accent/20" 
-                    : "bg-primary/10 group-hover:bg-primary/20"
-                } transition-colors`}>
-                  <feature.icon className={`w-6 h-6 lg:w-7 lg:h-7 ${
-                    feature.color === "accent" ? "text-accent" : "text-primary"
-                  }`} />
-                </div>
+              <div className="group relative h-full rounded-2xl border border-border/50 bg-card overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-primary/10 hover:border-primary/30 hover:-translate-y-1">
+                {/* Top gradient bar */}
+                <div className={`h-1.5 w-full bg-gradient-to-r ${feature.gradient} opacity-60 group-hover:opacity-100 transition-opacity duration-500`} />
 
-                <div className="flex-1">
-                  <p className={`text-sm font-medium mb-1 ${
-                    feature.color === "accent" ? "text-accent" : "text-primary"
-                  }`}>
+                <div className="p-6 lg:p-7 flex flex-col h-full">
+                  {/* Icon */}
+                  <motion.div
+                    whileHover={{ rotate: [0, -8, 8, 0], scale: 1.1 }}
+                    transition={{ duration: 0.4 }}
+                    className={`flex items-center justify-center w-14 h-14 rounded-2xl mb-5 ${feature.iconBg} transition-colors duration-300`}
+                  >
+                    <feature.icon className={`w-7 h-7 ${feature.iconColor}`} />
+                  </motion.div>
+
+                  {/* Content */}
+                  <p className={`text-sm font-semibold mb-1 ${feature.iconColor}`}>
                     {feature.title}
                   </p>
-                  <h3 className="text-lg lg:text-xl font-semibold text-foreground mb-3">
+                  <h3 className="text-lg font-bold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
                     {feature.subtitle}
                   </h3>
-                  <p className="text-sm lg:text-base text-muted-foreground leading-relaxed">
+                  <p className="text-sm text-muted-foreground leading-relaxed flex-1">
                     {feature.description}
                   </p>
-                </div>
-              </div>
 
-              {/* Gradient overlay */}
-              <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none ${
-                feature.color === "accent"
-                  ? "bg-gradient-to-b from-accent/5 to-transparent"
-                  : "bg-gradient-to-b from-primary/5 to-transparent"
-              }`} />
+                  {/* Bottom shine effect on hover */}
+                  <div className="mt-5 h-px w-full bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                </div>
+
+                {/* Hover glow overlay */}
+                <div className={`absolute inset-0 rounded-2xl bg-gradient-to-b ${feature.gradient} opacity-0 group-hover:opacity-[0.04] transition-opacity duration-500 pointer-events-none`} />
+              </div>
             </motion.div>
           ))}
-        </motion.div>
+        </div>
+
+        {/* Scroll indicator dots */}
+        <div className="flex justify-center gap-1.5 mt-2">
+          {features.map((_, i) => (
+            <div
+              key={i}
+              className="w-1.5 h-1.5 rounded-full bg-primary/20"
+            />
+          ))}
+        </div>
       </div>
     </section>
   );
