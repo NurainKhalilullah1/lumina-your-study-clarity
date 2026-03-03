@@ -3,6 +3,7 @@ import { HeroSection } from "@/components/HeroSection";
 import { SocialProof } from "@/components/SocialProof";
 import { ProblemSection } from "@/components/ProblemSection";
 import { SolutionSection } from "@/components/SolutionSection";
+import { PricingSection } from "@/components/PricingSection";
 import { CTASection } from "@/components/CTASection";
 import { Footer } from "@/components/Footer";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -20,6 +21,7 @@ const Index = () => {
       <SocialProof />
       <ProblemSection />
       <SolutionSection />
+      <PricingSection />
       <CTASection />
       <Footer />
     </main>

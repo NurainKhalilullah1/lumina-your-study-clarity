@@ -378,6 +378,7 @@ export type Database = {
           id: string
           storage_limit_bytes: number
           storage_used_bytes: number
+          subscription_tier: string
           university: string | null
           updated_at: string
         }
@@ -390,6 +391,7 @@ export type Database = {
           id: string
           storage_limit_bytes?: number
           storage_used_bytes?: number
+          subscription_tier?: string
           university?: string | null
           updated_at?: string
         }
@@ -402,6 +404,7 @@ export type Database = {
           id?: string
           storage_limit_bytes?: number
           storage_used_bytes?: number
+          subscription_tier?: string
           university?: string | null
           updated_at?: string
         }
@@ -570,6 +573,48 @@ export type Database = {
         }
         Relationships: []
       }
+      upgrade_requests: {
+        Row: {
+          admin_note: string | null
+          amount: number
+          created_at: string
+          id: string
+          payment_reference: string | null
+          receipt_url: string | null
+          requested_tier: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string | null
+          amount: number
+          created_at?: string
+          id?: string
+          payment_reference?: string | null
+          receipt_url?: string | null
+          requested_tier: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          admin_note?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          payment_reference?: string | null
+          receipt_url?: string | null
+          requested_tier?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_files: {
         Row: {
           created_at: string
@@ -629,6 +674,24 @@ export type Database = {
           id?: string
           pomodoro_duration?: number
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
         Relationships: []
@@ -738,6 +801,13 @@ export type Database = {
           weekly_xp: number
         }[]
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       process_league_week: { Args: never; Returns: undefined }
       upsert_user_group: {
         Args: { p_course_of_study: string; p_university: string }
@@ -745,7 +815,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -872,6 +942,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const

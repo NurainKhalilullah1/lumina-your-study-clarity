@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { User, Shield, Loader2, Save, LogOut, BookOpen, Database, Info, Trash2, Download, Camera, GraduationCap } from "lucide-react";
+import { User, Shield, Loader2, Save, LogOut, BookOpen, Database, Info, Trash2, Download, Camera, GraduationCap, Crown } from "lucide-react";
 import { exportUserDataAsPDF } from "@/utils/exportUserData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,12 +32,20 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useProfile } from "@/hooks/useProfile";
 import { UNIVERSITIES } from "@/constants/universities";
-
+import { useSubscription, TIER_CONFIG } from "@/hooks/useSubscription";
+import UpgradeDialog, { UpgradeRequestStatus } from "@/components/UpgradeDialog";
+import { Badge } from "@/components/ui/badge";
 const Settings = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Subscription
+  const { tier, requests: upgradeRequests } = useSubscription();
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
+  const [upgradeTier, setUpgradeTier] = useState<"pro" | "premium">("pro");
   
   // Profile state
   const [name, setName] = useState("");
@@ -96,6 +105,17 @@ const Settings = () => {
   }, [profile]);
 
   const selectedUniversity = university === "Other" ? customUniversity : university;
+
+  // Open upgrade dialog if navigated with state
+  useEffect(() => {
+    const state = location.state as { upgradeTier?: string } | null;
+    if (state?.upgradeTier && (state.upgradeTier === "pro" || state.upgradeTier === "premium")) {
+      setUpgradeTier(state.upgradeTier);
+      setUpgradeDialogOpen(true);
+      // Clear the state
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const handleSaveUniCourse = async () => {
     if (!user || !selectedUniversity || !courseOfStudy) return;
@@ -363,6 +383,56 @@ const Settings = () => {
             </div>
           </div>
         </div>
+
+        {/* Subscription Section */}
+        <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
+          <div className="flex items-center gap-2 mb-6">
+            <Crown className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Subscription</h2>
+          </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-foreground">Current Plan</p>
+                <p className="text-sm text-muted-foreground">{TIER_CONFIG[tier].name} — ₦{TIER_CONFIG[tier].price.toLocaleString()}/mo</p>
+              </div>
+              <Badge className="capitalize">{tier}</Badge>
+            </div>
+            {tier !== "premium" && (
+              <div className="flex gap-2">
+                {tier === "free" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setUpgradeTier("pro"); setUpgradeDialogOpen(true); }}
+                  >
+                    Upgrade to Pro
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  className="gradient-primary text-primary-foreground"
+                  onClick={() => { setUpgradeTier("premium"); setUpgradeDialogOpen(true); }}
+                >
+                  Upgrade to Premium
+                </Button>
+              </div>
+            )}
+            {upgradeRequests.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-border">
+                <p className="text-sm font-medium text-foreground">Recent Requests</p>
+                {upgradeRequests.slice(0, 3).map((req) => (
+                  <div key={req.id} className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground capitalize">{req.requested_tier} — {new Date(req.created_at).toLocaleDateString()}</span>
+                    <UpgradeRequestStatus status={req.status} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <UpgradeDialog open={upgradeDialogOpen} onOpenChange={setUpgradeDialogOpen} selectedTier={upgradeTier} />
 
         {/* University & Course Section */}
         <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
