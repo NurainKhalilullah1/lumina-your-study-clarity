@@ -1,44 +1,85 @@
+## Pricing Table + Manual Payment Upgrade System
 
+### Overview
 
-## Community Tab Improvements
+Add a pricing section to the landing page with 3 tiers (Free, Pro, Premium), and build a manual bank transfer upgrade flow in the dashboard. Users upload a receipt or enter a transaction reference. An admin panel verifies payments and upgrades user tiers.
 
-Here are the improvements I recommend, covering usability, engagement, and visual polish:
+### Pricing Tiers
 
-### 1. Category Filter Chips
-Add horizontal scrollable filter chips (All, Question, Tip, Discussion, Achievement) above the post feed so users can quickly filter by category without scrolling through irrelevant posts.
+- **Free**: Current limits (50MB storage, 10 quiz questions, basic AI tutor)
+- **Pro** (~₦2,000/mo): 200MB storage, 20 quiz questions, priority AI, unlimited flashcards
+- **Premium** (~₦5,000/mo): 300MB storage, unlimited quizzes, advanced AI, all features unlocked
 
-**Changes:** `src/pages/Community.tsx` -- Add a `useState` for active category filter, render a row of `Badge`-style buttons, filter posts client-side before rendering.
+### Database Changes (Migration)
 
-### 2. Sort Options (Newest / Most Upvoted)
-Add a dropdown or toggle to sort posts by "Newest" (default) or "Most Upvoted" so high-quality content surfaces.
+**1. `subscription_tiers` enum or use text column**
 
-**Changes:** `src/pages/Community.tsx` -- Add sort state, sort the posts array before mapping. No backend changes needed since we already fetch `upvote_count`.
+**2. New `upgrade_requests` table:**
 
-### 3. Search Bar
-Add a search input above posts to filter by keyword in post content.
+- `id`, `user_id`, `requested_tier` (text: 'pro'/'premium'), `amount` (integer), `payment_reference` (text, nullable), `receipt_url` (text, nullable), `status` (text: 'pending'/'approved'/'rejected', default 'pending'), `admin_note` (text, nullable), `created_at`, `reviewed_at`, `reviewed_by` (uuid, nullable)
+- RLS: users can INSERT their own, SELECT their own; admins can SELECT/UPDATE all (via `has_role` function)
 
-**Changes:** `src/pages/Community.tsx` -- Add a search `Input` with a `Search` icon, filter posts client-side using `.includes()` on content.
+**3. Add `subscription_tier` column to `profiles` table:**
 
-### 4. Richer Post Cards
-- Larger author avatar (10x10 instead of 9x9)
-- Post title support (optional bold first line)
-- Better visual hierarchy with subtle hover effect
-- Show relative time more prominently
+- `subscription_tier text NOT NULL DEFAULT 'free'`
 
-**Changes:** `src/components/community/PostCard.tsx` -- Update sizing, add `hover:bg-accent/50 transition-colors`, improve typography.
+**4. Create `user_roles` table** (per security guidelines):
 
-### 5. Illustrated Empty States
-Replace plain text empty states with an icon + heading + subtitle layout for both "No posts yet" and "Set your university" states.
+- `id`, `user_id`, `role` (app_role enum: 'admin', 'moderator', 'user')
+- Plus `has_role()` security definer function
 
-**Changes:** `src/pages/Community.tsx` -- Add `MessageCircle` icon and styled empty state containers.
+**5. New `receipts` storage bucket** (public: false) for uploaded receipt images.
 
-### 6. Trending Sidebar Section
-Add a "Trending Posts" section in the sidebar (desktop) showing the top 3 most-upvoted posts of the week as compact links.
+### Frontend Changes
 
-**Changes:** `src/components/community/GroupInfo.tsx` -- Add a trending section below the group info card, pulling from existing `allPosts` data sorted by upvote_count.
+**File 1: `src/components/PricingSection.tsx` (NEW)**
 
-### Files to Modify
-- `src/pages/Community.tsx` -- Filter chips, search bar, sort dropdown, empty states
-- `src/components/community/PostCard.tsx` -- Visual polish, hover effects
-- `src/components/community/GroupInfo.tsx` -- Add trending posts sidebar section
+- 3-column pricing cards (Free, Pro, Premium) with feature lists, prices in ₦
+- "Get Started" for Free, "Upgrade" buttons for Pro/Premium linking to `/auth` or `/settings` (upgrade dialog)
+- Animated with framer-motion, responsive grid
 
+**File 2: `src/pages/Index.tsx**`
+
+- Import and add `<PricingSection />` between SolutionSection and CTASection
+
+**File 3: `src/components/UpgradeDialog.tsx` (NEW)**
+
+- Modal dialog showing selected tier details + bank transfer instructions (placeholder)
+- Two proof options: upload receipt image OR enter transaction reference
+- Submit creates a row in `upgrade_requests` and uploads receipt to storage
+- Shows pending/approved/rejected status of existing requests
+
+**File 4: `src/pages/Settings.tsx**`
+
+- Add "Subscription" section showing current tier + upgrade button
+- Shows current tier badge, opens UpgradeDialog for upgrades
+- Shows history of upgrade requests with status
+
+**File 5: `src/components/dashboard/StorageIndicator.tsx**`
+
+- Update to reflect tier-based storage limits (reads `subscription_tier` from profile)
+
+**File 6: `src/pages/Admin.tsx` (NEW)**
+
+- Protected admin page (checks `has_role(uid, 'admin')`)
+- Lists pending upgrade requests with user info, receipt preview, reference number
+- Approve/Reject buttons that update `upgrade_requests.status` and `profiles.subscription_tier`
+
+**File 7: `src/App.tsx**`
+
+- Add `/admin` route (protected)
+
+**File 8: `src/hooks/useSubscription.ts` (NEW)**
+
+- Hook to fetch current user's tier and upgrade request history
+
+### Flow
+
+1. User sees pricing on landing page or in Settings
+2. Clicks "Upgrade to Pro/Premium"
+3. Dialog shows bank details + amount
+4. User uploads receipt screenshot or enters reference
+5. Request goes to `upgrade_requests` as 'pending'
+6. Admin visits `/admin`, reviews, approves/rejects
+7. On approval, `profiles.subscription_tier` updates, user gets expanded limits
+8. Ensures that all the features for each plan are integrated
