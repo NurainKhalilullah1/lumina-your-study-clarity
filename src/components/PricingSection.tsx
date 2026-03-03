@@ -108,7 +108,7 @@ export const PricingSection = () => {
                         if (tier.key === "free") {
                           navigate("/auth");
                         } else {
-                          navigate("/settings", { state: { upgradeTier: tier.key } });
+                          navigate("/upgrade");
                         }
                       }}
                     >
