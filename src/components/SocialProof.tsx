@@ -17,16 +17,17 @@ const logos = [
 
 export const SocialProof = () => {
   return (
-    <section className="py-16 bg-muted/30 border-y border-border/50 overflow-hidden">
+    <section className="py-20 bg-background border-y border-border/40 overflow-hidden relative">
+      <div className="absolute inset-0 bg-primary/[0.02] pointer-events-none" />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 mb-8">
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="text-center text-sm font-medium uppercase tracking-widest text-muted-foreground"
+          className="text-center text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground/80 font-sans"
         >
-          Trusted by students at top universities
+          Trusted by students at Nigeria's top universities
         </motion.p>
       </div>
 

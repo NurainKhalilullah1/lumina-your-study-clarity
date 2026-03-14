@@ -87,7 +87,7 @@ export const SolutionSection = () => {
           <span className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
             Your Complete Study Toolkit
           </span>
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+          <h2 className="text-4xl sm:text-5xl font-bold text-foreground mb-6 font-heading tracking-tight">
             Everything You Need to{" "}
             <span className="gradient-text">Succeed</span>
           </h2>
@@ -129,7 +129,7 @@ export const SolutionSection = () => {
               transition={{ duration: 0.5, delay: index * 0.08 }}
               className="snap-start shrink-0 w-[300px] sm:w-[320px]"
             >
-              <div className="group relative h-full rounded-2xl border border-border/50 bg-card overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-primary/10 hover:border-primary/30 hover:-translate-y-1">
+              <div className="group relative h-full rounded-[24px] border border-border/50 bg-card overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-primary/10 hover:border-primary/30 hover:-translate-y-1">
                 {/* Top gradient bar */}
                 <div className={`h-1.5 w-full bg-gradient-to-r ${feature.gradient} opacity-60 group-hover:opacity-100 transition-opacity duration-500`} />
 
@@ -147,7 +147,7 @@ export const SolutionSection = () => {
                   <p className={`text-sm font-semibold mb-1 ${feature.iconColor}`}>
                     {feature.title}
                   </p>
-                  <h3 className="text-lg font-bold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
+                  <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors duration-300 font-heading">
                     {feature.subtitle}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed flex-1">

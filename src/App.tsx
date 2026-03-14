@@ -3,13 +3,15 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PomodoroProvider } from "@/contexts/PomodoroContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { SplashScreen } from "@/components/SplashScreen";
 import { Capacitor } from "@capacitor/core";
+import { App as CapacitorApp } from "@capacitor/app";
+import { Browser } from "@capacitor/browser";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -54,6 +56,17 @@ const App = () => {
       if (window.location.pathname === '/' || window.location.pathname === '') {
         window.location.replace('/auth');
       }
+
+      // Listen for deep links (like Supabase OAuth redirects)
+      CapacitorApp.addListener('appUrlOpen', (event) => {
+        const urlOptions = new URL(event.url);
+        // Supabase OAuth returns an access_token in the URL hash
+        if (urlOptions.hash && urlOptions.hash.includes('access_token')) {
+          window.location.hash = urlOptions.hash;
+          // Close the in-app browser once we have the token
+          Browser.close();
+        }
+      });
     }
   }, []);
 
@@ -79,7 +92,7 @@ const App = () => {
 
               <BrowserRouter>
                 <Routes>
-                  <Route path="/" element={<Index />} />
+                  <Route path="/" element={<Navigate to="/auth" replace />} />
                   <Route path="/features" element={<Features />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/privacy" element={<PrivacyPolicy />} />

@@ -4,10 +4,6 @@ const config: CapacitorConfig = {
   appId: 'app.lumina.studyflow',
   appName: 'StudyFlow',
   webDir: 'dist',
-  server: {
-    url: 'https://27168b78-f9c4-486c-84cd-8eab9a4eb6e7.lovableproject.com?forceHideBadge=true',
-    cleartext: true,
-  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
@@ -22,6 +18,11 @@ const config: CapacitorConfig = {
       spinnerColor: "#999999",
       splashFullScreen: true,
       splashImmersive: true,
+    },
+    GoogleAuth: {
+      scopes: ["profile", "email"],
+      serverClientId: "1048055478088-k1k2bs5dvikenalklapbvuuoarn7qef9.apps.googleusercontent.com",
+      forceCodeForRefreshToken: true,
     },
   },
 };

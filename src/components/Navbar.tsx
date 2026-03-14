@@ -21,7 +21,7 @@ export const Navbar = () => {
               <StudyFlowLogo size="lg" variant="purple" className="transition-transform group-hover:scale-110" />
               <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
             </div>
-            <span className="text-xl font-bold text-foreground">StudyFlow</span>
+            <span className="text-xl font-bold text-foreground font-heading tracking-tight">Lumina</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -79,7 +79,7 @@ export const Navbar = () => {
                 <Button variant="ghost" className="justify-start" asChild onClick={() => setIsOpen(false)}>
                   <Link to="/auth">Login</Link>
                 </Button>
-                
+
                 <Button variant="glow" asChild onClick={() => setIsOpen(false)}>
                   <Link to="/auth">Get Started</Link>
                 </Button>

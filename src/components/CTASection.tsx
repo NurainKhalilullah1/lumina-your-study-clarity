@@ -7,7 +7,7 @@ export const CTASection = () => {
     <section className="py-24 relative overflow-hidden">
       {/* Background gradient */}
       <div className="absolute inset-0 gradient-primary" />
-      
+
       {/* Decorative elements */}
       <div className="absolute top-0 left-0 w-full h-full">
         <div className="absolute top-10 left-10 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
@@ -34,12 +34,12 @@ export const CTASection = () => {
             <span className="text-sm font-medium text-primary-foreground">Ready to Transform</span>
           </motion.div>
 
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary-foreground mb-6 text-balance">
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-primary-foreground mb-6 text-balance font-heading tracking-tight">
             Your academic weapon is ready.
           </h2>
 
-          <p className="text-lg text-primary-foreground/80 mb-10 max-w-xl mx-auto">
-            Join thousands of students who've already transformed their study habits with StudyFlow.
+          <p className="text-xl text-primary-foreground/90 mb-10 max-w-xl mx-auto font-sans">
+            Join thousands of students who've already transformed their study habits with Lumina.
           </p>
 
           <motion.div
@@ -50,10 +50,10 @@ export const CTASection = () => {
           >
             <Button
               size="xl"
-              className="bg-white text-primary hover:bg-white/90 shadow-2xl shadow-black/20 hover:scale-105 transition-all duration-200 group"
+              className="bg-white text-primary hover:bg-white/90 shadow-2xl shadow-black/20 hover:scale-105 transition-all duration-200 group font-bold px-10"
             >
-              <Rocket className="w-5 h-5 mr-1 transition-transform group-hover:-translate-y-0.5" />
-              Launch StudyFlow
+              <Rocket className="w-5 h-5 mr-2 transition-transform group-hover:-translate-y-0.5" />
+              Launch Lumina
             </Button>
           </motion.div>
         </motion.div>

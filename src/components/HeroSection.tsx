@@ -25,14 +25,14 @@ export const HeroSection = () => {
               <span className="text-sm font-medium text-primary">AI-Powered Student OS</span>
             </motion.div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-foreground leading-tight mb-6 text-balance">
+            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold font-heading text-foreground leading-[1.1] mb-6 text-balance">
               Bring{" "}
               <span className="gradient-text">Clarity</span>{" "}
-              to Your Chaos.
+              <br /> to Your Chaos.
             </h1>
 
             <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed mb-8 max-w-xl">
-              The student OS that organizes your deadlines, generates quizzes from your slides, 
+              The student OS that organizes your deadlines, generates quizzes from your slides,
               and uses AI to explain anything you don't understand.{" "}
               <span className="font-medium text-foreground">Your entire academic life, in one place.</span>
             </p>
@@ -43,7 +43,7 @@ export const HeroSection = () => {
               transition={{ delay: 0.4, duration: 0.5 }}
             >
               {/* FIXED BUTTON: Uses asChild and Link to work on mobile */}
-              <Button variant="hero" size="xl" className="group" asChild>
+              <Button variant="hero" size="xl" className="group cta-pulse shadow-glow-accent" asChild>
                 <Link to="/auth">
                   Try StudyFlow for Free
                   <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
@@ -62,16 +62,17 @@ export const HeroSection = () => {
             <div className="relative">
               {/* Main Dashboard Card */}
               <motion.div
-                className="bg-card rounded-2xl shadow-2xl border border-border/50 p-6 backdrop-blur-sm"
-                animate={{ y: [0, -8, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="bento-card p-8 backdrop-blur-md relative overflow-hidden"
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
               >
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
                 <div className="flex items-center gap-3 mb-6">
                   <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
                     <Sparkles className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">StudyFlow Dashboard</h3>
+                    <h3 className="font-bold text-foreground font-heading">Lumina Dashboard</h3>
                     <p className="text-sm text-muted-foreground">Your academic command center</p>
                   </div>
                 </div>

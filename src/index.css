@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Work+Sans:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,24 +7,24 @@
 @layer base {
   :root {
     --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    --foreground: 244 47% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 244 47% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 244 47% 15%;
 
-    --primary: 239 84% 67%;
+    --primary: 243 75% 59%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 234 89% 74%;
+    --secondary-foreground: 244 47% 15%;
 
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
 
-    --accent: 263 70% 50%;
+    --accent: 25 95% 53%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -32,16 +32,17 @@
 
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 239 84% 67%;
+    --ring: 243 75% 59%;
 
-    --radius: 0.75rem;
+    --radius: 1.5rem;
+    /* 24px per design system */
 
     /* Custom StudyFlow tokens */
     --glow-primary: 239 84% 67%;
     --glow-accent: 263 70% 50%;
     --gradient-start: 239 84% 67%;
     --gradient-end: 263 70% 50%;
-    
+
     /* Warning color for storage indicator */
     --warning: 25 95% 53%;
     --warning-foreground: 0 0% 100%;
@@ -84,7 +85,7 @@
     --border: 217 33% 17%;
     --input: 217 33% 17%;
     --ring: 239 84% 67%;
-    
+
     /* Warning color for storage indicator - dark mode */
     --warning: 25 95% 53%;
     --warning-foreground: 0 0% 100%;
@@ -113,7 +114,17 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-family: 'Work Sans', system-ui, sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Outfit', sans-serif;
+    @apply font-semibold;
   }
 
   #root {
@@ -134,9 +145,9 @@
     min-width: 0 !important;
     overflow: hidden !important;
   }
-  
+
   /* Target the sidebar wrapper spacer div */
-  [data-variant="sidebar"] > div:first-child {
+  [data-variant="sidebar"]>div:first-child {
     width: 0 !important;
     min-width: 0 !important;
   }
@@ -179,12 +190,26 @@
     background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask-composite: exclude;
     pointer-events: none;
   }
 
   .text-balance {
     text-wrap: balance;
+  }
+
+  .bento-card {
+    @apply bg-card border border-border/50 rounded-[24px] shadow-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-primary/20;
+  }
+
+  .cta-pulse {
+    @apply relative overflow-hidden;
+  }
+
+  .cta-pulse::after {
+    content: '';
+    @apply absolute inset-0 rounded-[inherit] border-2 border-accent opacity-0 animate-[pulse_2s_infinite];
   }
 }
 
@@ -193,6 +218,7 @@
   0% {
     transform: translateX(0%);
   }
+
   100% {
     transform: translateX(-50%);
   }

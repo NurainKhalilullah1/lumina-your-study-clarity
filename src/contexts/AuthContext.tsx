@@ -1,6 +1,9 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 interface AuthContextType {
   user: User | null;
@@ -22,6 +25,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let initialValidationDone = false;
+    // Initialize Native Google Auth
+    if (Capacitor.isNativePlatform()) {
+      GoogleAuth.initialize();
+    }
 
     // Validate session with server, not just local token
     supabase.auth.getUser().then(async ({ data: { user }, error }) => {
@@ -62,7 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/onboarding`,
+        emailRedirectTo: Capacitor.isNativePlatform() ? 'app.lumina.studyflow://onboarding' : `${window.location.origin}/onboarding`,
       },
     });
     return { error };
@@ -77,18 +84,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/onboarding`,
-      },
-    });
-    return { error };
+    const isNative = Capacitor.isNativePlatform();
+    
+    if (isNative) {
+      try {
+        // 1. Get ID Token from Native Google Sign-In
+        const googleUser = await GoogleAuth.signIn();
+        
+        if (!googleUser.authentication?.idToken) {
+          throw new Error("No ID token returned from Google");
+        }
+
+        // 2. Pass ID Token to Supabase
+        const { error } = await supabase.auth.signInWithIdToken({
+          provider: 'google',
+          token: googleUser.authentication.idToken,
+        });
+        
+        return { error };
+      } catch (error: any) {
+        console.error("Native Google Sign-In Error:", error);
+        return { error: new Error(error.message || "Native Google Sign-In failed") };
+      }
+    } else {
+      // Web fallback
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/onboarding`,
+        },
+      });
+
+      if (error) return { error };
+
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+      return { error: null };
+    }
   };
 
   const resetPassword = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth`,
+      redirectTo: Capacitor.isNativePlatform() ? 'app.lumina.studyflow://auth' : `${window.location.origin}/auth`,
     });
     return { error };
   };

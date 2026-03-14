@@ -49,9 +49,9 @@ export const ProblemSection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-16"
+          className="text-center mb-20"
         >
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+          <h2 className="text-4xl sm:text-5xl font-bold text-foreground mb-6 font-heading tracking-tight">
             Why is university so{" "}
             <span className="gradient-text">hard</span>{" "}
             right now?
@@ -72,13 +72,13 @@ export const ProblemSection = () => {
             <motion.div
               key={index}
               variants={cardVariants}
-              className="group relative bg-muted/50 hover:bg-muted rounded-2xl p-8 border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg"
+              className="bento-card p-10 group relative"
             >
               <div className="flex flex-col items-center text-center">
                 <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-destructive/10 mb-6 group-hover:bg-destructive/20 transition-colors">
                   <problem.icon className="w-7 h-7 text-destructive" />
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-3">
+                <h3 className="text-2xl font-bold text-foreground mb-4 font-heading">
                   {problem.title}
                 </h3>
                 <p className="text-muted-foreground leading-relaxed">

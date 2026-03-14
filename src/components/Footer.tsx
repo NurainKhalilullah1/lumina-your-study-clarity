@@ -10,13 +10,13 @@ const footerLinks = [
 
 export const Footer = () => {
   return (
-    <footer className="py-12 bg-muted/30 border-t border-border/50">
+    <footer className="py-16 bg-background border-t border-border/40">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-8">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
             <StudyFlowLogo size="md" variant="purple" className="transition-transform group-hover:scale-110" />
-            <span className="text-lg font-bold text-foreground">StudyFlow</span>
+            <span className="text-lg font-bold text-foreground font-heading tracking-tight">Lumina</span>
           </Link>
 
           {/* Links */}
@@ -34,9 +34,9 @@ export const Footer = () => {
         </div>
 
         {/* Copyright */}
-        <div className="mt-8 pt-8 border-t border-border/50 text-center">
-          <p className="text-sm text-muted-foreground">
-            Copyright © 2026 StudyFlow. All rights reserved.
+        <div className="mt-12 pt-8 border-t border-border/40 text-center">
+          <p className="text-sm text-muted-foreground font-sans">
+            Copyright © 2026 Lumina. All rights reserved. Built for Nigerian Students.
           </p>
         </div>
       </div>
