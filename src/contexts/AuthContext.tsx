@@ -34,10 +34,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getUser().then(async ({ data: { user }, error }) => {
       if (error || !user) {
         // Token is invalid or user was deleted - clear local session
-        setSession(null);
-        setUser(null);
-        // Use local scope to ensure localStorage is cleared even if server rejects
-        await supabase.auth.signOut({ scope: "local" });
+        // IMPORTANT: Never eagerly sign out if we're in the middle of an OAuth redirect (URL contains access_token)
+        if (!window.location.hash.includes('access_token')) {
+          setSession(null);
+          setUser(null);
+          await supabase.auth.signOut({ scope: "local" });
+        }
       } else {
         // Valid user, now get the full session
         const { data: { session } } = await supabase.auth.getSession();

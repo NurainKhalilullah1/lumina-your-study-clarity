@@ -92,7 +92,7 @@ const App = () => {
 
               <BrowserRouter>
                 <Routes>
-                  <Route path="/" element={<Navigate to="/auth" replace />} />
+                  <Route path="/" element={<Index />} />
                   <Route path="/features" element={<Features />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/privacy" element={<PrivacyPolicy />} />
