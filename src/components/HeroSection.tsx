@@ -80,7 +80,7 @@ export const HeroSection = () => {
                     <Sparkles className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-foreground font-heading">Lumina Dashboard</h3>
+                    <h3 className="font-bold text-foreground font-heading">StudyFlow Dashboard</h3>
                     <p className="text-sm text-muted-foreground">Your academic command center</p>
                   </div>
                 </div>

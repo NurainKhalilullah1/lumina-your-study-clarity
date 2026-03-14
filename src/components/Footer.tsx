@@ -16,7 +16,7 @@ export const Footer = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
             <StudyFlowLogo size="md" variant="purple" className="transition-transform group-hover:scale-110" />
-            <span className="text-lg font-bold text-foreground font-heading tracking-tight">Lumina</span>
+            <span className="text-lg font-bold text-foreground font-heading tracking-tight">StudyFlow</span>
           </Link>
 
           {/* Links */}
@@ -36,7 +36,7 @@ export const Footer = () => {
         {/* Copyright */}
         <div className="mt-12 pt-8 border-t border-border/40 text-center">
           <p className="text-sm text-muted-foreground font-sans">
-            Copyright © 2026 Lumina. All rights reserved. Built for Nigerian Students.
+            Copyright © 2026 StudyFlow. All rights reserved. Built for Nigerian Students.
           </p>
         </div>
       </div>

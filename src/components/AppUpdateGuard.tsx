@@ -27,9 +27,9 @@ export const AppUpdateGuard = ({ children }: AppUpdateGuardProps) => {
 
       try {
         const appInfo = await CapacitorApp.getInfo();
-        // Fallback to 1 if build is missing or non-numeric
         const currentVersionCode = parseInt(appInfo.build, 10) || 1;
 
+        // Initial fetch
         const { data, error } = await supabase
           .from("app_versions")
           .select("*")
@@ -49,6 +49,33 @@ export const AppUpdateGuard = ({ children }: AppUpdateGuardProps) => {
           setReleaseNotes(data.release_notes || "Bug fixes and improvements.");
           setDownloadUrl(data.download_url);
         }
+
+        // Set up Realtime Subscription for immediate updates
+        const channel = supabase
+          .channel('schema-db-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*', // Listen to INSERT and UPDATE
+              schema: 'public',
+              table: 'app_versions',
+            },
+            (payload) => {
+              const newVersion = payload.new as any;
+              if (newVersion && newVersion.version_code > currentVersionCode) {
+                setUpdateAvailable(true);
+                setIsMandatory(newVersion.is_mandatory);
+                setReleaseNotes(newVersion.release_notes || "Bug fixes and improvements.");
+                setDownloadUrl(newVersion.download_url);
+              }
+            }
+          )
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(channel);
+        };
+
       } catch (err) {
         console.error("Failed to check app version", err);
       } finally {
@@ -56,7 +83,13 @@ export const AppUpdateGuard = ({ children }: AppUpdateGuardProps) => {
       }
     };
 
-    checkForUpdates();
+    const cleanupPromise = checkForUpdates();
+    
+    return () => {
+      cleanupPromise.then(cleanup => {
+        if (typeof cleanup === 'function') cleanup();
+      });
+    };
   }, []);
 
   const handleUpdate = async () => {

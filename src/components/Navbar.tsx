@@ -21,7 +21,7 @@ export const Navbar = () => {
               <StudyFlowLogo size="lg" variant="purple" className="transition-transform group-hover:scale-110" />
               <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
             </div>
-            <span className="text-xl font-bold text-foreground font-heading tracking-tight">Lumina</span>
+            <span className="text-xl font-bold text-foreground font-heading tracking-tight">StudyFlow</span>
           </Link>
 
           {/* Desktop Navigation */}

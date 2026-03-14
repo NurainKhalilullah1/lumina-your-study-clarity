@@ -27,15 +27,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let initialValidationDone = false;
     // Initialize Native Google Auth
     if (Capacitor.isNativePlatform()) {
-      GoogleAuth.initialize();
+      try {
+        GoogleAuth.initialize();
+      } catch (e) {
+        console.warn("GoogleAuth initialization failed (non-critical if retryable):", e);
+      }
     }
 
     // Validate session with server, not just local token
     supabase.auth.getUser().then(async ({ data: { user }, error }) => {
       if (error || !user) {
         // Token is invalid or user was deleted - clear local session
-        // IMPORTANT: Never eagerly sign out if we're in the middle of an OAuth redirect (URL contains access_token)
-        if (!window.location.hash.includes('access_token')) {
+        // IMPORTANT: Never eagerly sign out if we're in the middle of an OAuth redirect 
+        // OR if this is a fresh launch where we already have no session (prevents potential null errors)
+        const hasHashToken = window.location.hash.includes('access_token');
+        if (!hasHashToken && (session || user)) {
           setSession(null);
           setUser(null);
           await supabase.auth.signOut({ scope: "local" });
@@ -71,7 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email,
       password,
       options: {
-        emailRedirectTo: Capacitor.isNativePlatform() ? 'app.lumina.studyflow://onboarding' : `${window.location.origin}/onboarding`,
+        emailRedirectTo: Capacitor.isNativePlatform() ? 'app.studyflow://onboarding' : `${window.location.origin}/onboarding`,
       },
     });
     return { error };
@@ -128,7 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const resetPassword = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: Capacitor.isNativePlatform() ? 'app.lumina.studyflow://auth' : `${window.location.origin}/auth`,
+      redirectTo: Capacitor.isNativePlatform() ? 'app.studyflow://auth' : `${window.location.origin}/auth`,
     });
     return { error };
   };

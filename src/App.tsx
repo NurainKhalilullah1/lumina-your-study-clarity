@@ -35,6 +35,7 @@ import Upgrade from "./pages/Upgrade";
 import NotFound from "./pages/NotFound";
 import DownloadPage from "./pages/Download";
 import { AppUpdateGuard } from "@/components/AppUpdateGuard";
+import InitialRedirect from "@/components/InitialRedirect";
 
 const queryClient = new QueryClient();
 
@@ -54,11 +55,7 @@ const App = () => {
     if (Capacitor.isNativePlatform()) {
       setShowSplash(false); // Disable web splash for mobile
       setHasSeenSplash(true);
-      // Redirect to auth if on root path
-      if (window.location.pathname === '/' || window.location.pathname === '') {
-        window.location.replace('/auth');
-      }
-
+      
       // Listen for deep links (like Supabase OAuth redirects)
       CapacitorApp.addListener('appUrlOpen', (event) => {
         const urlOptions = new URL(event.url);
@@ -95,7 +92,7 @@ const App = () => {
               <AppUpdateGuard>
                 <BrowserRouter>
                   <Routes>
-                    <Route path="/" element={<Index />} />
+                    <Route path="/" element={<InitialRedirect />} />
                     <Route path="/features" element={<Features />} />
                     <Route path="/about" element={<About />} />
                     <Route path="/privacy" element={<PrivacyPolicy />} />
