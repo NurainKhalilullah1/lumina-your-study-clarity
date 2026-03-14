@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_versions: {
+        Row: {
+          created_at: string
+          download_url: string
+          id: string
+          is_mandatory: boolean | null
+          release_notes: string | null
+          version_code: number
+          version_name: string
+        }
+        Insert: {
+          created_at?: string
+          download_url: string
+          id?: string
+          is_mandatory?: boolean | null
+          release_notes?: string | null
+          version_code: number
+          version_name: string
+        }
+        Update: {
+          created_at?: string
+          download_url?: string
+          id?: string
+          is_mandatory?: boolean | null
+          release_notes?: string | null
+          version_code?: number
+          version_name?: string
+        }
+        Relationships: []
+      }
       assignments: {
         Row: {
           course_id: string | null

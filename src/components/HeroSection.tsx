@@ -42,13 +42,21 @@ export const HeroSection = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.5 }}
             >
-              {/* FIXED BUTTON: Uses asChild and Link to work on mobile */}
-              <Button variant="hero" size="xl" className="group cta-pulse shadow-glow-accent" asChild>
-                <Link to="/auth">
-                  Try StudyFlow for Free
-                  <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </Button>
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                {/* FIXED BUTTON: Uses asChild and Link to work on mobile */}
+                <Button variant="hero" size="xl" className="group cta-pulse shadow-glow-accent w-full sm:w-auto" asChild>
+                  <Link to="/auth">
+                    Try StudyFlow for Free
+                    <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                  </Link>
+                </Button>
+                
+                <Button variant="outline" size="xl" className="bg-background/50 backdrop-blur-sm border-primary/20 hover:bg-primary/10 w-full sm:w-auto" asChild>
+                  <Link to="/download">
+                    Download Android App
+                  </Link>
+                </Button>
+              </div>
             </motion.div>
           </motion.div>
 
