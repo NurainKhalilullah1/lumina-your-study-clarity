@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -49,6 +50,40 @@ export const usePosts = (groupId?: string | null) => {
       return (data as unknown) as CommunityPost[];
     },
   });
+};
+
+export const useCommunityRealtime = () => {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const postsChannel = supabase
+      .channel('public:community_posts')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_posts' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["community-posts"] });
+      })
+      .subscribe();
+
+    const commentsChannel = supabase
+      .channel('public:community_comments')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_comments' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["community-comments"] });
+      })
+      .subscribe();
+
+    const upvotesChannel = supabase
+      .channel('public:community_upvotes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_upvotes' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["community-posts"] });
+        queryClient.invalidateQueries({ queryKey: ["community-upvotes"] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(postsChannel);
+      supabase.removeChannel(commentsChannel);
+      supabase.removeChannel(upvotesChannel);
+    };
+  }, [queryClient]);
 };
 
 export const useComments = (postId: string) => {

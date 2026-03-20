@@ -126,13 +126,13 @@ const Dashboard = () => {
         {/* Assignment Stats Cards */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {stats.map((stat) => (
-            <div key={stat.label} className="bg-card rounded-xl p-5 shadow-sm border border-border">
+            <div key={stat.label} className="bg-card/60 backdrop-blur-xl rounded-xl p-5 shadow-xl border border-border/50 hover:-translate-y-1 transition-all duration-300">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">{stat.label}</p>
                   <p className="text-3xl font-bold text-foreground mt-1">{stat.value}</p>
                 </div>
-                <div className={`p-3 rounded-xl bg-muted ${stat.color}`}>
+                <div className={`p-3 rounded-xl bg-muted/80 ${stat.color}`}>
                   <stat.icon className="w-6 h-6" />
                 </div>
               </div>
@@ -141,7 +141,7 @@ const Dashboard = () => {
         </motion.div>
 
         {/* Due Soon */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-card rounded-xl p-6 shadow-sm border border-border">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-card/60 backdrop-blur-xl rounded-xl p-6 shadow-xl border border-border/50">
           <div className="flex items-center gap-2 mb-4">
             <AlertCircle className="w-5 h-5 text-destructive" />
             <h2 className="text-lg font-semibold text-foreground">Due Soon</h2>
@@ -176,7 +176,7 @@ const Dashboard = () => {
         </motion.div>
 
         {/* Quick Actions */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-card rounded-xl p-6 shadow-sm border border-border">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-card/60 backdrop-blur-xl rounded-xl p-6 shadow-xl border border-border/50">
           <h2 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h2>
           <div className="flex flex-wrap gap-3">
             <Button className="gap-2" onClick={() => navigate('/tutor')}>

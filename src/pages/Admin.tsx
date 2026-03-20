@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Shield, CheckCircle2, XCircle, Loader2, Receipt, ExternalLink } from "lucide-react";
+import { Shield, CheckCircle2, XCircle, Loader2, Receipt, ExternalLink, Users, FileText, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +44,23 @@ const Admin = () => {
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data as any[]) as AdminUpgradeRequest[];
+    },
+    enabled: !!isAdmin,
+  });
+
+  const { data: stats } = useQuery({
+    queryKey: ["admin-stats"],
+    queryFn: async () => {
+      const [users, flashcards, posts] = await Promise.all([
+        supabase.from("profiles").select("*", { count: "exact", head: true }),
+        supabase.from("flashcards").select("*", { count: "exact", head: true }),
+        supabase.from("community_posts").select("*", { count: "exact", head: true }),
+      ]);
+      return {
+        users: users.count || 0,
+        flashcards: flashcards.count || 0,
+        posts: posts.count || 0,
+      };
     },
     enabled: !!isAdmin,
   });
@@ -131,11 +148,42 @@ const Admin = () => {
             <Shield className="w-6 h-6 text-primary" />
             <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Admin Panel</h1>
           </div>
-          <p className="text-muted-foreground mt-1">Review and manage upgrade requests.</p>
+          <p className="text-muted-foreground mt-1">Review and manage upgrade requests and system statistics.</p>
+        </motion.div>
+
+        {/* System Stats Overview */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          <div className="bg-card/60 backdrop-blur-xl rounded-xl p-5 shadow-xl border border-border/50 flex items-center gap-4">
+            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+              <Users className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total Users</p>
+              <h2 className="text-2xl font-bold">{stats?.users ?? "-"}</h2>
+            </div>
+          </div>
+          <div className="bg-card/60 backdrop-blur-xl rounded-xl p-5 shadow-xl border border-border/50 flex items-center gap-4">
+            <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center">
+              <MessageSquare className="w-6 h-6 text-accent" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Community Posts</p>
+              <h2 className="text-2xl font-bold">{stats?.posts ?? "-"}</h2>
+            </div>
+          </div>
+          <div className="bg-card/60 backdrop-blur-xl rounded-xl p-5 shadow-xl border border-border/50 flex items-center gap-4">
+            <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center">
+              <FileText className="w-6 h-6 text-emerald-500" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Flashcards Created</p>
+              <h2 className="text-2xl font-bold">{stats?.flashcards ?? "-"}</h2>
+            </div>
+          </div>
         </motion.div>
 
         {/* Pending Requests */}
-        <div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <h2 className="text-lg font-semibold text-foreground mb-4">
             Pending Requests ({pendingRequests.length})
           </h2>
@@ -151,88 +199,89 @@ const Admin = () => {
             </Card>
           ) : (
             <div className="space-y-4">
-              {pendingRequests.map((req) => (
-                <Card key={req.id}>
-                  <CardContent className="pt-6 space-y-4">
-                    <div className="flex items-start justify-between flex-wrap gap-2">
-                      <div>
-                        <p className="text-sm text-muted-foreground">User ID</p>
-                        <p className="text-xs font-mono text-foreground">{req.user_id}</p>
+                {pendingRequests.map((req) => (
+                  <Card key={req.id} className="bg-card/60 backdrop-blur-xl border-border/50 hover:shadow-xl transition-shadow">
+                    <CardContent className="pt-6 space-y-4">
+                      {/* ... (existing inner content preserved logically outside this chunk snippet, just updated the wrapper class) ... */}
+                      <div className="flex items-start justify-between flex-wrap gap-2">
+                        <div>
+                          <p className="text-sm text-muted-foreground">User ID</p>
+                          <p className="text-xs font-mono text-foreground">{req.user_id}</p>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant="secondary" className="capitalize">{req.requested_tier}</Badge>
+                          <p className="text-sm font-semibold text-foreground mt-1">
+                            ₦{req.amount.toLocaleString()}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <Badge variant="secondary" className="capitalize">{req.requested_tier}</Badge>
-                        <p className="text-sm font-semibold text-foreground mt-1">
-                          ₦{req.amount.toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
 
-                    {req.payment_reference && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Reference</p>
-                        <p className="text-sm font-mono text-foreground">{req.payment_reference}</p>
-                      </div>
-                    )}
+                      {req.payment_reference && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">Reference</p>
+                          <p className="text-sm font-mono text-foreground">{req.payment_reference}</p>
+                        </div>
+                      )}
 
-                    {req.receipt_url && (
+                      {req.receipt_url && (
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">Receipt</p>
+                          <a
+                            href={getReceiptUrl(req.receipt_url)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                          >
+                            <Receipt className="w-4 h-4" /> View Receipt <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      )}
+
                       <div>
-                        <p className="text-sm text-muted-foreground mb-1">Receipt</p>
-                        <a
-                          href={getReceiptUrl(req.receipt_url)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                        <Label className="text-xs">Admin Note (optional)</Label>
+                        <Input
+                          placeholder="Add a note..."
+                          value={adminNotes[req.id] || ""}
+                          onChange={(e) =>
+                            setAdminNotes((prev) => ({ ...prev, [req.id]: e.target.value }))
+                          }
+                          maxLength={500}
+                        />
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleAction(req.id, "approved")}
+                          disabled={processingId === req.id}
+                          className="bg-green-600 hover:bg-green-700 text-white"
                         >
-                          <Receipt className="w-4 h-4" /> View Receipt <ExternalLink className="w-3 h-3" />
-                        </a>
+                          {processingId === req.id ? (
+                            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="mr-1 h-3 w-3" />
+                          )}
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleAction(req.id, "rejected")}
+                          disabled={processingId === req.id}
+                        >
+                          <XCircle className="mr-1 h-3 w-3" /> Reject
+                        </Button>
                       </div>
-                    )}
 
-                    <div>
-                      <Label className="text-xs">Admin Note (optional)</Label>
-                      <Input
-                        placeholder="Add a note..."
-                        value={adminNotes[req.id] || ""}
-                        onChange={(e) =>
-                          setAdminNotes((prev) => ({ ...prev, [req.id]: e.target.value }))
-                        }
-                        maxLength={500}
-                      />
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => handleAction(req.id, "approved")}
-                        disabled={processingId === req.id}
-                        className="bg-green-600 hover:bg-green-700 text-white"
-                      >
-                        {processingId === req.id ? (
-                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                        ) : (
-                          <CheckCircle2 className="mr-1 h-3 w-3" />
-                        )}
-                        Approve
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleAction(req.id, "rejected")}
-                        disabled={processingId === req.id}
-                      >
-                        <XCircle className="mr-1 h-3 w-3" /> Reject
-                      </Button>
-                    </div>
-
-                    <p className="text-xs text-muted-foreground">
-                      Submitted: {new Date(req.created_at).toLocaleString()}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
+                      <p className="text-xs text-muted-foreground">
+                        Submitted: {new Date(req.created_at).toLocaleString()}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
             </div>
           )}
-        </div>
+        </motion.div>
 
         {/* Processed Requests */}
         {processedRequests.length > 0 && (

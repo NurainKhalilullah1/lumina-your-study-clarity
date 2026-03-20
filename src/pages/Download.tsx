@@ -66,7 +66,7 @@ const DownloadPage = () => {
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent" />
           
           <h1 className="text-2xl font-bold text-foreground mb-4">
-            Downloading StudyFlow API...
+            Downloading StudyFlow App...
           </h1>
 
           {loading ? (

@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { usePosts, useUserUpvotes, useToggleUpvote, useUserGroup } from "@/hooks/useCommunity";
+import { usePosts, useUserUpvotes, useToggleUpvote, useUserGroup, useCommunityRealtime } from "@/hooks/useCommunity";
 import PostCard from "@/components/community/PostCard";
 import CreatePostDialog from "@/components/community/CreatePostDialog";
 import GroupInfo from "@/components/community/GroupInfo";
@@ -38,6 +38,8 @@ const categoryChipColors: Record<string, string> = {
 };
 
 const Community = () => {
+  useCommunityRealtime(); // Enable live syncing
+  
   const { data: allPosts, isLoading: loadingAll } = usePosts();
   const { data: userGroup } = useUserGroup();
   const { data: groupPosts, isLoading: loadingGroup } = usePosts(userGroup?.id);

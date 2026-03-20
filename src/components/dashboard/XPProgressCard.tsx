@@ -20,9 +20,9 @@ export const XPProgressCard = () => {
   }
 
   return (
-    <div className="bg-card rounded-xl p-5 shadow-sm border border-border h-full relative overflow-hidden">
+    <div className="bg-card/60 backdrop-blur-xl rounded-xl p-5 shadow-xl border border-border/50 h-full relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
       {/* Subtle gradient glow */}
-      <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-primary/5 blur-2xl" />
+      <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-primary/10 blur-3xl group-hover:bg-primary/20 transition-all duration-500" />
 
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
