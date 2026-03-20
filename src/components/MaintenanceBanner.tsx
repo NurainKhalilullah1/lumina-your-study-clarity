@@ -4,7 +4,7 @@ import { Wrench } from "lucide-react";
 // 🔧  TOGGLE THIS FLAG to enable / disable maintenance lockdown
 //     true  → entire app is locked (no login, no access at all)
 //     false → app works normally
-export const MAINTENANCE_MODE = false;
+export const MAINTENANCE_MODE = true;
 
 // ✏️  EDIT these to match your upgrade window
 const MAINTENANCE_START = "Tuesday 18 March 2026";
