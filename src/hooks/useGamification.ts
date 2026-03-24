@@ -200,14 +200,11 @@ export function useGamification() {
         last_calculated_at: new Date().toISOString(),
         weekly_xp: weeklyXP,
         week_start: weekStartStr,
-      } as any;
+        current_league: currentLeague, // default from state
+      };
 
-      if (storedXP) {
-        await supabase.from('user_xp').update(payload).eq('user_id', user.id);
-      } else {
-        payload.current_league = 2;
-        await supabase.from('user_xp').insert(payload);
-      }
+      // Use upsert to prevent 409 Conflict from race conditions (e.g. React Strict Mode double-render)
+      await supabase.from('user_xp').upsert(payload, { onConflict: 'user_id' });
 
       queryClient.invalidateQueries({ queryKey: ['user-xp'] });
       queryClient.invalidateQueries({ queryKey: ['leaderboard'] });

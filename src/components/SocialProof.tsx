@@ -32,10 +32,10 @@ export const SocialProof = () => {
       </div>
 
       {/* Logo Marquee */}
-      <div className="relative">
-        <div className="flex animate-marquee">
+      <div className="relative flex overflow-hidden group">
+        <div className="flex w-max animate-marquee hover:[animation-play-state:paused] flex-nowrap">
           {/* First set of logos */}
-          {[...logos, ...logos].map((logo, index) => (
+          {[...logos, ...logos, ...logos, ...logos].map((logo, index) => (
             <div
               key={index}
               className="flex-shrink-0 mx-8 sm:mx-12 group"

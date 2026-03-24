@@ -7,6 +7,7 @@ import PostCard from "@/components/community/PostCard";
 import CreatePostDialog from "@/components/community/CreatePostDialog";
 import GroupInfo from "@/components/community/GroupInfo";
 import TrendingPosts from "@/components/community/TrendingPosts";
+import { PostSkeleton } from "@/components/community/PostSkeleton";
 import { Loader2, Search, MessageCircle, GraduationCap, ArrowUpDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -85,8 +86,10 @@ const Community = () => {
   const renderPosts = (posts: typeof allPosts, loading: boolean) => {
     if (loading) {
       return (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        <div className="space-y-4 animate-fade-in">
+          <PostSkeleton />
+          <PostSkeleton />
+          <PostSkeleton />
         </div>
       );
     }

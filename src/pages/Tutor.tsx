@@ -198,7 +198,7 @@ export default function Tutor() {
 
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-      let result;
+      let resultStream;
       if (imagePart) {
         // Use vision capabilities for images
         const prompt = `You are StudyFlow, a friendly and knowledgeable AI tutor. 
@@ -206,7 +206,7 @@ A student has shared an image with you. Please analyze it and help them understa
 ${inputMessage ? `Their question: "${inputMessage}"` : "Please describe and explain what you see in this image."}
 INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points when appropriate. Keep responses concise but comprehensive.`;
 
-        result = await model.generateContent([prompt, imagePart]);
+        resultStream = await model.generateContentStream([prompt, imagePart]);
       } else {
         const prompt = `
           You are StudyFlow, a friendly and knowledgeable AI tutor.
@@ -215,12 +215,23 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
           USER: "${inputMessage}"
           INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points when appropriate. Keep responses concise but comprehensive.
         `;
-        result = await model.generateContent(prompt);
+        resultStream = await model.generateContentStream(prompt);
       }
 
-      const responseText = result.response.text();
+      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+      let fullResponseText = "";
+      
+      for await (const chunk of resultStream.stream) {
+        const chunkText = chunk.text();
+        fullResponseText += chunkText;
+        setMessages((prev) => {
+          const newMsgs = [...prev];
+          newMsgs[newMsgs.length - 1] = { ...newMsgs[newMsgs.length - 1], content: fullResponseText };
+          return newMsgs;
+        });
+      }
 
-      setMessages((prev) => [...prev, { role: "assistant", content: responseText }]);
+      const responseText = fullResponseText;
 
       if (currentSession && user) {
         await supabase.from("chat_messages").insert({

@@ -1,9 +1,10 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { User, FileText } from "lucide-react";
+import { User, FileText, Copy, Check, Download } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import { StudyFlowLogo } from "@/components/StudyFlowLogo";
 import { ImagePreview } from "./ImagePreview";
+import { useState } from "react";
 
 interface Message {
   role: 'user' | 'assistant';
@@ -18,6 +19,24 @@ interface ChatMessagesProps {
 }
 
 export const ChatMessages = ({ messages, isLoading }: ChatMessagesProps) => {
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
+  const handleCopy = (text: string, idx: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIndex(idx);
+    setTimeout(() => setCopiedIndex(null), 2000);
+  };
+
+  const handleExport = (text: string, idx: number) => {
+    const blob = new Blob([text], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `studyflow-tutor-response-${idx + 1}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6 pb-4 max-w-4xl mx-auto w-full overflow-hidden">
       {messages.map((msg, idx) => (
@@ -78,8 +97,30 @@ export const ChatMessages = ({ messages, isLoading }: ChatMessagesProps) => {
                 : "bg-muted/50 text-foreground rounded-bl-md border border-border/50"
             )}>
               {msg.role === 'assistant' ? (
-                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-ul:my-2 prose-li:my-0.5 break-words overflow-wrap-anywhere">
-                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                <div className="flex flex-col gap-2">
+                  <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-ul:my-2 prose-li:my-0.5 break-words overflow-wrap-anywhere">
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  </div>
+                  {msg.content && (
+                    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/50">
+                      <button
+                        onClick={() => handleCopy(msg.content, idx)}
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors p-1"
+                        title="Copy Response"
+                      >
+                        {copiedIndex === idx ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copiedIndex === idx ? "Copied" : "Copy"}
+                      </button>
+                      <button
+                        onClick={() => handleExport(msg.content, idx)}
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors p-1"
+                        title="Download as Markdown"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Export
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p className="whitespace-pre-wrap break-words">{msg.content}</p>

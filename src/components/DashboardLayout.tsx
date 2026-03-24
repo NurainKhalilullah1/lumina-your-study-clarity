@@ -36,7 +36,7 @@ const DashboardLayout = ({ children, hideMobileHeader }: DashboardLayoutProps) =
         <SidebarInset className="flex flex-col min-w-0 min-h-0">
           {/* Mobile Header */}
           {!hideMobileHeader && (
-            <header className="flex items-center justify-between h-14 px-4 border-b border-border bg-card md:hidden shrink-0">
+            <header className="flex items-center justify-between h-14 px-4 border-b border-border bg-card/80 backdrop-blur-md md:hidden shrink-0 sticky top-0 z-10">
               <div className="flex items-center gap-2">
                 <button onClick={handleSignOut} className="p-2 -ml-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors">
                   <LogOut className="w-5 h-5" />
@@ -54,7 +54,7 @@ const DashboardLayout = ({ children, hideMobileHeader }: DashboardLayoutProps) =
           )}
           
           {/* Desktop Header */}
-          <div className="hidden md:flex items-center justify-between h-14 px-4 border-b border-border bg-card shrink-0">
+          <div className="hidden md:flex items-center justify-between h-14 px-4 border-b border-border bg-card/80 backdrop-blur-md shrink-0 sticky top-0 z-10">
             <SidebarTrigger />
             <ThemeToggle />
           </div>
