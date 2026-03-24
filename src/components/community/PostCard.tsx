@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { ThumbsUp, MessageCircle, User } from "lucide-react";
+import { ThumbsUp, MessageCircle, User, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
-import { CommunityPost } from "@/hooks/useCommunity";
+import { CommunityPost, useDeletePost } from "@/hooks/useCommunity";
 import CommentSection from "./CommentSection";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
+import { useAuth } from "@/contexts/AuthContext";
 
 const categoryColors: Record<string, string> = {
   question: "bg-blue-500/10 text-blue-500 border-blue-500/20",
@@ -24,6 +25,10 @@ interface PostCardProps {
 const PostCard = ({ post, isUpvoted, onToggleUpvote }: PostCardProps) => {
   const [showComments, setShowComments] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const { user } = useAuth();
+  const deletePost = useDeletePost();
+
+  const isAuthor = user?.id === post.user_id;
 
   // Extract optional title from first line
   const lines = post.content.split("\n");
@@ -108,6 +113,20 @@ const PostCard = ({ post, isUpvoted, onToggleUpvote }: PostCardProps) => {
             <span className="font-medium">{post.comment_count}</span>
           </Button>
         </motion.div>
+
+        {isAuthor && (
+          <motion.div whileTap={{ scale: 0.9 }} className="ml-auto">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => deletePost.mutate(post.id)}
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              disabled={deletePost.isPending}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </motion.div>
+        )}
       </div>
 
       <AnimatePresence>
