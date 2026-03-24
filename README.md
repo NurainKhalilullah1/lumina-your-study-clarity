@@ -166,4 +166,4 @@ This project is proprietary. All rights reserved.
 
 ---
 
-Built with ❤️ using [Lovable](https://lovable.dev)
+Built with ❤️ for Nigerian Student.
