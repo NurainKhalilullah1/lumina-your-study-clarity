@@ -13,6 +13,7 @@ import { WeeklyGoals } from "@/components/dashboard/WeeklyGoals";
 import { DashboardPomodoroCard } from "@/components/dashboard/DashboardPomodoroCard";
 import { XPProgressCard } from "@/components/dashboard/XPProgressCard";
 import { AchievementsCard } from "@/components/dashboard/AchievementsCard";
+import { useTrackStudyEvent, useStudyEvents } from "@/hooks/useStudyStats";
 const getGreeting = () => {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
@@ -32,6 +33,8 @@ const Dashboard = () => {
   ]);
 
   const [urgentAssignments, setUrgentAssignments] = useState<any[]>([]);
+  const { data: recentEvents } = useStudyEvents(user?.id, 1);
+  const trackEvent = useTrackStudyEvent();
 
   const fetchData = async () => {
     if (!user) return;
@@ -85,6 +88,24 @@ const Dashboard = () => {
   useEffect(() => {
     fetchData();
   }, [user]);
+
+  // Track daily login streak
+  useEffect(() => {
+    if (user && recentEvents) {
+      const today = new Date().toDateString();
+      const hasLoggedInToday = recentEvents.some(
+        e => e.event_type === 'daily_login' && new Date(e.created_at).toDateString() === today
+      );
+      
+      if (!hasLoggedInToday) {
+        trackEvent.mutate({
+          userId: user.id,
+          eventType: 'daily_login',
+          metadata: { source: 'dashboard_login' }
+        });
+      }
+    }
+  }, [user, recentEvents]);
 
   return (
     <DashboardLayout>

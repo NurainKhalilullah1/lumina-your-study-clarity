@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export type StudyEventType = 'pomodoro_completed' | 'flashcard_reviewed' | 'document_analyzed';
+export type StudyEventType = 'pomodoro_completed' | 'flashcard_reviewed' | 'document_analyzed' | 'daily_login';
 
 export interface StudyEvent {
   id: string;
