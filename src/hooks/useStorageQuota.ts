@@ -17,9 +17,9 @@ export const useStorageQuota = (userId: string | undefined) => {
       if (!userId) {
         return {
           used: 0,
-          limit: 52428800,
+          limit: 20971520,
           percentage: 0,
-          remaining: 52428800,
+          remaining: 20971520,
           isNearLimit: false,
           isAtLimit: false,
         };
@@ -35,15 +35,15 @@ export const useStorageQuota = (userId: string | undefined) => {
         console.error("Error fetching storage quota:", error);
         return {
           used: 0,
-          limit: 52428800,
+          limit: 20971520,
           percentage: 0,
-          remaining: 52428800,
+          remaining: 20971520,
           isNearLimit: false,
           isAtLimit: false,
         };
       }
 
-      const limit = data?.storage_limit_bytes ?? 52428800;
+      const limit = data?.storage_limit_bytes ?? 20971520;
       const used = data?.storage_used_bytes ?? 0;
       const percentage = limit > 0 ? Math.round((used / limit) * 100) : 0;
       const remaining = Math.max(0, limit - used);

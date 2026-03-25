@@ -8,6 +8,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
+import { useTrackStudyEvent, useStudyEvents } from "@/hooks/useStudyStats";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -15,10 +17,31 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout = ({ children, hideMobileHeader }: DashboardLayoutProps) => {
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  
+  const { data: recentEvents } = useStudyEvents(user?.id, 1);
+  const trackEvent = useTrackStudyEvent();
+
+  // Track daily login streak globally
+  useEffect(() => {
+    if (user && recentEvents) {
+      const today = new Date().toDateString();
+      const hasLoggedInToday = recentEvents.some(
+        e => e.event_type === 'daily_login' && new Date(e.created_at).toDateString() === today
+      );
+      
+      if (!hasLoggedInToday) {
+        trackEvent.mutate({
+          userId: user.id,
+          eventType: 'daily_login',
+          metadata: { source: 'app_launch' }
+        });
+      }
+    }
+  }, [user, recentEvents]);
 
   const handleSignOut = async () => {
     await signOut();
