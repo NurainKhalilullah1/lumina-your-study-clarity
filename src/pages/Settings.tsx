@@ -31,7 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useProfile } from "@/hooks/useProfile";
-import { UNIVERSITIES } from "@/constants/universities";
+import { useUniversityData } from "@/hooks/useUniversityData";
 import { useSubscription, TIER_CONFIG } from "@/hooks/useSubscription";
 import UpgradeDialog, { UpgradeRequestStatus } from "@/components/UpgradeDialog";
 import { Badge } from "@/components/ui/badge";
@@ -58,9 +58,11 @@ const Settings = () => {
   
   // University & Course state
   const { data: profile, refetch: refetchProfile } = useProfile(user?.id);
+  const { universities, courses, loadingUniversities, loadingCourses } = useUniversityData();
   const [university, setUniversity] = useState("");
   const [customUniversity, setCustomUniversity] = useState("");
   const [courseOfStudy, setCourseOfStudy] = useState("");
+  const [level, setLevel] = useState("");
   const [savingUniCourse, setSavingUniCourse] = useState(false);
 
   // Study preferences hook
@@ -96,13 +98,19 @@ const Settings = () => {
   useEffect(() => {
     if (profile) {
       if (profile.university) {
-        const isPreset = UNIVERSITIES.includes(profile.university as any);
-        setUniversity(isPreset ? profile.university : "Other");
-        if (!isPreset) setCustomUniversity(profile.university);
+        // We will just let the Select match it or set it to 'Other' if it doesn't match once universities are loaded
+        if (universities.length > 0) {
+          const isPreset = universities.includes(profile.university);
+          setUniversity(isPreset ? profile.university : "Other");
+          if (!isPreset) setCustomUniversity(profile.university);
+        } else {
+          setUniversity(profile.university);
+        }
       }
       if (profile.course_of_study) setCourseOfStudy(profile.course_of_study);
+      if (profile.level) setLevel(profile.level);
     }
-  }, [profile]);
+  }, [profile, universities]);
 
   const selectedUniversity = university === "Other" ? customUniversity : university;
 
@@ -118,17 +126,20 @@ const Settings = () => {
   }, [location.state]);
 
   const handleSaveUniCourse = async () => {
-    if (!user || !selectedUniversity || !courseOfStudy) return;
+    if (!user || !selectedUniversity || !courseOfStudy || !level) return;
     setSavingUniCourse(true);
     try {
       await supabase.from("profiles").update({
         university: selectedUniversity,
         course_of_study: courseOfStudy,
+        level: level,
       }).eq("id", user.id);
 
+      // We call upsert_user_group with level
       await supabase.rpc("upsert_user_group", {
         p_university: selectedUniversity,
         p_course_of_study: courseOfStudy,
+        p_level: level,
       });
 
       await refetchProfile();
@@ -439,26 +450,33 @@ const Settings = () => {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <GraduationCap className="w-5 h-5 text-primary" />
-              <h2 className="text-lg font-semibold text-foreground">University & Course</h2>
+              <h2 className="text-lg font-semibold text-foreground">Academic Details</h2>
             </div>
             <Button
               size="sm"
               onClick={handleSaveUniCourse}
-              disabled={savingUniCourse || !selectedUniversity || !courseOfStudy}
+              disabled={savingUniCourse || !selectedUniversity || !courseOfStudy || !level}
             >
               {savingUniCourse ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               Save
             </Button>
           </div>
+          
+          {location.state?.fromMissingProfile && (
+            <div className="mb-4 p-3 bg-destructive/10 text-destructive text-sm rounded-md border border-destructive/20">
+              Please complete your University, Course, and Level details to continue using StudyFlow.
+            </div>
+          )}
+
           <div className="space-y-4">
             <div className="grid gap-2">
               <Label>University</Label>
               <Select value={university} onValueChange={(val) => { setUniversity(val); if (val !== "Other") setCustomUniversity(""); }}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your university" />
+                <SelectTrigger disabled={loadingUniversities}>
+                  <SelectValue placeholder={loadingUniversities ? "Loading universities..." : "Select your university"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {UNIVERSITIES.map((u) => (
+                  {universities.map((u: string) => (
                     <SelectItem key={u} value={u}>{u}</SelectItem>
                   ))}
                   <SelectItem value="Other">Other</SelectItem>
@@ -466,19 +484,40 @@ const Settings = () => {
               </Select>
               {university === "Other" && (
                 <Input
+                  className="mt-2"
                   placeholder="Enter your university name"
                   value={customUniversity}
                   onChange={(e) => setCustomUniversity(e.target.value)}
                 />
               )}
             </div>
-            <div className="grid gap-2">
+            
+            <div className="grid gap-2 mt-4">
               <Label>Course of Study</Label>
-              <Input
-                placeholder="e.g. Computer Science"
-                value={courseOfStudy}
-                onChange={(e) => setCourseOfStudy(e.target.value)}
-              />
+              <Select value={courseOfStudy} onValueChange={setCourseOfStudy}>
+                <SelectTrigger disabled={loadingCourses}>
+                  <SelectValue placeholder={loadingCourses ? "Loading courses..." : "Select your course"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {courses.map((c: string) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2 mt-4">
+              <Label>Level</Label>
+              <Select value={level} onValueChange={setLevel}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your academic level" />
+                </SelectTrigger>
+                <SelectContent>
+                  {["100 Level", "200 Level", "300 Level", "400 Level", "500 Level", "600 Level"].map((l) => (
+                    <SelectItem key={l} value={l}>{l}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>

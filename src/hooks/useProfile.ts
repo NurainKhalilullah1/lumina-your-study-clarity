@@ -10,6 +10,7 @@ export interface Profile {
   storage_used_bytes: number;
   university: string | null;
   course_of_study: string | null;
+  level: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -43,7 +44,8 @@ export const createProfile = async (
   fullName?: string,
   avatarUrl?: string,
   university?: string,
-  courseOfStudy?: string
+  courseOfStudy?: string,
+  level?: string
 ) => {
   const { data, error } = await supabase
     .from("profiles")
@@ -54,6 +56,7 @@ export const createProfile = async (
       avatar_url: avatarUrl || null,
       university: university || null,
       course_of_study: courseOfStudy || null,
+      level: level || null,
     })
     .select()
     .single();

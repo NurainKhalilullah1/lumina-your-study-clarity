@@ -1,7 +1,9 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { Sparkles } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useEffect, useState } from "react";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,6 +12,9 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading: authLoading } = useAuth();
   const { data: profile, isLoading: profileLoading } = useProfile(user?.id);
+  const location = useLocation();
+  const { toast } = useToast();
+  const [hasShownToast, setHasShownToast] = useState(false);
 
   // Show loading while checking auth
   if (authLoading) {
@@ -43,6 +48,24 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   // Authenticated but no profile - redirect to onboarding
   if (!profile) {
     return <Navigate to="/onboarding" replace />;
+  }
+
+  const isMissingInfo = !profile.university || !profile.course_of_study || !profile.level;
+
+  if (isMissingInfo && location.pathname !== "/settings" && location.pathname !== "/onboarding") {
+    // We use a timeout to avoid setting state during render
+    setTimeout(() => {
+      if (!hasShownToast) {
+        toast({
+          title: "Profile Incomplete",
+          description: "Please update your University, Course, and Level to continue.",
+          variant: "destructive",
+          duration: 5000,
+        });
+        setHasShownToast(true);
+      }
+    }, 0);
+    return <Navigate to="/settings" replace state={{ fromMissingProfile: true }} />;
   }
 
   return <>{children}</>;

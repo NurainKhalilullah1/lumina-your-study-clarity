@@ -8,18 +8,21 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, UserPlus, GraduationCap, BookOpen, ChevronRight, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { UNIVERSITIES } from "@/constants/universities";
+import { useUniversityData } from "@/hooks/useUniversityData";
 import { supabase } from "@/integrations/supabase/client";
 
 const Onboarding = () => {
   const { user, loading: authLoading } = useAuth();
   const { data: profile, isLoading: profileLoading, refetch } = useProfile(user?.id);
+  const { universities, courses, loadingUniversities, loadingCourses } = useUniversityData();
   const [isCreating, setIsCreating] = useState(false);
   const [step, setStep] = useState(0);
   const [university, setUniversity] = useState("");
   const [customUniversity, setCustomUniversity] = useState("");
   const [courseOfStudy, setCourseOfStudy] = useState("");
+  const [level, setLevel] = useState("");
   const [uniSearch, setUniSearch] = useState("");
+  const [courseSearch, setCourseSearch] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -48,14 +51,16 @@ const Onboarding = () => {
         user.user_metadata?.full_name || user.user_metadata?.name,
         user.user_metadata?.avatar_url,
         selectedUniversity || undefined,
-        courseOfStudy || undefined
+        courseOfStudy || undefined,
+        level || undefined
       );
 
       // Auto-join group if both fields are set
-      if (selectedUniversity && courseOfStudy) {
+      if (selectedUniversity && courseOfStudy && level) {
         await supabase.rpc("upsert_user_group", {
           p_university: selectedUniversity,
           p_course_of_study: courseOfStudy,
+          p_level: level,
         });
       }
       
@@ -89,8 +94,12 @@ const Onboarding = () => {
     );
   }
 
-  const filteredUniversities = UNIVERSITIES.filter((u) =>
+  const filteredUniversities = universities.filter((u: string) =>
     u.toLowerCase().includes(uniSearch.toLowerCase())
+  );
+
+  const filteredCourses = courses.filter((c: string) =>
+    c.toLowerCase().includes(courseSearch.toLowerCase())
   );
 
   const steps = [
@@ -130,7 +139,8 @@ const Onboarding = () => {
       />
 
       <div className="max-h-48 overflow-y-auto space-y-1 mb-3 border border-border rounded-lg p-2">
-        {filteredUniversities.map((u) => (
+        {loadingUniversities && <p className="text-sm p-2 text-muted-foreground">Loading...</p>}
+        {filteredUniversities.map((u: string) => (
           <button
             key={u}
             onClick={() => { setUniversity(u); setUniSearch(""); }}
@@ -187,18 +197,31 @@ const Onboarding = () => {
       <p className="text-sm text-muted-foreground text-center mb-4">e.g. Computer Science, Mechanical Engineering</p>
 
       <div className="mb-2">
-        <Label htmlFor="course">Course of Study</Label>
         <Input
-          id="course"
-          placeholder="Enter your course"
-          value={courseOfStudy}
-          onChange={(e) => setCourseOfStudy(e.target.value)}
+          placeholder="Search courses..."
+          value={courseSearch}
+          onChange={(e) => setCourseSearch(e.target.value)}
+          className="mb-3"
         />
-      </div>
-
-      <div className="p-3 bg-muted/50 rounded-lg mb-4 text-sm text-muted-foreground">
-        <p><strong>University:</strong> {selectedUniversity}</p>
-        {courseOfStudy && <p><strong>Course:</strong> {courseOfStudy}</p>}
+        <div className="max-h-48 overflow-y-auto space-y-1 mb-3 border border-border rounded-lg p-2">
+          {loadingCourses && <p className="text-sm p-2 text-muted-foreground">Loading...</p>}
+          {filteredCourses.map((c: string) => (
+            <button
+              key={c}
+              onClick={() => { setCourseOfStudy(c); setCourseSearch(""); }}
+              className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                courseOfStudy === c
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-muted text-foreground"
+              }`}
+            >
+              {c}
+            </button>
+          ))}
+          {filteredCourses.length === 0 && !loadingCourses && (
+            <p className="text-sm text-muted-foreground p-2">No standard courses found.</p>
+          )}
+        </div>
       </div>
 
       <div className="flex gap-3">
@@ -206,12 +229,56 @@ const Onboarding = () => {
           <ChevronLeft className="w-4 h-4 mr-1" /> Back
         </Button>
         <Button
+          onClick={() => setStep(3)}
+          disabled={!courseOfStudy}
+          className="flex-1"
+        >
+          Next <ChevronRight className="w-4 h-4 ml-1" />
+        </Button>
+      </div>
+    </div>,
+
+    // Step 3: Level
+    <div key="level">
+      <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+        <GraduationCap className="w-6 h-6 text-primary" />
+      </div>
+      <h2 className="text-xl font-bold text-foreground mb-1 text-center">Your Academic Level</h2>
+      <p className="text-sm text-muted-foreground text-center mb-4">Select your current level</p>
+
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        {["100 Level", "200 Level", "300 Level", "400 Level", "500 Level", "600 Level"].map((l) => (
+          <button
+            key={l}
+            onClick={() => setLevel(l)}
+            className={`px-4 py-3 rounded-lg border text-sm font-medium transition-all ${
+              level === l
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border hover:border-primary/50 text-foreground"
+            }`}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
+
+      <div className="p-3 bg-muted/50 rounded-lg mb-4 text-sm text-muted-foreground">
+        <p><strong>University:</strong> {selectedUniversity}</p>
+        <p><strong>Course:</strong> {courseOfStudy}</p>
+        {level && <p><strong>Level:</strong> {level}</p>}
+      </div>
+
+      <div className="flex gap-3">
+        <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
+          <ChevronLeft className="w-4 h-4 mr-1" /> Back
+        </Button>
+        <Button
           onClick={handleCompleteSignup}
-          disabled={isCreating || !courseOfStudy}
+          disabled={isCreating || !level}
           className="flex-1"
         >
           {isCreating ? (
-            <><Sparkles className="w-4 h-4 mr-2 animate-spin" /> Creating...</>
+            <><Sparkles className="w-4 h-4 mr-2 animate-spin" /> Completing...</>
           ) : (
             <><UserPlus className="w-4 h-4 mr-2" /> Complete Signup</>
           )}
@@ -231,7 +298,7 @@ const Onboarding = () => {
         <div className="bg-card border border-border rounded-2xl p-8 shadow-lg">
           {/* Progress dots */}
           <div className="flex justify-center gap-2 mb-6">
-            {[0, 1, 2].map((i) => (
+            {[0, 1, 2, 3].map((i) => (
               <div
                 key={i}
                 className={`w-2 h-2 rounded-full transition-colors ${

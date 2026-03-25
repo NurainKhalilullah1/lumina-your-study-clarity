@@ -7,6 +7,7 @@ import PostCard from "@/components/community/PostCard";
 import CreatePostDialog from "@/components/community/CreatePostDialog";
 import GroupInfo from "@/components/community/GroupInfo";
 import TrendingPosts from "@/components/community/TrendingPosts";
+import PullToRefresh from "@/components/ui/PullToRefresh";
 import { PostSkeleton } from "@/components/community/PostSkeleton";
 import { Loader2, Search, MessageCircle, GraduationCap, ArrowUpDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -41,9 +42,9 @@ const categoryChipColors: Record<string, string> = {
 const Community = () => {
   useCommunityRealtime(); // Enable live syncing
   
-  const { data: allPosts, isLoading: loadingAll } = usePosts();
+  const { data: allPosts, isLoading: loadingAll, refetch: refetchAll } = usePosts();
   const { data: userGroup } = useUserGroup();
-  const { data: groupPosts, isLoading: loadingGroup } = usePosts(userGroup?.id);
+  const { data: groupPosts, isLoading: loadingGroup, refetch: refetchGroup } = usePosts(userGroup?.id);
   const { data: upvotedIds } = useUserUpvotes();
   const toggleUpvote = useToggleUpvote();
 
@@ -209,23 +210,29 @@ const Community = () => {
               <TabsTrigger value="all" className="flex-1">All Posts</TabsTrigger>
               <TabsTrigger value="group" className="flex-1">My Group</TabsTrigger>
             </TabsList>
-            <TabsContent value="all">{renderPosts(allPosts, loadingAll)}</TabsContent>
+            <TabsContent value="all">
+              <PullToRefresh onRefresh={async () => { await refetchAll(); }}>
+                {renderPosts(allPosts, loadingAll)}
+              </PullToRefresh>
+            </TabsContent>
             <TabsContent value="group">
-              {userGroup ? (
-                renderPosts(groupPosts, loadingGroup)
-              ) : (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                    <GraduationCap className="w-8 h-8 text-muted-foreground" />
+              <PullToRefresh onRefresh={async () => { await refetchGroup(); }}>
+                {userGroup ? (
+                  renderPosts(groupPosts, loadingGroup)
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                      <GraduationCap className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="font-semibold text-foreground mb-1">Join a Study Group</h3>
+                    <p className="text-sm text-muted-foreground max-w-xs">
+                      Set your university and course in{" "}
+                      <a href="/settings" className="text-primary underline">Settings</a>{" "}
+                      to see your group's posts.
+                    </p>
                   </div>
-                  <h3 className="font-semibold text-foreground mb-1">Join a Study Group</h3>
-                  <p className="text-sm text-muted-foreground max-w-xs">
-                    Set your university and course in{" "}
-                    <a href="/settings" className="text-primary underline">Settings</a>{" "}
-                    to see your group's posts.
-                  </p>
-                </div>
-              )}
+                )}
+              </PullToRefresh>
             </TabsContent>
           </Tabs>
 

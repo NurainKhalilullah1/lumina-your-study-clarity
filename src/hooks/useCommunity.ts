@@ -179,19 +179,6 @@ export const useCreateComment = () => {
         content,
       });
       if (error) throw error;
-
-      // Increment comment_count manually
-      const { data: postData } = await supabase
-        .from("community_posts")
-        .select("comment_count")
-        .eq("id", postId)
-        .single();
-      if (postData) {
-        await supabase
-          .from("community_posts")
-          .update({ comment_count: (postData.comment_count || 0) + 1 })
-          .eq("id", postId);
-      }
     },
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["community-comments", vars.postId] });
@@ -209,54 +196,21 @@ export const useToggleUpvote = () => {
       if (!user) throw new Error("Not authenticated");
 
       if (isUpvoted) {
-        const { data: deletedRows, error: deleteErr } = await supabase
+        const { error: deleteErr } = await supabase
           .from("community_upvotes")
           .delete()
           .eq("post_id", postId)
-          .eq("user_id", user.id)
-          .select("post_id");
+          .eq("user_id", user.id);
 
         if (deleteErr) throw deleteErr;
-
-        // Decrement only if we successfully removed a row
-        if (deletedRows && deletedRows.length > 0) {
-          const { data } = await supabase
-            .from("community_posts")
-            .select("upvote_count")
-            .eq("id", postId)
-            .single();
-          if (data) {
-            await supabase
-              .from("community_posts")
-              .update({ upvote_count: Math.max((data.upvote_count || 0) - 1, 0) })
-              .eq("id", postId);
-          }
-        }
       } else {
         const { error } = await supabase.from("community_upvotes").insert({
           post_id: postId,
           user_id: user.id,
         });
 
-        // Postgres constraint violation: 23505 (unique_violation). 
-        // This signifies the user already upvoted this post, safely ignore the constraint error so we don't spam 409s.
         if (error && error.code !== '23505') {
           throw error;
-        }
-
-        // Only increment the vote counter if the insert definitively succeeded without conflicts
-        if (!error) {
-          const { data } = await supabase
-            .from("community_posts")
-            .select("upvote_count")
-            .eq("id", postId)
-            .single();
-          if (data) {
-            await supabase
-              .from("community_posts")
-              .update({ upvote_count: (data.upvote_count || 0) + 1 })
-              .eq("id", postId);
-          }
         }
       }
     },

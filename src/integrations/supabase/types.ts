@@ -166,6 +166,13 @@ export type Database = {
             referencedRelation: "community_posts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "community_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       community_posts: {
@@ -205,6 +212,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -398,6 +412,24 @@ export type Database = {
           },
         ]
       }
+      nigerian_universities: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -406,6 +438,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          level: string | null
           storage_limit_bytes: number
           storage_used_bytes: number
           subscription_tier: string
@@ -419,6 +452,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          level?: string | null
           storage_limit_bytes?: number
           storage_used_bytes?: number
           subscription_tier?: string
@@ -432,6 +466,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          level?: string | null
           storage_limit_bytes?: number
           storage_used_bytes?: number
           subscription_tier?: string
@@ -584,6 +619,7 @@ export type Database = {
           course_of_study: string
           created_at: string
           id: string
+          level: string | null
           member_count: number
           university: string
         }
@@ -591,6 +627,7 @@ export type Database = {
           course_of_study: string
           created_at?: string
           id?: string
+          level?: string | null
           member_count?: number
           university: string
         }
@@ -598,8 +635,27 @@ export type Database = {
           course_of_study?: string
           created_at?: string
           id?: string
+          level?: string | null
           member_count?: number
           university?: string
+        }
+        Relationships: []
+      }
+      university_courses: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
         }
         Relationships: []
       }
@@ -839,10 +895,19 @@ export type Database = {
         Returns: boolean
       }
       process_league_week: { Args: never; Returns: undefined }
-      upsert_user_group: {
-        Args: { p_course_of_study: string; p_university: string }
-        Returns: undefined
-      }
+      upsert_user_group:
+        | {
+            Args: { p_course_of_study: string; p_university: string }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_course_of_study: string
+              p_level: string
+              p_university: string
+            }
+            Returns: undefined
+          }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
