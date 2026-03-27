@@ -1,37 +1,50 @@
 import { motion } from "framer-motion";
-import { Check, Zap, Crown, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { TIER_CONFIG } from "@/hooks/useSubscription";
+import { PricingContainer, PricingPlan } from "@/components/ui/pricing-container";
+import { Badge } from "@/components/ui/badge";
 
-const tiers = [
-  {
-    key: "free" as const,
-    icon: Zap,
-    badge: null,
-    cta: "Get Started",
-    popular: false,
-  },
-  {
-    key: "pro" as const,
-    icon: Sparkles,
-    badge: "Most Popular",
-    cta: "Upgrade to Pro",
-    popular: true,
-  },
-  {
-    key: "premium" as const,
-    icon: Crown,
-    badge: "Best Value",
-    cta: "Upgrade to Premium",
-    popular: false,
-  },
-];
+const ACCENT_MAP = {
+  free: "bg-violet-500",
+  pro: "bg-indigo-500",
+  premium: "bg-purple-600",
+};
 
 export const PricingSection = () => {
   const navigate = useNavigate();
+
+  const plans: PricingPlan[] = [
+    {
+      name: TIER_CONFIG.free.name,
+      monthlyPrice: TIER_CONFIG.free.price,
+      yearlyPrice: TIER_CONFIG.free.price,
+      features: [...TIER_CONFIG.free.features],
+      isPopular: false,
+      accent: ACCENT_MAP.free,
+      cta: "Get Started Free",
+      onCtaClick: () => navigate("/auth"),
+    },
+    {
+      name: TIER_CONFIG.pro.name,
+      monthlyPrice: TIER_CONFIG.pro.price,
+      yearlyPrice: Math.floor(TIER_CONFIG.pro.price * 10), // ~2 months free yearly
+      features: [...TIER_CONFIG.pro.features],
+      isPopular: true,
+      accent: ACCENT_MAP.pro,
+      cta: "Upgrade to Pro",
+      onCtaClick: () => navigate("/upgrade"),
+    },
+    {
+      name: TIER_CONFIG.premium.name,
+      monthlyPrice: TIER_CONFIG.premium.price,
+      yearlyPrice: Math.floor(TIER_CONFIG.premium.price * 10),
+      features: [...TIER_CONFIG.premium.features],
+      isPopular: false,
+      accent: ACCENT_MAP.premium,
+      cta: "Upgrade to Premium",
+      onCtaClick: () => navigate("/upgrade"),
+    },
+  ];
 
   return (
     <section className="py-20 px-4 relative bg-glow">
@@ -40,7 +53,7 @@ export const PricingSection = () => {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-14"
+          className="text-center mb-10"
         >
           <Badge variant="secondary" className="mb-4 text-sm px-4 py-1">
             Pricing
@@ -53,73 +66,11 @@ export const PricingSection = () => {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
-          {tiers.map((tier, i) => {
-            const config = TIER_CONFIG[tier.key];
-            return (
-              <motion.div
-                key={tier.key}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <Card
-                  className={`relative h-full flex flex-col ${
-                    tier.popular
-                      ? "border-primary shadow-lg glow-primary scale-[1.02]"
-                      : "border-border"
-                  }`}
-                >
-                  {tier.badge && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Badge className="gradient-primary text-primary-foreground px-3">
-                        {tier.badge}
-                      </Badge>
-                    </div>
-                  )}
-                  <CardHeader className="text-center pb-2">
-                    <div className="mx-auto mb-3 w-12 h-12 rounded-xl gradient-primary flex items-center justify-center">
-                      <tier.icon className="w-6 h-6 text-primary-foreground" />
-                    </div>
-                    <CardTitle className="text-xl">{config.name}</CardTitle>
-                    <CardDescription>
-                      <span className="text-3xl font-bold text-foreground">
-                        {config.price === 0 ? "Free" : `₦${config.price.toLocaleString()}`}
-                      </span>
-                      {config.price > 0 && (
-                        <span className="text-muted-foreground text-sm">/month</span>
-                      )}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex-1 flex flex-col">
-                    <ul className="space-y-3 mb-6 flex-1">
-                      {config.features.map((feature) => (
-                        <li key={feature} className="flex items-start gap-2 text-sm">
-                          <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                          <span className="text-foreground">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Button
-                      className={`w-full ${tier.popular ? "gradient-primary text-primary-foreground" : ""}`}
-                      variant={tier.popular ? "default" : "outline"}
-                      onClick={() => {
-                        if (tier.key === "free") {
-                          navigate("/auth");
-                        } else {
-                          navigate("/upgrade");
-                        }
-                      }}
-                    >
-                      {tier.cta}
-                    </Button>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </div>
+        <PricingContainer
+          title=""
+          plans={plans}
+          className="bg-transparent py-4"
+        />
       </div>
     </section>
   );

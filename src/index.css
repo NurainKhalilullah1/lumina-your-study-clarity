@@ -55,6 +55,13 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Hero Theme Variables - Light */
+    --hero-bg: 210 40% 98%;
+    --hero-glow: 243 75% 59% / 0.1;
+    --hero-meteor: 243 75% 59% / 0.4;
+    --hero-meteor-trail: 243 75% 59% / 0.2;
+    --hero-inset-shadow: 243 75% 59% / 0.05;
   }
 
   .dark {
@@ -98,6 +105,13 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Hero Theme Variables - Dark */
+    --hero-bg: 222 47% 4%;
+    --hero-glow: 243 75% 59% / 0.3;
+    --hero-meteor: 0 0% 100% / 0.8;
+    --hero-meteor-trail: 243 75% 59% / 0.5;
+    --hero-inset-shadow: 243 75% 59% / 0.15;
   }
 }
 
@@ -115,6 +129,7 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Work Sans', system-ui, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   h1,
@@ -250,4 +265,62 @@
   background: radial-gradient(ellipse, hsl(var(--primary) / 0.08) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
+}
+
+/* Premium Hero Background */
+.hero-premium-bg {
+  background-color: hsl(var(--hero-bg));
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 150px 50px hsla(var(--hero-inset-shadow));
+}
+
+.hero-premium-bg::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60%;
+  background: radial-gradient(circle at 50% 0%, hsla(var(--hero-glow)) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes meteor {
+  0% {
+    transform: rotate(215deg) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(215deg) translateX(-600px);
+    opacity: 0;
+  }
+}
+
+.animate-meteor {
+  position: absolute;
+  height: 1px;
+  width: 1px;
+  background-color: hsla(var(--hero-meteor));
+  border-radius: 9999px;
+  box-shadow: 0 0 0 1px hsla(var(--hero-meteor) / 0.1);
+  animation: meteor linear infinite;
+  z-index: 1;
+}
+
+.animate-meteor::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(to right, hsla(var(--hero-meteor-trail)), transparent);
 }

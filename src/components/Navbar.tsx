@@ -4,12 +4,13 @@ import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { StudyFlowLogo } from "./StudyFlowLogo";
+import { ThemeToggle } from "./ThemeToggle";
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/10 dark:border-white/5">
+    <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/40">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -40,6 +41,7 @@ export const Navbar = () => {
             <Button variant="ghost" size="sm" asChild>
               <Link to="/auth">Login</Link>
             </Button>
+            <ThemeToggle />
             <Button variant="glow" size="sm" asChild>
               <Link to="/auth">Get Started</Link>
             </Button>
@@ -67,7 +69,7 @@ export const Navbar = () => {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="md:hidden border-t border-white/10 dark:border-white/5 py-4"
+              className="md:hidden border-t border-border/40 py-4"
             >
               <div className="flex flex-col gap-3">
                 <Button variant="ghost" className="justify-start" asChild onClick={() => setIsOpen(false)}>
@@ -76,9 +78,12 @@ export const Navbar = () => {
                 <Button variant="ghost" className="justify-start" asChild onClick={() => setIsOpen(false)}>
                   <Link to="/about">About</Link>
                 </Button>
-                <Button variant="ghost" className="justify-start" asChild onClick={() => setIsOpen(false)}>
-                  <Link to="/auth">Login</Link>
-                </Button>
+                <div className="flex items-center justify-between">
+                  <Button variant="ghost" className="justify-start flex-1" asChild onClick={() => setIsOpen(false)}>
+                    <Link to="/auth">Login</Link>
+                  </Button>
+                  <ThemeToggle />
+                </div>
 
                 <Button variant="glow" asChild onClick={() => setIsOpen(false)}>
                   <Link to="/auth">Get Started</Link>
