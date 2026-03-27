@@ -140,7 +140,7 @@ export const SolutionSection = () => {
                     transition={{ duration: 0.4 }}
                     className={`flex items-center justify-center w-14 h-14 rounded-2xl mb-5 ${feature.iconBg} transition-colors duration-300`}
                   >
-                    <feature.icon className={`w-7 h-7 ${feature.iconColor}`} />
+                    <feature.icon className={`w-7 h-7 ${feature.iconColor}`} aria-hidden="true" />
                   </motion.div>
 
                   {/* Content */}
