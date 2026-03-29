@@ -10,10 +10,12 @@ import {
   Trophy,
   Users,
   Settings, 
-  LogOut 
+  LogOut,
+  Shield
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useIsAdmin } from "@/hooks/useSubscription";
 import {
   Sidebar,
   SidebarContent,
@@ -49,6 +51,7 @@ const DashboardSidebar = () => {
   const { toast } = useToast();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const { data: isAdmin } = useIsAdmin();
 
   const handleSignOut = async () => {
     await signOut();
@@ -98,6 +101,24 @@ const DashboardSidebar = () => {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {isAdmin && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive("/admin")}
+                    tooltip="Admin Panel"
+                  >
+                    <a
+                      href="/admin"
+                      onClick={(e) => { e.preventDefault(); navigate("/admin"); }}
+                      className="flex items-center gap-3 text-primary"
+                    >
+                      <Shield className="w-5 h-5 shrink-0" />
+                      <span>Admin Panel</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

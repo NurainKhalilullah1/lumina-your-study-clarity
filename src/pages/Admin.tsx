@@ -1,12 +1,17 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Shield, CheckCircle2, XCircle, Loader2, Receipt, ExternalLink, Users, FileText, MessageSquare } from "lucide-react";
+import {
+  Shield, CheckCircle2, XCircle, Loader2, Receipt, ExternalLink,
+  Users, FileText, MessageSquare, Mail, Eye, EyeOff, Send,
+  BookOpen, TrendingUp, Activity, Edit3, Save, ChevronDown, ChevronUp
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +32,107 @@ interface AdminUpgradeRequest {
   reviewed_at: string | null;
 }
 
+// ─── Email builder (shared with edge function) ──────────────────────────────
+function buildEmail(
+  subject: string, headerBg: string, headerTitle: string, headerSubtitle: string,
+  body: string, ctaText?: string, ctaUrl?: string, footer?: string
+) {
+  return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${subject}</title></head>
+<body style="margin:0;padding:0;background:#f4f4f7;font-family:Inter,'Segoe UI',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f7;padding:32px 0;">
+    <tr><td align="center">
+      <table role="presentation" width="600" style="max-width:600px;width:100%;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+        <tr><td style="background:${headerBg};padding:36px 40px;text-align:center;">
+          <h1 style="margin:0 0 4px;color:#fff;font-size:26px;font-weight:700;">✦ StudyFlow</h1>
+          <p style="margin:4px 0 0;color:rgba(255,255,255,0.9);font-size:16px;font-weight:600;">${headerTitle}</p>
+          ${headerSubtitle ? `<p style="margin:6px 0 0;color:rgba(255,255,255,0.75);font-size:14px;">${headerSubtitle}</p>` : ""}
+        </td></tr>
+        <tr><td style="padding:40px;color:#1a1a2e;">
+          <div style="font-size:16px;line-height:1.75;color:#333;">${body}</div>
+          ${ctaText && ctaUrl ? `<div style="text-align:center;margin:32px 0;"><a href="${ctaUrl}" style="background:#6c47ff;color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:600;font-size:15px;display:inline-block;">${ctaText}</a></div>` : ""}
+        </td></tr>
+        <tr><td style="background:#f9f9fb;border-top:1px solid #e8e8ef;padding:24px 40px;text-align:center;">
+          <p style="margin:0;font-size:13px;color:#888;">${footer ?? "© 2025 StudyFlow · Helping students learn smarter"}</p>
+          <p style="margin:6px 0 0;font-size:12px;color:#aaa;">You received this because you have a StudyFlow account.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+const DEFAULT_TEMPLATES = {
+  welcome: {
+    label: "🎉 Welcome Email",
+    headerBg: "linear-gradient(135deg,#6c47ff 0%,#a78bfa 100%)",
+    headerTitle: "Welcome to StudyFlow! 🎊",
+    headerSubtitle: "Your journey to smarter studying starts now",
+    body: `<p>Hi <strong>{{name}}</strong>,</p>
+<p>We're so excited to have you on board! StudyFlow is your all-in-one study companion — from AI-powered tutoring and smart flashcards to community study groups and quizzes.</p>
+<ul style="padding-left:20px;color:#555;">
+  <li style="margin-bottom:8px;">Set your university and course to join your study community</li>
+  <li style="margin-bottom:8px;">Create AI-powered flashcards from any document</li>
+  <li style="margin-bottom:8px;">Chat with your AI tutor anytime</li>
+  <li style="margin-bottom:8px;">Track your study streaks on the leaderboard</li>
+</ul>
+<p>Let's get you started!</p>`,
+    ctaText: "Go to StudyFlow",
+    ctaUrl: "https://studyflow.vercel.app",
+  },
+  studyGroup: {
+    label: "📚 Study Group Joined",
+    headerBg: "linear-gradient(135deg,#059669 0%,#34d399 100%)",
+    headerTitle: "Study Community Joined! 📚",
+    headerSubtitle: "{{course}} · {{level}} · {{university}}",
+    body: `<p>Hi <strong>{{name}}</strong>,</p>
+<p>Great news! You've been automatically added to your <strong>{{course}} — {{level}}</strong> community group at <strong>{{university}}</strong>.</p>
+<ul style="padding-left:20px;color:#555;">
+  <li style="margin-bottom:8px;">Post questions and discussions in your community feed</li>
+  <li style="margin-bottom:8px;">See posts from classmates in the same course and level</li>
+  <li style="margin-bottom:8px;">Share notes, resources and study tips</li>
+</ul>
+<p>Head to the Community tab to start connecting!</p>`,
+    ctaText: "Open Community",
+    ctaUrl: "https://studyflow.vercel.app/community",
+  },
+  upgradeRequest: {
+    label: "⏳ Upgrade Request Received",
+    headerBg: "linear-gradient(135deg,#f59e0b 0%,#fcd34d 100%)",
+    headerTitle: "Upgrade Request Received ⏳",
+    headerSubtitle: "{{tier}} Plan · ₦{{amount}}",
+    body: `<p>Hi <strong>{{name}}</strong>,</p>
+<p>We've received your request to upgrade to the <strong>{{tier}} Plan</strong>.</p>
+<p>Our team will review your payment and activate your plan within <strong>24 hours</strong>. You'll receive a confirmation email once it's done.</p>
+<p>If you have any questions, feel free to reach out to us.</p>
+<p style="color:#888;font-size:14px;">Reference: {{reference}}</p>`,
+    ctaText: "Go to Settings",
+    ctaUrl: "https://studyflow.vercel.app/settings",
+  },
+  upgradeApproved: {
+    label: "✅ Upgrade Approved",
+    headerBg: "linear-gradient(135deg,#6c47ff 0%,#a78bfa 100%)",
+    headerTitle: "🎉 You're now on {{tier}}!",
+    headerSubtitle: "Enjoy your new features",
+    body: `<p>Hi <strong>{{name}}</strong>,</p>
+<p>Your subscription has been upgraded to the <strong>{{tier}} Plan</strong>! Your new features are now active.</p>
+<p>Enjoy everything StudyFlow has to offer. Thank you for supporting us! 🙏</p>`,
+    ctaText: "Explore New Features",
+    ctaUrl: "https://studyflow.vercel.app",
+  },
+  upgradeRejected: {
+    label: "❌ Upgrade Rejected",
+    headerBg: "linear-gradient(135deg,#64748b 0%,#94a3b8 100%)",
+    headerTitle: "Upgrade Request Update",
+    headerSubtitle: "We reviewed your request",
+    body: `<p>Hi <strong>{{name}}</strong>,</p>
+<p>After reviewing your upgrade request, we were unable to process it at this time.</p>
+<p>If you believe this is a mistake, please contact us or try again.</p>`,
+    ctaText: "Contact Support",
+    ctaUrl: "mailto:info.studyflow001@gmail.com",
+  },
+};
+
 const Admin = () => {
   const { user } = useAuth();
   const { data: isAdmin, isLoading: adminLoading } = useIsAdmin();
@@ -34,6 +140,49 @@ const Admin = () => {
   const queryClient = useQueryClient();
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [adminNotes, setAdminNotes] = useState<Record<string, string>>({});
+
+  // Newsletter state
+  const [nlSubject, setNlSubject] = useState("");
+  const [nlHeader, setNlHeader] = useState("");
+  const [nlBody, setNlBody] = useState("");
+  const [nlCtaText, setNlCtaText] = useState("");
+  const [nlCtaUrl, setNlCtaUrl] = useState("");
+  const [nlFooter, setNlFooter] = useState("");
+  const [nlPreview, setNlPreview] = useState(false);
+  const [nlSending, setNlSending] = useState(false);
+
+  // Email templates — load from DB, fall back to defaults
+  const [templates, setTemplates] = useState(DEFAULT_TEMPLATES);
+  const [savingTemplate, setSavingTemplate] = useState<string | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<string | null>(null);
+  const [previewTemplate, setPreviewTemplate] = useState<string | null>(null);
+
+  useQuery({
+    queryKey: ["email-templates"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("email_templates" as any)
+        .select("*");
+      if (error) throw error;
+      if (data && data.length > 0) {
+        const mapped: any = { ...DEFAULT_TEMPLATES };
+        for (const row of data) {
+          mapped[row.id] = {
+            label: row.label,
+            headerBg: row.header_bg,
+            headerTitle: row.header_title,
+            headerSubtitle: row.header_subtitle,
+            body: row.body,
+            ctaText: row.cta_text,
+            ctaUrl: row.cta_url,
+          };
+        }
+        setTemplates(mapped);
+      }
+      return data;
+    },
+    enabled: !!isAdmin,
+  });
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["admin-upgrade-requests"],
@@ -51,15 +200,18 @@ const Admin = () => {
   const { data: stats } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const [users, flashcards, posts] = await Promise.all([
+      const [users, flashcards, posts, newUsers] = await Promise.all([
         supabase.from("profiles").select("*", { count: "exact", head: true }),
         supabase.from("flashcards").select("*", { count: "exact", head: true }),
         supabase.from("community_posts").select("*", { count: "exact", head: true }),
+        supabase.from("profiles").select("*", { count: "exact", head: true })
+          .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
       ]);
       return {
         users: users.count || 0,
         flashcards: flashcards.count || 0,
         posts: posts.count || 0,
+        newUsers: newUsers.count || 0,
       };
     },
     enabled: !!isAdmin,
@@ -72,7 +224,6 @@ const Admin = () => {
       const request = requests.find((r) => r.id === requestId);
       if (!request) return;
 
-      // Update the request status
       const { error: updateError } = await supabase
         .from("upgrade_requests")
         .update({
@@ -85,21 +236,12 @@ const Admin = () => {
 
       if (updateError) throw updateError;
 
-      // If approved, update user's subscription tier and storage limit
       if (action === "approved") {
-        const storageLimit =
-          request.requested_tier === "premium"
-            ? 300 * 1024 * 1024
-            : 200 * 1024 * 1024;
-
+        const storageLimit = request.requested_tier === "premium" ? 300 * 1024 * 1024 : 200 * 1024 * 1024;
         const { error: profileError } = await supabase
           .from("profiles")
-          .update({
-            subscription_tier: request.requested_tier,
-            storage_limit_bytes: storageLimit,
-          } as any)
+          .update({ subscription_tier: request.requested_tier, storage_limit_bytes: storageLimit } as any)
           .eq("id", request.user_id);
-
         if (profileError) throw profileError;
       }
 
@@ -115,6 +257,82 @@ const Admin = () => {
   const getReceiptUrl = (path: string) => {
     const { data } = supabase.storage.from("receipts").getPublicUrl(path);
     return data.publicUrl;
+  };
+
+  const handleSendNewsletter = async () => {
+    if (!nlSubject || !nlBody) {
+      toast({ title: "Missing fields", description: "Subject and body are required.", variant: "destructive" });
+      return;
+    }
+    setNlSending(true);
+    try {
+      const htmlContent = buildEmail(nlSubject, "linear-gradient(135deg,#6c47ff 0%,#a78bfa 100%)", nlHeader, "", nlBody, nlCtaText, nlCtaUrl, nlFooter);
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-newsletter`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ subject: nlSubject, htmlContent }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send");
+      toast({ title: "Newsletter Sent! 🎉", description: `Successfully delivered to ${data.recipientCount} users.` });
+      setNlSubject(""); setNlHeader(""); setNlBody(""); setNlCtaText(""); setNlCtaUrl(""); setNlFooter("");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setNlSending(false);
+    }
+  };
+
+  const updateTemplateField = (key: string, field: string, value: string) => {
+    setTemplates((prev: any) => ({ ...prev, [key]: { ...prev[key], [field]: value } }));
+  };
+
+  const handleSaveTemplate = async (key: string) => {
+    setSavingTemplate(key);
+    try {
+      const t = templates[key as keyof typeof templates];
+      const { error } = await supabase
+        .from("email_templates" as any)
+        .upsert({
+          id: key,
+          label: t.label,
+          header_bg: t.headerBg,
+          header_title: t.headerTitle,
+          header_subtitle: t.headerSubtitle,
+          body: t.body,
+          cta_text: t.ctaText,
+          cta_url: t.ctaUrl,
+          updated_at: new Date().toISOString(),
+        });
+      if (error) throw error;
+      toast({ title: "Template saved!", description: `${t.label} has been updated.` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingTemplate(null);
+    }
+  };
+
+  const buildPreviewForTemplate = (key: string) => {
+    const t = templates[key as keyof typeof templates];
+    const sampleBody = t.body
+      .replace(/{{name}}/g, "Alex Johnson")
+      .replace(/{{course}}/g, "Computer Science")
+      .replace(/{{level}}/g, "300 Level")
+      .replace(/{{university}}/g, "University of Lagos")
+      .replace(/{{tier}}/g, "Pro")
+      .replace(/{{amount}}/g, "5,000")
+      .replace(/{{reference}}/g, "PAY-123456");
+    const subtitle = t.headerSubtitle
+      .replace(/{{course}}/g, "Computer Science")
+      .replace(/{{level}}/g, "300 Level")
+      .replace(/{{university}}/g, "University of Lagos")
+      .replace(/{{tier}}/g, "Pro")
+      .replace(/{{amount}}/g, "5,000");
+    const title = t.headerTitle.replace(/{{tier}}/g, "Pro");
+    return buildEmail(t.label, t.headerBg, title, subtitle, sampleBody, t.ctaText, t.ctaUrl);
   };
 
   if (adminLoading) {
@@ -142,153 +360,218 @@ const Admin = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-6 lg:p-8 space-y-6 max-w-4xl">
+      <div className="p-6 lg:p-8 space-y-8 max-w-4xl pb-24 md:pb-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <div className="flex items-center gap-2">
             <Shield className="w-6 h-6 text-primary" />
             <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Admin Panel</h1>
           </div>
-          <p className="text-muted-foreground mt-1">Review and manage upgrade requests and system statistics.</p>
+          <p className="text-muted-foreground mt-1">Manage users, upgrade requests, emails and system stats.</p>
         </motion.div>
 
-        {/* System Stats Overview */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <div className="bg-card/60 backdrop-blur-xl rounded-xl p-5 shadow-xl border border-border/50 flex items-center gap-4">
-            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-              <Users className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Total Users</p>
-              <h2 className="text-2xl font-bold">{stats?.users ?? "-"}</h2>
-            </div>
-          </div>
-          <div className="bg-card/60 backdrop-blur-xl rounded-xl p-5 shadow-xl border border-border/50 flex items-center gap-4">
-            <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center">
-              <MessageSquare className="w-6 h-6 text-accent" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Community Posts</p>
-              <h2 className="text-2xl font-bold">{stats?.posts ?? "-"}</h2>
-            </div>
-          </div>
-          <div className="bg-card/60 backdrop-blur-xl rounded-xl p-5 shadow-xl border border-border/50 flex items-center gap-4">
-            <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center">
-              <FileText className="w-6 h-6 text-emerald-500" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Flashcards Created</p>
-              <h2 className="text-2xl font-bold">{stats?.flashcards ?? "-"}</h2>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Pending Requests */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <h2 className="text-lg font-semibold text-foreground mb-4">
-            Pending Requests ({pendingRequests.length})
+        {/* ── Stats Grid ──────────────────────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Activity className="w-4 h-4 text-primary" /> Platform Overview
           </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {[
+                          { label: "Total Users", value: stats?.users, icon: Users, color: "text-primary", bg: "bg-primary/10" },
+              { label: "New (7 days)", value: stats?.newUsers, icon: TrendingUp, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+              { label: "Community Posts", value: stats?.posts, icon: MessageSquare, color: "text-blue-500", bg: "bg-blue-500/10" },
+              { label: "Flashcards", value: stats?.flashcards, icon: BookOpen, color: "text-violet-500", bg: "bg-violet-500/10" },
+              { label: "Pending Requests", value: pendingRequests.length, icon: Shield, color: "text-rose-500", bg: "bg-rose-500/10" },
+            ].map((s) => (
+              <div key={s.label} className="bg-card/60 backdrop-blur-xl rounded-xl p-4 border border-border/50 flex items-center gap-3">
+                <div className={`w-10 h-10 ${s.bg} rounded-full flex items-center justify-center shrink-0`}>
+                  <s.icon className={`w-5 h-5 ${s.color}`} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground leading-tight truncate">{s.label}</p>
+                  <p className="text-xl font-bold">{s.value ?? "—"}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* ── Newsletter Composer ─────────────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+          <div className="flex items-center gap-2 mb-3">
+            <Mail className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Send Newsletter</h2>
+            <Badge variant="secondary" className="ml-auto">{stats?.users ?? "?"} recipients</Badge>
+          </div>
+          <Card className="bg-card/60 backdrop-blur-xl border-border/50">
+            <CardContent className="pt-6 space-y-4">
+              <div className="grid gap-2">
+                <Label>Subject Line *</Label>
+                <Input placeholder="e.g. New features just dropped! 🚀" value={nlSubject} onChange={(e) => setNlSubject(e.target.value)} />
+              </div>
+              <div className="grid gap-2">
+                <Label>Header Tagline</Label>
+                <Input placeholder="e.g. Your weekly study update" value={nlHeader} onChange={(e) => setNlHeader(e.target.value)} />
+              </div>
+              <div className="grid gap-2">
+                <Label>Email Body *</Label>
+                <Textarea placeholder="Write your newsletter message here…" className="min-h-[120px] resize-y" value={nlBody} onChange={(e) => setNlBody(e.target.value)} />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid gap-2"><Label>Button Label (optional)</Label><Input placeholder="e.g. Open StudyFlow" value={nlCtaText} onChange={(e) => setNlCtaText(e.target.value)} /></div>
+                <div className="grid gap-2"><Label>Button URL (optional)</Label><Input placeholder="https://studyflow.app" value={nlCtaUrl} onChange={(e) => setNlCtaUrl(e.target.value)} /></div>
+              </div>
+              <div className="grid gap-2">
+                <Label>Footer Text (optional)</Label>
+                <Input placeholder="© 2025 StudyFlow · Helping students learn smarter" value={nlFooter} onChange={(e) => setNlFooter(e.target.value)} />
+              </div>
+              <div className="flex flex-wrap gap-3 pt-2">
+                <Button variant="outline" onClick={() => setNlPreview((p) => !p)} className="flex-1 sm:flex-none">
+                  {nlPreview ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                  {nlPreview ? "Hide Preview" : "Preview Email"}
+                </Button>
+                <Button onClick={handleSendNewsletter} disabled={nlSending || !nlSubject || !nlBody} className="flex-1 sm:flex-none gradient-primary text-primary-foreground">
+                  {nlSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                  {nlSending ? "Sending…" : `Send to All ${stats?.users ?? ""} Users`}
+                </Button>
+              </div>
+              {nlPreview && (
+                <div className="rounded-xl border border-border overflow-hidden">
+                  <div className="bg-muted px-4 py-2 text-xs text-muted-foreground font-medium">📧 Email Preview</div>
+                  <iframe title="Newsletter Preview" srcDoc={buildEmail(nlSubject, "linear-gradient(135deg,#6c47ff 0%,#a78bfa 100%)", nlHeader, "", nlBody, nlCtaText, nlCtaUrl, nlFooter)} className="w-full h-[480px] border-0" sandbox="allow-same-origin" />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* ── Automated Email Templates ───────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <div className="flex items-center gap-2 mb-3">
+            <Edit3 className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Automated Email Templates</h2>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Edit and preview the emails that are automatically sent based on user actions. Use <code className="bg-muted px-1 rounded text-xs">{"{{name}}"}</code>, <code className="bg-muted px-1 rounded text-xs">{"{{course}}"}</code>, <code className="bg-muted px-1 rounded text-xs">{"{{level}}"}</code>, <code className="bg-muted px-1 rounded text-xs">{"{{tier}}"}</code> as placeholders.
+          </p>
+          <div className="space-y-3">
+            {Object.entries(templates).map(([key, t]) => (
+              <Card key={key} className="bg-card/60 backdrop-blur-xl border-border/50">
+                <CardHeader className="py-3 px-5">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-semibold">{t.label}</CardTitle>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => setPreviewTemplate(previewTemplate === key ? null : key)}>
+                        {previewTemplate === key ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingTemplate(editingTemplate === key ? null : key)}>
+                        {editingTemplate === key ? <ChevronUp className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                {editingTemplate === key && (
+                  <CardContent className="space-y-3 pt-0">
+                    <div className="grid gap-2">
+                      <Label className="text-xs">Header Title</Label>
+                      <Input className="h-8 text-sm" value={t.headerTitle} onChange={(e) => updateTemplateField(key, "headerTitle", e.target.value)} />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label className="text-xs">Header Subtitle</Label>
+                      <Input className="h-8 text-sm" value={t.headerSubtitle} onChange={(e) => updateTemplateField(key, "headerSubtitle", e.target.value)} />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label className="text-xs">Body (HTML)</Label>
+                      <Textarea className="min-h-[120px] text-xs font-mono resize-y" value={t.body} onChange={(e) => updateTemplateField(key, "body", e.target.value)} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="grid gap-2"><Label className="text-xs">CTA Button Text</Label><Input className="h-8 text-sm" value={t.ctaText} onChange={(e) => updateTemplateField(key, "ctaText", e.target.value)} /></div>
+                      <div className="grid gap-2"><Label className="text-xs">CTA Button URL</Label><Input className="h-8 text-sm" value={t.ctaUrl} onChange={(e) => updateTemplateField(key, "ctaUrl", e.target.value)} /></div>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => handleSaveTemplate(key)}
+                      disabled={savingTemplate === key}
+                      className="gradient-primary text-primary-foreground"
+                    >
+                      {savingTemplate === key ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Save className="mr-2 h-3 w-3" />}
+                      Save to Database
+                    </Button>
+                  </CardContent>
+                )}
+                {previewTemplate === key && (
+                  <CardContent className="pt-0">
+                    <div className="rounded-xl border border-border overflow-hidden">
+                      <div className="bg-muted px-4 py-2 text-xs text-muted-foreground font-medium">📧 Preview (with sample data)</div>
+                      <iframe title={`Preview ${key}`} srcDoc={buildPreviewForTemplate(key)} className="w-full h-[480px] border-0" sandbox="allow-same-origin" />
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* ── Pending Requests ─────────────────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+          <h2 className="text-lg font-semibold text-foreground mb-4">Pending Requests ({pendingRequests.length})</h2>
           {isLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            </div>
+            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
           ) : pendingRequests.length === 0 ? (
-            <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
-                No pending requests.
-              </CardContent>
-            </Card>
+            <Card><CardContent className="py-8 text-center text-muted-foreground">No pending requests.</CardContent></Card>
           ) : (
             <div className="space-y-4">
-                {pendingRequests.map((req) => (
-                  <Card key={req.id} className="bg-card/60 backdrop-blur-xl border-border/50 hover:shadow-xl transition-shadow">
-                    <CardContent className="pt-6 space-y-4">
-                      {/* ... (existing inner content preserved logically outside this chunk snippet, just updated the wrapper class) ... */}
-                      <div className="flex items-start justify-between flex-wrap gap-2">
-                        <div>
-                          <p className="text-sm text-muted-foreground">User ID</p>
-                          <p className="text-xs font-mono text-foreground">{req.user_id}</p>
-                        </div>
-                        <div className="text-right">
-                          <Badge variant="secondary" className="capitalize">{req.requested_tier}</Badge>
-                          <p className="text-sm font-semibold text-foreground mt-1">
-                            ₦{req.amount.toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-
-                      {req.payment_reference && (
-                        <div>
-                          <p className="text-sm text-muted-foreground">Reference</p>
-                          <p className="text-sm font-mono text-foreground">{req.payment_reference}</p>
-                        </div>
-                      )}
-
-                      {req.receipt_url && (
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-1">Receipt</p>
-                          <a
-                            href={getReceiptUrl(req.receipt_url)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                          >
-                            <Receipt className="w-4 h-4" /> View Receipt <ExternalLink className="w-3 h-3" />
-                          </a>
-                        </div>
-                      )}
-
+              {pendingRequests.map((req) => (
+                <Card key={req.id} className="bg-card/60 backdrop-blur-xl border-border/50 hover:shadow-xl transition-shadow">
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="flex items-start justify-between flex-wrap gap-2">
                       <div>
-                        <Label className="text-xs">Admin Note (optional)</Label>
-                        <Input
-                          placeholder="Add a note..."
-                          value={adminNotes[req.id] || ""}
-                          onChange={(e) =>
-                            setAdminNotes((prev) => ({ ...prev, [req.id]: e.target.value }))
-                          }
-                          maxLength={500}
-                        />
+                        <p className="text-sm text-muted-foreground">User ID</p>
+                        <p className="text-xs font-mono text-foreground">{req.user_id}</p>
                       </div>
-
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => handleAction(req.id, "approved")}
-                          disabled={processingId === req.id}
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                        >
-                          {processingId === req.id ? (
-                            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                          ) : (
-                            <CheckCircle2 className="mr-1 h-3 w-3" />
-                          )}
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleAction(req.id, "rejected")}
-                          disabled={processingId === req.id}
-                        >
-                          <XCircle className="mr-1 h-3 w-3" /> Reject
-                        </Button>
+                      <div className="text-right">
+                        <Badge variant="secondary" className="capitalize">{req.requested_tier}</Badge>
+                        <p className="text-sm font-semibold text-foreground mt-1">₦{req.amount.toLocaleString()}</p>
                       </div>
-
-                      <p className="text-xs text-muted-foreground">
-                        Submitted: {new Date(req.created_at).toLocaleString()}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
+                    </div>
+                    {req.payment_reference && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Reference</p>
+                        <p className="text-sm font-mono text-foreground">{req.payment_reference}</p>
+                      </div>
+                    )}
+                    {req.receipt_url && (
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Receipt</p>
+                        <a href={getReceiptUrl(req.receipt_url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+                          <Receipt className="w-4 h-4" /> View Receipt <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    )}
+                    <div>
+                      <Label className="text-xs">Admin Note (optional)</Label>
+                      <Input placeholder="Add a note…" value={adminNotes[req.id] || ""} onChange={(e) => setAdminNotes((prev) => ({ ...prev, [req.id]: e.target.value }))} maxLength={500} />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => handleAction(req.id, "approved")} disabled={processingId === req.id} className="bg-green-600 hover:bg-green-700 text-white">
+                        {processingId === req.id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <CheckCircle2 className="mr-1 h-3 w-3" />}
+                        Approve
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => handleAction(req.id, "rejected")} disabled={processingId === req.id}>
+                        <XCircle className="mr-1 h-3 w-3" /> Reject
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Submitted: {new Date(req.created_at).toLocaleString()}</p>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           )}
         </motion.div>
 
-        {/* Processed Requests */}
+        {/* ── Processed Requests ───────────────────────────────────────────── */}
         {processedRequests.length > 0 && (
           <div>
-            <h2 className="text-lg font-semibold text-foreground mb-4">
-              Processed ({processedRequests.length})
-            </h2>
+            <h2 className="text-lg font-semibold text-foreground mb-4">Processed ({processedRequests.length})</h2>
             <div className="space-y-3">
               {processedRequests.map((req) => (
                 <Card key={req.id} className="opacity-75">
@@ -299,9 +582,7 @@ const Admin = () => {
                     </div>
                     <div className="text-right">
                       <UpgradeRequestStatus status={req.status} />
-                      {req.admin_note && (
-                        <p className="text-xs text-muted-foreground mt-1">{req.admin_note}</p>
-                      )}
+                      {req.admin_note && <p className="text-xs text-muted-foreground mt-1">{req.admin_note}</p>}
                     </div>
                   </CardContent>
                 </Card>

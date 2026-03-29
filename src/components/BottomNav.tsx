@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, FolderOpen, Sparkles, Trophy, Users } from "lucide-react";
+import { LayoutDashboard, FolderOpen, Sparkles, Trophy, Users, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsAdmin } from "@/hooks/useSubscription";
 
 const navItems = [
   { title: "Home", url: "/dashboard", icon: LayoutDashboard },
@@ -13,6 +14,7 @@ const navItems = [
 const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { data: isAdmin } = useIsAdmin();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-lg md:hidden">
@@ -35,6 +37,20 @@ const BottomNav = () => {
             </button>
           );
         })}
+        {isAdmin && (
+          <button
+            onClick={() => navigate("/admin")}
+            className={cn(
+              "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors",
+              location.pathname === "/admin"
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Shield className={cn("w-5 h-5", location.pathname === "/admin" && "drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]")} />
+            <span className="text-[10px] font-medium">Admin</span>
+          </button>
+        )}
       </div>
     </nav>
   );
