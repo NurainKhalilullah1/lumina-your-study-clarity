@@ -207,6 +207,9 @@ const Settings = () => {
 
       if (error) throw error;
 
+      // Explicitly update profiles table as well to trigger user_xp sync
+      await supabase.from("profiles").update({ full_name: name }).eq("id", user.id);
+
       toast({ 
         title: "Profile Updated", 
         description: "Your display name has been changed." 

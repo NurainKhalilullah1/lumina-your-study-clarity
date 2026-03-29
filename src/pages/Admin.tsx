@@ -160,9 +160,9 @@ const Admin = () => {
   useQuery({
     queryKey: ["email-templates"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from("email_templates" as any)
-        .select("*");
+        .select("*") as any);
       if (error) throw error;
       if (data && data.length > 0) {
         const mapped: any = { ...DEFAULT_TEMPLATES };
@@ -398,118 +398,19 @@ const Admin = () => {
         {/* ── Newsletter Composer ─────────────────────────────────────────── */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
           <div className="flex items-center gap-2 mb-3">
-            <Mail className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Send Newsletter</h2>
-            <Badge variant="secondary" className="ml-auto">{stats?.users ?? "?"} recipients</Badge>
+            <Mail className="w-5 h-5 text-muted-foreground" />
+            <h2 className="text-lg font-semibold text-muted-foreground">Send Newsletter</h2>
+            <Badge variant="outline" className="ml-auto text-xs">Unavailable</Badge>
           </div>
-          <Card className="bg-card/60 backdrop-blur-xl border-border/50">
-            <CardContent className="pt-6 space-y-4">
-              <div className="grid gap-2">
-                <Label>Subject Line *</Label>
-                <Input placeholder="e.g. New features just dropped! 🚀" value={nlSubject} onChange={(e) => setNlSubject(e.target.value)} />
-              </div>
-              <div className="grid gap-2">
-                <Label>Header Tagline</Label>
-                <Input placeholder="e.g. Your weekly study update" value={nlHeader} onChange={(e) => setNlHeader(e.target.value)} />
-              </div>
-              <div className="grid gap-2">
-                <Label>Email Body *</Label>
-                <Textarea placeholder="Write your newsletter message here…" className="min-h-[120px] resize-y" value={nlBody} onChange={(e) => setNlBody(e.target.value)} />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="grid gap-2"><Label>Button Label (optional)</Label><Input placeholder="e.g. Open StudyFlow" value={nlCtaText} onChange={(e) => setNlCtaText(e.target.value)} /></div>
-                <div className="grid gap-2"><Label>Button URL (optional)</Label><Input placeholder="https://studyflow.app" value={nlCtaUrl} onChange={(e) => setNlCtaUrl(e.target.value)} /></div>
-              </div>
-              <div className="grid gap-2">
-                <Label>Footer Text (optional)</Label>
-                <Input placeholder="© 2025 StudyFlow · Helping students learn smarter" value={nlFooter} onChange={(e) => setNlFooter(e.target.value)} />
-              </div>
-              <div className="flex flex-wrap gap-3 pt-2">
-                <Button variant="outline" onClick={() => setNlPreview((p) => !p)} className="flex-1 sm:flex-none">
-                  {nlPreview ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-                  {nlPreview ? "Hide Preview" : "Preview Email"}
-                </Button>
-                <Button onClick={handleSendNewsletter} disabled={nlSending || !nlSubject || !nlBody} className="flex-1 sm:flex-none gradient-primary text-primary-foreground">
-                  {nlSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                  {nlSending ? "Sending…" : `Send to All ${stats?.users ?? ""} Users`}
-                </Button>
-              </div>
-              {nlPreview && (
-                <div className="rounded-xl border border-border overflow-hidden">
-                  <div className="bg-muted px-4 py-2 text-xs text-muted-foreground font-medium">📧 Email Preview</div>
-                  <iframe title="Newsletter Preview" srcDoc={buildEmail(nlSubject, "linear-gradient(135deg,#6c47ff 0%,#a78bfa 100%)", nlHeader, "", nlBody, nlCtaText, nlCtaUrl, nlFooter)} className="w-full h-[480px] border-0" sandbox="allow-same-origin" />
-                </div>
-              )}
+          <Card className="bg-card/40 backdrop-blur-xl border-border/30 opacity-60">
+            <CardContent className="py-6 text-center space-y-1">
+              <p className="text-sm font-medium text-muted-foreground">📧 Email service is temporarily suspended</p>
+              <p className="text-xs text-muted-foreground">Restore your Brevo account to re-enable this feature.</p>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* ── Automated Email Templates ───────────────────────────────────── */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <div className="flex items-center gap-2 mb-3">
-            <Edit3 className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Automated Email Templates</h2>
-          </div>
-          <p className="text-sm text-muted-foreground mb-4">
-            Edit and preview the emails that are automatically sent based on user actions. Use <code className="bg-muted px-1 rounded text-xs">{"{{name}}"}</code>, <code className="bg-muted px-1 rounded text-xs">{"{{course}}"}</code>, <code className="bg-muted px-1 rounded text-xs">{"{{level}}"}</code>, <code className="bg-muted px-1 rounded text-xs">{"{{tier}}"}</code> as placeholders.
-          </p>
-          <div className="space-y-3">
-            {Object.entries(templates).map(([key, t]) => (
-              <Card key={key} className="bg-card/60 backdrop-blur-xl border-border/50">
-                <CardHeader className="py-3 px-5">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-semibold">{t.label}</CardTitle>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => setPreviewTemplate(previewTemplate === key ? null : key)}>
-                        {previewTemplate === key ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setEditingTemplate(editingTemplate === key ? null : key)}>
-                        {editingTemplate === key ? <ChevronUp className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                {editingTemplate === key && (
-                  <CardContent className="space-y-3 pt-0">
-                    <div className="grid gap-2">
-                      <Label className="text-xs">Header Title</Label>
-                      <Input className="h-8 text-sm" value={t.headerTitle} onChange={(e) => updateTemplateField(key, "headerTitle", e.target.value)} />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label className="text-xs">Header Subtitle</Label>
-                      <Input className="h-8 text-sm" value={t.headerSubtitle} onChange={(e) => updateTemplateField(key, "headerSubtitle", e.target.value)} />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label className="text-xs">Body (HTML)</Label>
-                      <Textarea className="min-h-[120px] text-xs font-mono resize-y" value={t.body} onChange={(e) => updateTemplateField(key, "body", e.target.value)} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="grid gap-2"><Label className="text-xs">CTA Button Text</Label><Input className="h-8 text-sm" value={t.ctaText} onChange={(e) => updateTemplateField(key, "ctaText", e.target.value)} /></div>
-                      <div className="grid gap-2"><Label className="text-xs">CTA Button URL</Label><Input className="h-8 text-sm" value={t.ctaUrl} onChange={(e) => updateTemplateField(key, "ctaUrl", e.target.value)} /></div>
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={() => handleSaveTemplate(key)}
-                      disabled={savingTemplate === key}
-                      className="gradient-primary text-primary-foreground"
-                    >
-                      {savingTemplate === key ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Save className="mr-2 h-3 w-3" />}
-                      Save to Database
-                    </Button>
-                  </CardContent>
-                )}
-                {previewTemplate === key && (
-                  <CardContent className="pt-0">
-                    <div className="rounded-xl border border-border overflow-hidden">
-                      <div className="bg-muted px-4 py-2 text-xs text-muted-foreground font-medium">📧 Preview (with sample data)</div>
-                      <iframe title={`Preview ${key}`} srcDoc={buildPreviewForTemplate(key)} className="w-full h-[480px] border-0" sandbox="allow-same-origin" />
-                    </div>
-                  </CardContent>
-                )}
-              </Card>
-            ))}
-          </div>
-        </motion.div>
+        {/* ── Automated Email Templates ─── DISABLED ──────────────────────── */}
 
         {/* ── Pending Requests ─────────────────────────────────────────────── */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>

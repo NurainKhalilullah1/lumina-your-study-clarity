@@ -201,10 +201,11 @@ export function useGamification() {
         weekly_xp: weeklyXP,
         week_start: weekStartStr,
         current_league: currentLeague, // default from state
+        display_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
       };
 
       // Use upsert to prevent 409 Conflict from race conditions (e.g. React Strict Mode double-render)
-      await supabase.from('user_xp').upsert(payload, { onConflict: 'user_id' });
+      await (supabase.from('user_xp') as any).upsert(payload, { onConflict: 'user_id' });
 
       queryClient.invalidateQueries({ queryKey: ['user-xp'] });
       queryClient.invalidateQueries({ queryKey: ['leaderboard'] });

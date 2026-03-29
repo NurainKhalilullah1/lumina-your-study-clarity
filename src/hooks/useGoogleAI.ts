@@ -1,14 +1,8 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { supabase } from "@/integrations/supabase/client";
 import { Message } from "./useConversations";
 
 export function useGoogleAI() {
   const sendMessage = async (input: string, history: Message[]) => {
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (!apiKey) throw new Error("Gemini API key is not configured");
-
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
     // Format history for Gemini
     const contents = history.map(msg => ({
       role: msg.role === "user" ? "user" : "model",
@@ -21,8 +15,15 @@ export function useGoogleAI() {
       parts: [{ text: input }]
     });
 
-    const result = await model.generateContent({ contents });
-    return result.response.text();
+    // Call via Supabase Edge Function (works on both web and Android)
+    const { data, error } = await supabase.functions.invoke("gemini-chat", {
+      body: { contents },
+    });
+
+    if (error) throw new Error(error.message);
+    if (!data?.text) throw new Error("No response received from AI");
+
+    return data.text as string;
   };
 
   return { sendMessage };
