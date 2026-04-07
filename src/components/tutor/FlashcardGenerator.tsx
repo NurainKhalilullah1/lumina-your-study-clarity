@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Loader2, Sparkles, Check } from "lucide-react";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { useCreateFlashcards } from "@/hooks/useFlashcards";
 import { FlashcardViewer } from "./FlashcardViewer";
 import { toast } from "sonner";
@@ -57,15 +57,6 @@ export const FlashcardGenerator = ({
     setIsSaved(false);
 
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      if (!apiKey) {
-        toast.error("API key not configured");
-        return;
-      }
-
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
       const prompt = `Based on the following content, generate 5-10 flashcards for studying. Each flashcard should have a clear question (front) and a concise answer (back).
 
 Content:
@@ -79,8 +70,26 @@ Respond ONLY with a valid JSON array in this exact format, no other text:
 
 Make the questions test understanding, not just recall. Keep answers concise but complete.`;
 
-      const result = await model.generateContent(prompt);
-      const responseText = result.response.text();
+      // Call via Supabase Edge Function
+      const { data: aiData, error: aiError } = await supabase.functions.invoke("gemini-chat", {
+        body: { 
+          contents: [{ 
+            role: "user", 
+            parts: [{ text: prompt }] 
+          }] 
+        },
+      });
+
+      if (aiError) {
+        console.error("Supabase function error:", aiError);
+        throw new Error(`AI service error: ${aiError.message || "Unknown error"}`);
+      }
+
+      if (!aiData?.text) {
+        throw new Error("No response received from AI service");
+      }
+
+      const responseText = aiData.text;
 
       // Extract JSON from response
       const jsonMatch = responseText.match(/\[[\s\S]*\]/);

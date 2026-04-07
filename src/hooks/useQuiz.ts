@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useToast } from "@/hooks/use-toast";
 
 export interface QuizQuestion {
@@ -116,15 +115,6 @@ export const useGenerateQuizQuestions = () => {
       documentContent: string;
       numQuestions: number;
     }) => {
-      // Check if API key is configured
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      if (!apiKey) {
-        throw new Error("Gemini API key is not configured. Please add VITE_GEMINI_API_KEY to your environment.");
-      }
-
-      const genAIInstance = new GoogleGenerativeAI(apiKey);
-      const model = genAIInstance.getGenerativeModel({ model: "gemini-2.5-flash" });
-
       // Allow up to 70 questions as per UI slider
       const questionsToGenerate = Math.min(numQuestions, 70);
 
@@ -160,21 +150,26 @@ Generate exactly ${questionsToGenerate} questions distributed across ALL documen
 
       console.log("Starting quiz generation for", questionsToGenerate, "questions");
 
-      let result;
-      try {
-        result = await model.generateContent(prompt);
-      } catch (apiError: any) {
-        console.error("Gemini API error:", apiError);
-        if (apiError.message?.includes("API_KEY")) {
-          throw new Error("Invalid Gemini API key. Please check your VITE_GEMINI_API_KEY.");
-        }
-        if (apiError.message?.includes("quota") || apiError.message?.includes("429")) {
-          throw new Error("API quota exceeded. Please try again later.");
-        }
-        throw new Error(`AI service error: ${apiError.message || "Unknown error"}`);
+      // Call via Supabase Edge Function
+      const { data: aiData, error: aiError } = await supabase.functions.invoke("gemini-chat", {
+        body: { 
+          contents: [{ 
+            role: "user", 
+            parts: [{ text: prompt }] 
+          }] 
+        },
+      });
+
+      if (aiError) {
+        console.error("Supabase function error:", aiError);
+        throw new Error(`AI service error: ${aiError.message || "Unknown error"}`);
       }
 
-      const responseText = result.response.text();
+      if (!aiData?.text) {
+        throw new Error("No response received from AI service");
+      }
+
+      const responseText = aiData.text;
       console.log("Received response, length:", responseText.length);
 
       // Extract JSON from response (handle potential markdown code blocks)

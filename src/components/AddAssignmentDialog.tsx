@@ -15,9 +15,8 @@ import { downloadCalendarInvite, downloadBulkCalendarInvite } from "@/utils/cale
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || "");
+// No more direct genAI initialization here
 
 interface AddAssignmentDialogProps {
   onAssignmentAdded: () => void;
@@ -78,15 +77,25 @@ export function AddAssignmentDialog({ onAssignmentAdded }: AddAssignmentDialogPr
     setIsAnalyzing(true);
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       const prompt = `
         Extract deadlines from this text. Return a JSON array: 
         [{ "title": "Task Name", "date": "YYYY-MM-DD", "type": "exam"|"assignment", "course": "Course Name" }]
         TEXT: "${syllabusText}"
       `;
 
-      const result = await model.generateContent(prompt);
-      const tasks = JSON.parse(result.response.text().replace(/```json|```/g, "").trim());
+      const { data: aiData, error: aiError } = await supabase.functions.invoke("gemini-chat", {
+        body: { 
+          contents: [{ 
+            role: "user", 
+            parts: [{ text: prompt }] 
+          }] 
+        },
+      });
+
+      if (aiError) throw new Error(aiError.message);
+      if (!aiData?.text) throw new Error("No response received from AI");
+
+      const tasks = JSON.parse(aiData.text.replace(/```json|```/g, "").trim());
 
       const { error } = await supabase.from("assignments").insert(
         tasks.map((task: any) => ({

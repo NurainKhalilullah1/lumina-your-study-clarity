@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Themes for Android 12+ (API 31+).
+  On these devices the OS SplashScreen API runs natively — no need for
+  the windowBackground workaround. We use the platform attributes directly
+  which gives us the animated icon, branding image, and proper exit animation.
+-->
+<resources>
+    <!-- Base theme — no windowBackground needed, OS handles the flash prevention -->
+    <style name="Theme.StudyFlow" parent="Theme.Material3.DayNight.NoActionBar" />
+
+    <!-- Splash theme using native Android 12 SplashScreen attributes -->
+    <style name="Theme.StudyFlow.Splash" parent="Theme.SplashScreen">
+        <!-- Purple brand background -->
+        <item name="android:windowSplashScreenBackground">#6D28D9</item>
+        <!-- App icon displayed in the centre circle -->
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <!-- Return to full app theme after splash exits -->
+        <item name="postSplashScreenTheme">@style/Theme.StudyFlow</item>
+    </style>
+</resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.StudyFlow" parent="Theme.Material3.DayNight.NoActionBar"/>
+    <style name="Theme.StudyFlow.Splash" parent="Theme.SplashScreen">
+        
+        <item name="android:windowSplashScreenBackground">#6D28D9</item>
+        
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        
+        <item name="postSplashScreenTheme">@style/Theme.StudyFlow</item>
+    </style>
+</resources>
