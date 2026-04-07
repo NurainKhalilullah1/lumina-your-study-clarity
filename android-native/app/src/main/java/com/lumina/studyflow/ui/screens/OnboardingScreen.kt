@@ -20,7 +20,9 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import com.lumina.studyflow.data.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.auth.auth
+import androidx.compose.ui.graphics.Color
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 

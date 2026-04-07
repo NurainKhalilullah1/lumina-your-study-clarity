@@ -27,6 +27,7 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.launch
+import io.ktor.client.call.body
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 
@@ -82,7 +83,7 @@ Format: [{"question":"...","options":["A","B","C","D"],"correct_answer":"A","exp
                 val request = QzRequest(listOf(QzContent("user", listOf(QzPart(prompt)))))
                 val rawText = SupabaseClient.client.functions
                     .invoke("gemini-chat") { body = request }
-                    .decodeAs<QzResponse>().text.trim()
+                    .body<QzResponse>().text.trim()
                     .removePrefix("```json").removePrefix("```")
                     .removeSuffix("```").trim()
 

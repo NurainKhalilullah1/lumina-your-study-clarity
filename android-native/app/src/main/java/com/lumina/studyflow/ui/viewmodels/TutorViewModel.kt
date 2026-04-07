@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import io.ktor.client.call.body
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -175,7 +176,7 @@ class TutorViewModel : ViewModel() {
                 val response = SupabaseClient.client.functions
                     .invoke("gemini-chat") { body = AiRequestBody(contents = historyForAI) }
 
-                val aiData = response.decodeAs<AiResponse>()
+                val aiData = response.body<AiResponse>()
                 val modelMessage = ChatMessage(role = "model", content = aiData.text)
                 _messages.value = _messages.value + modelMessage
 

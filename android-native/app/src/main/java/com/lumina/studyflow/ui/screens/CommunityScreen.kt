@@ -573,7 +573,7 @@ private fun CommentBubble(comment: PostComment, isOwn: Boolean) {
                     .background(MaterialTheme.colorScheme.primary.copy(0.12f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text((comment.author_name?.firstOrNull() ?: "?").toString().uppercase(), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 13.sp)
+                Text("?", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 13.sp)
             }
             Spacer(modifier = Modifier.width(8.dp))
         }

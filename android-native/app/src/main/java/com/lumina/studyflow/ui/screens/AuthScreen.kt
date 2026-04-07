@@ -25,6 +25,7 @@ import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.compose.auth.composable.rememberSignInWithGoogle
 import io.github.jan.supabase.compose.auth.composeAuth
+import io.github.jan.supabase.compose.auth.providers.NativeSignInResult
 import kotlinx.coroutines.launch
 
 @Composable
@@ -45,20 +46,21 @@ fun AuthScreen(onAuthSuccess: () -> Unit) {
     val googleSignInState = SupabaseClient.client.composeAuth.rememberSignInWithGoogle(
         onResult = { result ->
             when (result) {
-                is io.github.jan.supabase.compose.auth.ui.providers.NativeSignInResult.Success -> {
+                NativeSignInResult.Success -> {
                     onAuthSuccess()
                 }
-                is io.github.jan.supabase.compose.auth.ui.providers.NativeSignInResult.ClosedByUser -> {
+                NativeSignInResult.ClosedByUser -> {
                     // User dismissed — no error shown
                 }
-                is io.github.jan.supabase.compose.auth.ui.providers.NativeSignInResult.Error -> {
+                is NativeSignInResult.Error -> {
                     errorMessage = "Google Sign-In failed: ${result.message}"
                     isLoading = false
                 }
-                is io.github.jan.supabase.compose.auth.ui.providers.NativeSignInResult.NetworkError -> {
+                is NativeSignInResult.NetworkError -> {
                     errorMessage = "Network error. Please check your connection."
                     isLoading = false
                 }
+                else -> {}
             }
         }
     )
@@ -193,7 +195,7 @@ fun AuthScreen(onAuthSuccess: () -> Unit) {
             },
             modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(14.dp),
-            enabled = !isLoading && !googleSignInState.isRunning()
+            enabled = !isLoading && !googleSignInState.isRunning
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
@@ -235,9 +237,9 @@ fun AuthScreen(onAuthSuccess: () -> Unit) {
             },
             modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(14.dp),
-            enabled = !isLoading && !googleSignInState.isRunning()
+            enabled = !isLoading && !googleSignInState.isRunning
         ) {
-            if (googleSignInState.isRunning()) {
+            if (googleSignInState.isRunning) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                 Spacer(modifier = Modifier.width(10.dp))
             } else {

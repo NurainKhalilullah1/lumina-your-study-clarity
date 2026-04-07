@@ -18,6 +18,8 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 @Composable
 fun SettingsScreen(onSignOut: () -> Unit = {}) {
@@ -93,7 +95,7 @@ fun SettingsScreen(onSignOut: () -> Unit = {}) {
                             coroutineScope.launch {
                                 isLoading = true
                                 try {
-                                    SupabaseClient.client.auth.modifyUser {
+                                    SupabaseClient.client.auth.updateUser {
                                         data = mapOf("full_name" to displayName)
                                     }
                                     val userId = SupabaseClient.client.auth.currentUserOrNull()?.id ?: return@launch
@@ -164,7 +166,11 @@ fun SettingsScreen(onSignOut: () -> Unit = {}) {
                                 ) { filter { eq("id", userId) } }
                                 SupabaseClient.client.postgrest.rpc(
                                     "upsert_user_group",
-                                    mapOf("p_university" to university, "p_course_of_study" to courseOfStudy, "p_level" to level)
+                                    buildJsonObject {
+                                        put("p_university", university)
+                                        put("p_course_of_study", courseOfStudy)
+                                        put("p_level", level)
+                                    }
                                 )
                                 snackbarHostState.showSnackbar("Academic details saved!")
                             } catch (e: Exception) {
@@ -268,7 +274,7 @@ fun SettingsScreen(onSignOut: () -> Unit = {}) {
                         showDeleteDialog = false
                         coroutineScope.launch {
                             try {
-                                SupabaseClient.client.postgrest.rpc("delete_own_account", emptyMap<String, String>())
+                                SupabaseClient.client.postgrest.rpc("delete_own_account", buildJsonObject {})
                                 SupabaseClient.client.auth.signOut()
                                 onSignOut()
                             } catch (e: Exception) {

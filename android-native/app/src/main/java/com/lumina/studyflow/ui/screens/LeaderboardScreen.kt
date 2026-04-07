@@ -26,6 +26,8 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 @Serializable
 data class LeaderboardEntry(
@@ -77,7 +79,7 @@ fun LeaderboardScreen() {
             // ── Step 2: Fetch leaderboard for that league ─────────────────
             val result = SupabaseClient.client.postgrest.rpc(
                 function = "get_league_leaderboard",
-                parameters = mapOf("p_league" to userLeague)
+                parameters = buildJsonObject { put("p_league", userLeague) }
             ).decodeList<LeaderboardEntry>()
             entries = result
         } catch (e: Exception) {

@@ -24,6 +24,7 @@ import com.lumina.studyflow.data.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.from
+import io.ktor.client.call.body
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
@@ -73,7 +74,7 @@ Format: [{"front":"question","back":"answer"},...]"""
                 )
                 val response = SupabaseClient.client.functions
                     .invoke("gemini-chat") { body = request }
-                val raw = response.decodeAs<FcResponse>().text.trim()
+                val raw = response.body<FcResponse>().text.trim()
 
                 // Strip markdown code fences if present
                 val jsonStr = raw

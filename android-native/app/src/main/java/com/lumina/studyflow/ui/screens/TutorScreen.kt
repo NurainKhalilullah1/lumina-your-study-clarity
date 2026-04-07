@@ -1,6 +1,7 @@
 package com.lumina.studyflow.ui.screens
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -349,7 +350,7 @@ private fun TypingIndicator() {
         initialValue = 0.3f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = androidx.compose.animation.core.tween(600),
+            animation = tween(600),
             repeatMode = RepeatMode.Reverse
         ),
         label = "alpha"
