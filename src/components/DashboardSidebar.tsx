@@ -11,7 +11,8 @@ import {
   Users,
   Settings, 
   LogOut,
-  Shield
+  Shield,
+  Layers
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +38,7 @@ const menuItems = [
   { title: "My Courses", url: "/courses", icon: BookOpen },
   { title: "Assignments", url: "/assignments", icon: CalendarCheck },
   { title: "AI Tutor", url: "/tutor", icon: Sparkles },
+  { title: "My Flashcards", url: "/flashcards", icon: Layers },
   { title: "Quiz History", url: "/quiz-history", icon: ClipboardList },
   { title: "Community", url: "/community", icon: Users },
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },

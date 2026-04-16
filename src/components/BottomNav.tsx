@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, FolderOpen, Sparkles, Trophy, Users, Shield } from "lucide-react";
+import { LayoutDashboard, FolderOpen, Sparkles, Trophy, Users, Shield, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsAdmin } from "@/hooks/useSubscription";
 
@@ -7,6 +7,7 @@ const navItems = [
   { title: "Home", url: "/dashboard", icon: LayoutDashboard },
   { title: "Docs", url: "/documents", icon: FolderOpen },
   { title: "AI Tutor", url: "/tutor", icon: Sparkles },
+  { title: "Cards", url: "/flashcards", icon: Layers },
   { title: "Ranks", url: "/leaderboard", icon: Trophy },
   { title: "Community", url: "/community", icon: Users },
 ];

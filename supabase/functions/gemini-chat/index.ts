@@ -33,15 +33,50 @@ Deno.serve(async (req: Request) => {
       throw new Error("Invalid request: 'contents' array is required");
     }
 
-    // Call the Gemini API server-side
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents }),
+    // Try gemini-2.5-flash first, fall back to gemini-1.5-flash if unavailable
+    const models = ["gemini-2.5-flash", "gemini-1.5-flash"];
+    let response: Response | null = null;
+    let lastError = "";
+
+    for (const model of models) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 90000);
+
+      try {
+        response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents }),
+            signal: controller.signal,
+          }
+        );
+      } finally {
+        clearTimeout(timeoutId);
       }
-    );
+
+      if (response.ok) {
+        console.log(`Using model: ${model}`);
+        break;
+      }
+
+      // If 404 or 400, this model isn't available — try next
+      if (response.status === 404 || response.status === 400) {
+        lastError = `Model ${model} not available (${response.status})`;
+        console.warn(lastError);
+        response = null;
+        continue;
+      }
+
+      // For other errors (rate limit, auth, etc.) stop immediately
+      const errorBody = await response.text();
+      throw new Error(`Gemini API error (${response.status}): ${errorBody}`);
+    }
+
+    if (!response) {
+      throw new Error(`No available Gemini model. Last error: ${lastError}`);
+    }
 
     if (!response.ok) {
       const errorBody = await response.text();
@@ -60,10 +95,12 @@ Deno.serve(async (req: Request) => {
     });
 
   } catch (error) {
+    // Always return 200 — if we return non-2xx, Supabase's client swallows the
+    // real error body and replaces it with "Edge Function returned a non-2xx status code".
     return new Response(
-      JSON.stringify({ error: (error as Error).message }),
+      JSON.stringify({ error: (error as Error).message, text: null }),
       {
-        status: 500,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );

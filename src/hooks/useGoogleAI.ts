@@ -21,6 +21,7 @@ export function useGoogleAI() {
     });
 
     if (error) throw new Error(error.message);
+    if (data?.error) throw new Error(data.error);
     if (!data?.text) throw new Error("No response received from AI");
 
     return data.text as string;

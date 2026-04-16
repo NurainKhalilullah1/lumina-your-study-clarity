@@ -85,6 +85,11 @@ Make the questions test understanding, not just recall. Keep answers concise but
         throw new Error(`AI service error: ${aiError.message || "Unknown error"}`);
       }
 
+      if (aiData?.error) {
+        console.error("Gemini API error:", aiData.error);
+        throw new Error(`AI error: ${aiData.error}`);
+      }
+
       if (!aiData?.text) {
         throw new Error("No response received from AI service");
       }

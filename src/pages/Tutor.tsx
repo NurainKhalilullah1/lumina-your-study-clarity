@@ -215,7 +215,7 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
                 mime_type: imagePart.inlineData.mimeType, 
                 data: imagePart.inlineData.data 
               } 
-            }
+            } as any
           ]
         });
       } else {
@@ -244,6 +244,11 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
         throw new Error(`AI service error: ${aiError.message || "Unknown error"}`);
       }
 
+      if (aiData?.error) {
+        console.error("Gemini API error:", aiData.error);
+        throw new Error(`AI error: ${aiData.error}`);
+      }
+
       if (!aiData?.text) {
         throw new Error("No response received from AI service");
       }
@@ -265,10 +270,30 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
         });
 
         if (isNewSession) {
-          // Use first message as title instead of AI call to save API quota
-          const newTitle = inputMessage.slice(0, 50).trim() || (file ? file.name : "New Chat");
-          await supabase.from("chat_sessions").update({ title: newTitle }).eq("id", currentSession);
-          setSidebarRefresh((prev) => prev + 1);
+          // Auto-rename: generate a smart 4-6 word title in the background
+          const sessionToRename = currentSession;
+          const firstUserMsg = inputMessage;
+          const firstAiMsg = responseText.slice(0, 200);
+          (async () => {
+            try {
+              const renamePrompt = `Generate a short, descriptive title (4-6 words max) for a study chat that started with:
+User: "${firstUserMsg.slice(0, 150)}"
+AI: "${firstAiMsg}"
+Reply with ONLY the title, no quotes, no punctuation at the end.`;
+              const { data: titleData } = await supabase.functions.invoke("gemini-chat", {
+                body: { contents: [{ role: "user", parts: [{ text: renamePrompt }] }] },
+              });
+              const generatedTitle = titleData?.text?.trim().replace(/^["']|["']$/g, "").slice(0, 60);
+              const finalTitle = generatedTitle || firstUserMsg.slice(0, 50).trim() || (file ? file.name : "New Chat");
+              await supabase.from("chat_sessions").update({ title: finalTitle }).eq("id", sessionToRename);
+              setSidebarRefresh((prev) => prev + 1);
+            } catch {
+              // Fallback to truncated first message
+              const fallback = firstUserMsg.slice(0, 50).trim() || (file ? file.name : "New Chat");
+              await supabase.from("chat_sessions").update({ title: fallback }).eq("id", sessionToRename);
+              setSidebarRefresh((prev) => prev + 1);
+            }
+          })();
         }
       }
     } catch (error) {

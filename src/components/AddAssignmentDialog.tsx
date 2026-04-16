@@ -93,6 +93,7 @@ export function AddAssignmentDialog({ onAssignmentAdded }: AddAssignmentDialogPr
       });
 
       if (aiError) throw new Error(aiError.message);
+      if (aiData?.error) throw new Error(aiData.error);
       if (!aiData?.text) throw new Error("No response received from AI");
 
       const tasks = JSON.parse(aiData.text.replace(/```json|```/g, "").trim());

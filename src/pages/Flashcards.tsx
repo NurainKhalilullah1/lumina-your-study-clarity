@@ -15,6 +15,7 @@ export default function Flashcards() {
   const { data: flashcards, isLoading } = useFlashcards(user?.id);
   const deleteFlashcard = useDeleteFlashcard();
   const [selectedDeck, setSelectedDeck] = useState<string | null>(null);
+  const [reviewAll, setReviewAll] = useState(false);
 
   // Group flashcards by deck_name
   const decks = flashcards?.reduce((acc, card) => {
@@ -28,6 +29,7 @@ export default function Flashcards() {
 
   const deckNames = Object.keys(decks);
   const selectedCards = selectedDeck ? decks[selectedDeck] || [] : [];
+  const allCards = flashcards || [];
 
   const handleDeleteCard = async (id: string) => {
     try {
@@ -48,21 +50,57 @@ export default function Flashcards() {
     );
   }
 
+  // Review All mode
+  if (reviewAll) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 max-w-3xl mx-auto pb-20 md:pb-6">
+          <Button variant="ghost" onClick={() => setReviewAll(false)} className="mb-4">
+            ← Back to decks
+          </Button>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-primary" />
+                  Review All Cards
+                </CardTitle>
+                <CardDescription>{allCards.length} cards from {deckNames.length} decks</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FlashcardViewer cards={allCards} />
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
-      <div className="p-6 max-w-6xl mx-auto">
+      <div className="p-6 max-w-6xl mx-auto pb-20 md:pb-6">
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-8">
-          <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center">
-            <Layers className="w-6 h-6 text-primary-foreground" />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between gap-3 mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center">
+              <Layers className="w-6 h-6 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">My Flashcards</h1>
+              <p className="text-muted-foreground">
+                {flashcards?.length || 0} cards across {deckNames.length} deck{deckNames.length !== 1 ? 's' : ''}
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold">My Flashcards</h1>
-            <p className="text-muted-foreground">
-              {flashcards?.length || 0} cards across {deckNames.length} deck{deckNames.length !== 1 ? 's' : ''}
-            </p>
-          </div>
+          {allCards.length > 0 && (
+            <Button onClick={() => setReviewAll(true)} className="gap-2 shrink-0">
+              <BookOpen className="w-4 h-4" />
+              Review All
+            </Button>
+          )}
         </motion.div>
+
 
         {deckNames.length === 0 ? (
           /* Empty state */
