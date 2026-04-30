@@ -11,8 +11,8 @@ export function useGoogleAI() {
         throw new Error("Gemini API Key is missing. Please add VITE_GEMINI_API_KEY to your .env file.");
       }
 
-      // Try gemini-2.0-flash first, fall back to gemini-1.5-flash
-      const models = ["gemini-2.5-flash", "gemini-1.5-flash"];
+      // Try gemini-2.0-flash first, fall back to gemini-flash-latest and gemini-2.5-flash
+      const models = ["gemini-2.0-flash", "gemini-flash-latest", "gemini-2.5-flash"];
       let lastError: any = null;
 
       for (const modelName of models) {
@@ -62,7 +62,7 @@ export function useGoogleAI() {
         throw new Error("Gemini API Key is missing. Please add VITE_GEMINI_API_KEY to your .env file.");
       }
 
-      const models = ["gemini-2.0-flash", "gemini-1.5-flash"];
+      const models = ["gemini-2.0-flash", "gemini-flash-latest", "gemini-2.5-flash"];
       let lastError: any = null;
 
       for (const modelName of models) {
