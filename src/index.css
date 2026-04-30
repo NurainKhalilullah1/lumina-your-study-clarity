@@ -1,0 +1,326 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Work+Sans:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 244 47% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 244 47% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 244 47% 15%;
+
+    --primary: 243 75% 59%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 234 89% 74%;
+    --secondary-foreground: 244 47% 15%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 25 95% 53%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 243 75% 59%;
+
+    --radius: 1.5rem;
+    /* 24px per design system */
+
+    /* Custom StudyFlow tokens */
+    --glow-primary: 239 84% 67%;
+    --glow-accent: 263 70% 50%;
+    --gradient-start: 239 84% 67%;
+    --gradient-end: 263 70% 50%;
+
+    /* Warning color for storage indicator */
+    --warning: 25 95% 53%;
+    --warning-foreground: 0 0% 100%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Hero Theme Variables - Light */
+    --hero-bg: 210 40% 98%;
+    --hero-glow: 243 75% 59% / 0.1;
+    --hero-meteor: 243 75% 59% / 0.4;
+    --hero-meteor-trail: 243 75% 59% / 0.2;
+    --hero-inset-shadow: 243 75% 59% / 0.05;
+  }
+
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 263 70% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 239 84% 67%;
+
+    /* Warning color for storage indicator - dark mode */
+    --warning: 25 95% 53%;
+    --warning-foreground: 0 0% 100%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Hero Theme Variables - Dark */
+    --hero-bg: 222 47% 4%;
+    --hero-glow: 243 75% 59% / 0.3;
+    --hero-meteor: 0 0% 100% / 0.8;
+    --hero-meteor-trail: 243 75% 59% / 0.5;
+    --hero-inset-shadow: 243 75% 59% / 0.15;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  /* Stabilize viewport width by reserving scrollbar space consistently */
+  html {
+    scrollbar-gutter: stable;
+    overflow-y: scroll;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Work Sans', system-ui, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Outfit', sans-serif;
+    @apply font-semibold;
+  }
+
+  #root {
+    overflow-x: hidden;
+    /* Capacitor specific safe area padding */
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    /* padding-bottom typically handled by nav bars, but good measure */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* DEV: Allow horizontal scroll for debugging when sf_debug_overflow=1 is set in localStorage */
+  /* This class is toggled via JS in development mode only */
+  #root.debug-overflow-visible {
+    overflow-x: auto !important;
+  }
+}
+
+/* Force desktop sidebar container to have no width on mobile viewports */
+@media (max-width: 767px) {
+  [data-sidebar="sidebar"]:not([data-mobile="true"]) {
+    width: 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Target the sidebar wrapper spacer div */
+  [data-variant="sidebar"]>div:first-child {
+    width: 0 !important;
+    min-width: 0 !important;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-white/10;
+  }
+
+  .glow-primary {
+    box-shadow: 0 0 40px -10px hsl(var(--primary) / 0.4);
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 40px -10px hsl(var(--accent) / 0.4);
+  }
+
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-border {
+    position: relative;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .bento-card {
+    @apply bg-card border border-border/50 rounded-[24px] shadow-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-primary/20;
+  }
+
+  .cta-pulse {
+    @apply relative overflow-hidden;
+  }
+
+  .cta-pulse::after {
+    content: '';
+    @apply absolute inset-0 rounded-[inherit] border-2 border-accent opacity-0 animate-[pulse_2s_infinite];
+  }
+}
+
+/* Logo marquee animation */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+/* Subtle background glow */
+.bg-glow {
+  position: relative;
+}
+
+.bg-glow::before {
+  content: '';
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(ellipse, hsl(var(--primary) / 0.08) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Premium Hero Background */
+.hero-premium-bg {
+  background-color: hsl(var(--hero-bg));
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 150px 50px hsla(var(--hero-inset-shadow));
+}
+
+.hero-premium-bg::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60%;
+  background: radial-gradient(circle at 50% 0%, hsla(var(--hero-glow)) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes meteor {
+  0% {
+    transform: rotate(215deg) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(215deg) translateX(-600px);
+    opacity: 0;
+  }
+}
+
+.animate-meteor {
+  position: absolute;
+  height: 1px;
+  width: 1px;
+  background-color: hsla(var(--hero-meteor));
+  border-radius: 9999px;
+  box-shadow: 0 0 0 1px hsla(var(--hero-meteor) / 0.1);
+  animation: meteor linear infinite;
+  z-index: 1;
+}
+
+.animate-meteor::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(to right, hsla(var(--hero-meteor-trail)), transparent);
+}

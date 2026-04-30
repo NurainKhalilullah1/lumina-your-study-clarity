@@ -1,0 +1,221 @@
+import { useState, useEffect } from "react";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { ThemeProvider } from "next-themes";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { PomodoroProvider } from "@/contexts/PomodoroContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { SplashScreen } from "@/components/SplashScreen";
+import { MaintenancePage, MAINTENANCE_MODE } from "@/components/MaintenanceBanner";
+import { Capacitor } from "@capacitor/core";
+import { App as CapacitorApp } from "@capacitor/app";
+import { Browser } from "@capacitor/browser";
+import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
+import Onboarding from "./pages/Onboarding";
+import Courses from "./pages/Courses";
+import Assignments from "./pages/Assignments";
+import Tutor from "./pages/Tutor";
+import Documents from "./pages/Documents";
+import Flashcards from "./pages/Flashcards";
+import Quiz from "./pages/Quiz";
+import QuizHistory from "./pages/QuizHistory";
+import Settings from "./pages/Settings";
+import Leaderboard from "./pages/Leaderboard";
+import Community from "./pages/Community";
+import Features from "./pages/Features";
+import About from "./pages/About";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import Admin from "./pages/Admin";
+import Upgrade from "./pages/Upgrade";
+import NotFound from "./pages/NotFound";
+import DownloadPage from "./pages/Download";
+import { AppUpdateGuard } from "@/components/AppUpdateGuard";
+import InitialRedirect from "@/components/InitialRedirect";
+
+const queryClient = new QueryClient();
+
+const App = () => {
+  const [showSplash, setShowSplash] = useState(true);
+  const [hasSeenSplash, setHasSeenSplash] = useState(false);
+
+  useEffect(() => {
+    // Check if user has already seen splash in this session
+    const seen = sessionStorage.getItem("splashSeen");
+    if (seen) {
+      setShowSplash(false);
+      setHasSeenSplash(true);
+    }
+
+    // Mobile App specific logic
+    if (Capacitor.isNativePlatform()) {
+      setShowSplash(false); // Disable web splash for mobile
+      setHasSeenSplash(true);
+      
+      // Listen for deep links (like Supabase OAuth redirects)
+      CapacitorApp.addListener('appUrlOpen', (event) => {
+        const urlOptions = new URL(event.url);
+        // Supabase OAuth returns an access_token in the URL hash
+        if (urlOptions.hash && urlOptions.hash.includes('access_token')) {
+          window.location.hash = urlOptions.hash;
+          // Close the in-app browser once we have the token
+          Browser.close();
+        }
+      });
+    }
+  }, []);
+
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+    setHasSeenSplash(true);
+    sessionStorage.setItem("splashSeen", "true");
+  };
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <AuthProvider>
+          <PomodoroProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+
+              {/* ── Strict Maintenance Gate ────────────────────── */}
+              {MAINTENANCE_MODE ? (
+                <MaintenancePage />
+              ) : (
+                <>
+                  {/* Splash Screen - only on first load per session */}
+                  {showSplash && !hasSeenSplash && (
+                    <SplashScreen onComplete={handleSplashComplete} />
+                  )}
+
+                  <AppUpdateGuard>
+                    <BrowserRouter>
+                      <Routes>
+                        <Route path="/" element={<InitialRedirect />} />
+                        <Route path="/features" element={<Features />} />
+                        <Route path="/about" element={<About />} />
+                        <Route path="/privacy" element={<PrivacyPolicy />} />
+                        <Route path="/terms" element={<TermsOfService />} />
+                        <Route path="/auth" element={<Auth />} />
+                        <Route path="/upgrade" element={<Upgrade />} />
+                        <Route path="/onboarding" element={<Onboarding />} />
+                        <Route path="/download" element={<DownloadPage />} />
+                        <Route
+                          path="/dashboard"
+                          element={
+                            <ProtectedRoute>
+                              <Dashboard />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/courses"
+                          element={
+                            <ProtectedRoute>
+                              <Courses />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/assignments"
+                          element={
+                            <ProtectedRoute>
+                              <Assignments />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/tutor"
+                          element={
+                            <ProtectedRoute>
+                              <Tutor />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/documents"
+                          element={
+                            <ProtectedRoute>
+                              <Documents />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/flashcards"
+                          element={
+                            <ProtectedRoute>
+                              <Flashcards />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/quiz"
+                          element={
+                            <ProtectedRoute>
+                              <Quiz />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/quiz-history"
+                          element={
+                            <ProtectedRoute>
+                              <QuizHistory />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/settings"
+                          element={
+                            <ProtectedRoute>
+                              <Settings />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/leaderboard"
+                          element={
+                            <ProtectedRoute>
+                              <Leaderboard />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/community"
+                          element={
+                            <ProtectedRoute>
+                              <Community />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/admin"
+                          element={
+                            <ProtectedRoute>
+                              <Admin />
+                            </ProtectedRoute>
+                          }
+                        />
+                        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </BrowserRouter>
+                  </AppUpdateGuard>
+                </>
+              )}
+            </TooltipProvider>
+          </PomodoroProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+};
+
+export default App;
