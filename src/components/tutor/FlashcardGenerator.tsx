@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useCreateFlashcards } from "@/hooks/useFlashcards";
 import { FlashcardViewer } from "./FlashcardViewer";
+import { useGoogleAI } from "@/hooks/useGoogleAI";
 import { toast } from "sonner";
 
 interface FlashcardGeneratorProps {
@@ -36,6 +37,7 @@ export const FlashcardGenerator = ({
   const [isSaved, setIsSaved] = useState(false);
 
   const { user } = useAuth();
+  const { generateContent } = useGoogleAI();
   const createFlashcards = useCreateFlashcards();
 
   // Handle external trigger
@@ -70,31 +72,8 @@ Respond ONLY with a valid JSON array in this exact format, no other text:
 
 Make the questions test understanding, not just recall. Keep answers concise but complete.`;
 
-      // Call via Supabase Edge Function
-      const { data: aiData, error: aiError } = await supabase.functions.invoke("gemini-chat", {
-        body: { 
-          contents: [{ 
-            role: "user", 
-            parts: [{ text: prompt }] 
-          }] 
-        },
-      });
-
-      if (aiError) {
-        console.error("Supabase function error:", aiError);
-        throw new Error(`AI service error: ${aiError.message || "Unknown error"}`);
-      }
-
-      if (aiData?.error) {
-        console.error("Gemini API error:", aiData.error);
-        throw new Error(`AI error: ${aiData.error}`);
-      }
-
-      if (!aiData?.text) {
-        throw new Error("No response received from AI service");
-      }
-
-      const responseText = aiData.text;
+      // Call via Gemini SDK (Vercel environment)
+      const responseText = await generateContent(prompt);
 
       // Extract JSON from response
       const jsonMatch = responseText.match(/\[[\s\S]*\]/);

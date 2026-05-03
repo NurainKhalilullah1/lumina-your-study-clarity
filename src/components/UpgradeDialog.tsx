@@ -95,9 +95,9 @@ const UpgradeDialog = ({ open, onOpenChange, selectedTier }: UpgradeDialogProps)
           {/* Bank details placeholder */}
           <div className="rounded-lg bg-muted p-4 space-y-1 text-sm">
             <p className="font-semibold text-foreground">Bank Transfer Details</p>
-            <p className="text-muted-foreground">Bank: [To be provided]</p>
-            <p className="text-muted-foreground">Account Number: [To be provided]</p>
-            <p className="text-muted-foreground">Account Name: [To be provided]</p>
+            <p className="text-muted-foreground">Bank: OPAY</p>
+            <p className="text-muted-foreground">Account Number: 9152630661</p>
+            <p className="text-muted-foreground">Account Name: KHALILULLAH OPEYEMI NURAIN</p>
             <p className="font-medium text-foreground mt-2">
               Amount: ₦{config.price.toLocaleString()}
             </p>

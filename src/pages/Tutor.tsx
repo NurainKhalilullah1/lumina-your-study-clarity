@@ -14,6 +14,7 @@ import { extractTextFromPDF } from "@/utils/pdfUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTrackStudyEvent } from "@/hooks/useStudyStats";
+import { useGoogleAI } from "@/hooks/useGoogleAI";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, FileText, X, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ export default function Tutor() {
 
   const { toast } = useToast();
   const { user } = useAuth();
+  const { sendMessage, generateContent } = useGoogleAI();
   const trackEvent = useTrackStudyEvent();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -191,69 +193,25 @@ export default function Tutor() {
         }
       }
 
-      const historyContents = messages
-        .slice(-6)
-        .map((m) => ({
-          role: m.role === "user" ? "user" : "model",
-          parts: [{ text: m.content }]
-        }));
-
-      let currentContents = [...historyContents];
-      
-      if (imagePart) {
-        const promptText = `You are StudyFlow, a friendly and knowledgeable AI tutor. 
+      const promptText = imagePart ? `You are StudyFlow, a friendly and knowledgeable AI tutor. 
 A student has shared an image with you. Please analyze it and help them understand it.
 ${inputMessage ? `Their question: "${inputMessage}"` : "Please describe and explain what you see in this image."}
-INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points when appropriate. Keep responses concise but comprehensive.`;
-        
-        currentContents.push({
-          role: "user",
-          parts: [
-            { text: promptText },
-            { 
-              inline_data: { 
-                mime_type: imagePart.inlineData.mimeType, 
-                data: imagePart.inlineData.data 
-              } 
-            } as any
-          ]
-        });
-      } else {
-        const promptText = `
+INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points when appropriate. Keep responses concise but comprehensive.` : `
           You are StudyFlow, a friendly and knowledgeable AI tutor.
           ACTIVE DOCUMENT: ${contextText ? contextText.slice(0, 25000) : "None"}
           USER: "${inputMessage}"
           INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points when appropriate. Keep responses concise but comprehensive.
         `;
-        currentContents.push({
-          role: "user",
-          parts: [{ text: promptText }]
-        });
-      }
 
       let fullResponseText = "";
       setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
-      // Call via Supabase Edge Function
-      const { data: aiData, error: aiError } = await supabase.functions.invoke("gemini-chat", {
-        body: { contents: currentContents as any },
-      });
+      fullResponseText = await sendMessage(
+        imagePart ? promptText : inputMessage,
+        messages.slice(-6),
+        imagePart ? { data: imagePart.inlineData.data, mimeType: imagePart.inlineData.mimeType } : undefined
+      );
 
-      if (aiError) {
-        console.error("Supabase function error:", aiError);
-        throw new Error(`AI service error: ${aiError.message || "Unknown error"}`);
-      }
-
-      if (aiData?.error) {
-        console.error("Gemini API error:", aiData.error);
-        throw new Error(`AI error: ${aiData.error}`);
-      }
-
-      if (!aiData?.text) {
-        throw new Error("No response received from AI service");
-      }
-
-      fullResponseText = aiData.text;
       setMessages((prev) => {
         const newMsgs = [...prev];
         newMsgs[newMsgs.length - 1] = { ...newMsgs[newMsgs.length - 1], content: fullResponseText };
@@ -280,11 +238,8 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
 User: "${firstUserMsg.slice(0, 150)}"
 AI: "${firstAiMsg}"
 Reply with ONLY the title, no quotes, no punctuation at the end.`;
-              const { data: titleData } = await supabase.functions.invoke("gemini-chat", {
-                body: { contents: [{ role: "user", parts: [{ text: renamePrompt }] }] },
-              });
-              const generatedTitle = titleData?.text?.trim().replace(/^["']|["']$/g, "").slice(0, 60);
-              const finalTitle = generatedTitle || firstUserMsg.slice(0, 50).trim() || (file ? file.name : "New Chat");
+              const generatedTitle = await generateContent(renamePrompt);
+              const finalTitle = generatedTitle?.trim().replace(/^["']|["']$/g, "").slice(0, 60) || firstUserMsg.slice(0, 50).trim() || (file ? file.name : "New Chat");
               await supabase.from("chat_sessions").update({ title: finalTitle }).eq("id", sessionToRename);
               setSidebarRefresh((prev) => prev + 1);
             } catch {

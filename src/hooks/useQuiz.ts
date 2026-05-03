@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useGoogleAI } from "./useGoogleAI";
 
 export interface QuizQuestion {
   id?: string;
@@ -103,6 +104,7 @@ export const useCreateQuizSession = () => {
 
 // Generate quiz questions using AI
 export const useGenerateQuizQuestions = () => {
+  const { generateContent } = useGoogleAI();
   const { toast } = useToast();
 
   return useMutation({
@@ -150,31 +152,8 @@ Generate exactly ${questionsToGenerate} questions distributed across ALL documen
 
       console.log("Starting quiz generation for", questionsToGenerate, "questions");
 
-      // Call via Supabase Edge Function
-      const { data: aiData, error: aiError } = await supabase.functions.invoke("gemini-chat", {
-        body: { 
-          contents: [{ 
-            role: "user", 
-            parts: [{ text: prompt }] 
-          }] 
-        },
-      });
-
-      if (aiError) {
-        console.error("Supabase function error:", aiError);
-        throw new Error(`AI service error: ${aiError.message || "Unknown error"}`);
-      }
-
-      if (aiData?.error) {
-        console.error("Gemini API error:", aiData.error);
-        throw new Error(`AI error: ${aiData.error}`);
-      }
-
-      if (!aiData?.text) {
-        throw new Error("No response received from AI service");
-      }
-
-      const responseText = aiData.text;
+      // Call via Gemini SDK (Vercel environment)
+      const responseText = await generateContent(prompt);
       console.log("Received response, length:", responseText.length);
 
       // Extract JSON from response (handle potential markdown code blocks)

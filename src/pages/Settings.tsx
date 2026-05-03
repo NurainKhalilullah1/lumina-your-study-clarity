@@ -35,18 +35,19 @@ import { useUniversityData } from "@/hooks/useUniversityData";
 import { useSubscription, TIER_CONFIG } from "@/hooks/useSubscription";
 import UpgradeDialog, { UpgradeRequestStatus } from "@/components/UpgradeDialog";
 import { Badge } from "@/components/ui/badge";
+
 const Settings = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Subscription
   const { tier, requests: upgradeRequests } = useSubscription();
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
   const [upgradeTier, setUpgradeTier] = useState<"pro" | "premium">("pro");
-  
+
   // Profile state
   const [name, setName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -55,7 +56,7 @@ const Settings = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isClearingHistory, setIsClearingHistory] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  
+
   // University & Course state
   const { data: profile, refetch: refetchProfile } = useProfile(user?.id);
   const { universities, courses, loadingUniversities, loadingCourses } = useUniversityData();
@@ -210,16 +211,16 @@ const Settings = () => {
       // Explicitly update profiles table as well to trigger user_xp sync
       await supabase.from("profiles").update({ full_name: name }).eq("id", user.id);
 
-      toast({ 
-        title: "Profile Updated", 
-        description: "Your display name has been changed." 
+      toast({
+        title: "Profile Updated",
+        description: "Your display name has been changed."
       });
-      
+
     } catch (error: any) {
-      toast({ 
-        title: "Error", 
-        description: error.message, 
-        variant: "destructive" 
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
@@ -230,16 +231,16 @@ const Settings = () => {
   const handleClearChatHistory = async () => {
     if (!user) return;
     setIsClearingHistory(true);
-    
+
     try {
       // Delete all chat sessions for this user (messages will cascade delete)
       const { error } = await supabase
         .from('chat_sessions')
         .delete()
         .eq('user_id', user.id);
-      
+
       if (error) throw error;
-      
+
       toast({
         title: "Chat History Cleared",
         description: "All your AI tutor conversations have been deleted."
@@ -263,20 +264,20 @@ const Settings = () => {
       // Call the secure database function - this deletes from auth.users
       // All related data is automatically deleted via ON DELETE CASCADE
       const { error } = await supabase.rpc('delete_own_account');
-      
+
       if (error) throw error;
 
       // If successful, sign out and redirect
       await signOut();
       toast({ title: "Account Deleted", description: "All your data has been erased. Goodbye!" });
       navigate("/", { replace: true });
-      
+
     } catch (error: any) {
       console.error(error);
-      toast({ 
-        title: "Error", 
-        description: "Could not delete account. Please try again.", 
-        variant: "destructive" 
+      toast({
+        title: "Error",
+        description: "Could not delete account. Please try again.",
+        variant: "destructive"
       });
     } finally {
       setIsDeleting(false);
@@ -320,7 +321,7 @@ const Settings = () => {
             <User className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-semibold text-foreground">Profile</h2>
           </div>
-          
+
           <div className="space-y-4">
             {/* Avatar Upload */}
             <div className="flex items-center gap-4">
@@ -368,14 +369,14 @@ const Settings = () => {
 
             <div className="grid gap-2">
               <Label htmlFor="name">Display Name</Label>
-              <Input 
-                id="name" 
-                value={name} 
-                onChange={(e) => setName(e.target.value)} 
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 placeholder="Enter your name"
               />
             </div>
-            
+
             <div className="grid gap-2">
               <Label>Email</Label>
               <Input value={user?.email || ""} disabled className="bg-muted text-muted-foreground" />
@@ -383,8 +384,8 @@ const Settings = () => {
             </div>
 
             <div className="pt-2 flex flex-wrap gap-3">
-              <Button 
-                onClick={handleUpdateProfile} 
+              <Button
+                onClick={handleUpdateProfile}
                 disabled={loading || !hasNameChanged}
               >
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
@@ -464,7 +465,7 @@ const Settings = () => {
               Save
             </Button>
           </div>
-          
+
           {location.state?.fromMissingProfile && (
             <div className="mb-4 p-3 bg-destructive/10 text-destructive text-sm rounded-md border border-destructive/20">
               Please complete your University, Course, and Level details to continue using StudyFlow.
@@ -494,7 +495,7 @@ const Settings = () => {
                 />
               )}
             </div>
-            
+
             <div className="grid gap-2 mt-4">
               <Label>Course of Study</Label>
               <Select value={courseOfStudy} onValueChange={setCourseOfStudy}>
@@ -545,7 +546,7 @@ const Settings = () => {
               Save
             </Button>
           </div>
-          
+
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
@@ -567,7 +568,7 @@ const Settings = () => {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-foreground">Pomodoro Duration</p>
@@ -597,7 +598,7 @@ const Settings = () => {
             <Database className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-semibold text-foreground">Data & Privacy</h2>
           </div>
-          
+
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
@@ -627,15 +628,15 @@ const Settings = () => {
                 </AlertDialogContent>
               </AlertDialog>
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-foreground">Export My Data</p>
                 <p className="text-sm text-muted-foreground">Download all your data as PDF</p>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleExportData}
                 disabled={isExporting}
               >
@@ -652,14 +653,14 @@ const Settings = () => {
             <Info className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-semibold text-foreground">About</h2>
           </div>
-          
+
           <div className="space-y-2 text-sm text-muted-foreground">
             <p>StudyFlow v1.0.0</p>
             <p>Made with ❤️ for students everywhere</p>
             <div className="flex gap-4 pt-2">
               <a href="#" className="text-primary hover:underline">Help Center</a>
-              <a href="#" className="text-primary hover:underline">Privacy Policy</a>
-              <a href="#" className="text-primary hover:underline">Terms of Service</a>
+              <a href="https://study-flow-app.vercel.app/privacy" className="text-primary hover:underline">Privacy Policy</a>
+              <a href="https://study-flow-app.vercel.app/terms" className="text-primary hover:underline">Terms of Service</a>
             </div>
           </div>
         </div>

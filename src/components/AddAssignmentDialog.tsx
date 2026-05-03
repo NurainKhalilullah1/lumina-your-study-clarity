@@ -15,6 +15,7 @@ import { downloadCalendarInvite, downloadBulkCalendarInvite } from "@/utils/cale
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { useGoogleAI } from "@/hooks/useGoogleAI";
 
 // No more direct genAI initialization here
 
@@ -38,6 +39,7 @@ export function AddAssignmentDialog({ onAssignmentAdded }: AddAssignmentDialogPr
 
   const { user } = useAuth();
   const { toast } = useToast();
+  const { generateContent } = useGoogleAI();
 
   // --- 1. MANUAL SUBMIT (Single Calendar File) ---
   const handleManualSubmit = async (e: React.FormEvent) => {
@@ -83,20 +85,8 @@ export function AddAssignmentDialog({ onAssignmentAdded }: AddAssignmentDialogPr
         TEXT: "${syllabusText}"
       `;
 
-      const { data: aiData, error: aiError } = await supabase.functions.invoke("gemini-chat", {
-        body: { 
-          contents: [{ 
-            role: "user", 
-            parts: [{ text: prompt }] 
-          }] 
-        },
-      });
-
-      if (aiError) throw new Error(aiError.message);
-      if (aiData?.error) throw new Error(aiData.error);
-      if (!aiData?.text) throw new Error("No response received from AI");
-
-      const tasks = JSON.parse(aiData.text.replace(/```json|```/g, "").trim());
+      const responseText = await generateContent(prompt);
+      const tasks = JSON.parse(responseText.replace(/```json|```/g, "").trim());
 
       const { error } = await supabase.from("assignments").insert(
         tasks.map((task: any) => ({
