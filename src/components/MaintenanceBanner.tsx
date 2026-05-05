@@ -68,7 +68,7 @@ export const MaintenancePage = () => (
       }}
     >
       We're upgrading <strong style={{ color: "#e2e8f0" }}>StudyFlow</strong> to
-      a faster, more powerful backend. We'll be back shortly!
+      a faster, more efficient workflow. We'll be back shortly!
     </p>
 
     {/* Info card */}
