@@ -8,9 +8,9 @@ export const MAINTENANCE_MODE = true;
 
 // ✏️  EDIT these to match your upgrade window
 const MAINTENANCE_START = "Tuesday 05 May 2026";
-const MAINTENANCE_DATE = "Friday 09 May 2026 at 03:00 PM";
+const MAINTENANCE_DATE = "Sunday 10 May 2026 at 03:00 PM";
 const MAINTENANCE_TIMEZONE = "WAT (West Africa Time)";
-const ESTIMATED_DURATION = "~4 days";
+const ESTIMATED_DURATION = "~5 days";
 // ─────────────────────────────────────────────────────────────
 
 export const MaintenancePage = () => (
@@ -68,7 +68,7 @@ export const MaintenancePage = () => (
       }}
     >
       We're upgrading <strong style={{ color: "#e2e8f0" }}>StudyFlow</strong> to
-      a faster, more workflow. We'll be back shortly!
+      a faster, more efficient workflow. We'll be back shortly!
     </p>
 
     {/* Info card */}
@@ -89,7 +89,7 @@ export const MaintenancePage = () => (
       <Row icon="⏱️" label="Duration" value={ESTIMATED_DURATION} />
     </div>
 
-    {/* Notice for mobile users
+    {/* Notice for mobile users */} 
     <p
       style={{
         fontSize: "0.875rem",
@@ -103,7 +103,7 @@ export const MaintenancePage = () => (
       <br />
       💻 <strong style={{ color: "#94a3b8" }}>Web users:</strong> simply refresh
       your browser when we're done.
-    </p> */}
+    </p>
 
     {/* Pulse keyframe (inline via style tag) */}
     <style>{`
