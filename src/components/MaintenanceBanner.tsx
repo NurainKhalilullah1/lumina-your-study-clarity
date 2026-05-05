@@ -4,13 +4,13 @@ import { Wrench } from "lucide-react";
 // 🔧  TOGGLE THIS FLAG to enable / disable maintenance lockdown
 //     true  → entire app is locked (no login, no access at all)
 //     false → app works normally
-export const MAINTENANCE_MODE = false;
+export const MAINTENANCE_MODE = true;
 
 // ✏️  EDIT these to match your upgrade window
-const MAINTENANCE_START = "Tuesday 18 March 2026";
-const MAINTENANCE_DATE = "Friday 20 March 2026 at 10:00 AM";
+const MAINTENANCE_START = "Tuesday 05 May 2026";
+const MAINTENANCE_DATE = "Sunday 10 May 2026 at 03:00 PM";
 const MAINTENANCE_TIMEZONE = "WAT (West Africa Time)";
-const ESTIMATED_DURATION = "~2 days";
+const ESTIMATED_DURATION = "~5 days";
 // ─────────────────────────────────────────────────────────────
 
 export const MaintenancePage = () => (
@@ -89,7 +89,7 @@ export const MaintenancePage = () => (
       <Row icon="⏱️" label="Duration" value={ESTIMATED_DURATION} />
     </div>
 
-    {/* Notice for mobile users */}
+    {/* Notice for mobile users */} 
     <p
       style={{
         fontSize: "0.875rem",
@@ -103,7 +103,7 @@ export const MaintenancePage = () => (
       <br />
       💻 <strong style={{ color: "#94a3b8" }}>Web users:</strong> simply refresh
       your browser when we're done.
-    </p>
+    </p> 
 
     {/* Pulse keyframe (inline via style tag) */}
     <style>{`
