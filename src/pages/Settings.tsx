@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { User, Shield, Loader2, Save, LogOut, BookOpen, Database, Info, Trash2, Download, Camera, GraduationCap, Crown } from "lucide-react";
+import { User, Shield, Loader2, Save, LogOut, BookOpen, Database, Info, Trash2, Download, Camera, GraduationCap, Crown, Bell } from "lucide-react";
 import { exportUserDataAsPDF } from "@/utils/exportUserData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +57,11 @@ const Settings = () => {
   const [isClearingHistory, setIsClearingHistory] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
+  // Email notification preferences
+  const [emailOptOut, setEmailOptOut] = useState(false);
+  const [emailOptOutLoaded, setEmailOptOutLoaded] = useState(false);
+  const [savingEmail, setSavingEmail] = useState(false);
+
   // University & Course state
   const { data: profile, refetch: refetchProfile } = useProfile(user?.id);
   const { universities, courses, loadingUniversities, loadingCourses } = useUniversityData();
@@ -75,7 +80,7 @@ const Settings = () => {
     savePreferences,
   } = useUserPreferences();
 
-  // Load current name and avatar when page opens
+  // Load current name, avatar and email prefs when page opens
   useEffect(() => {
     if (user?.user_metadata?.full_name) {
       setName(user.user_metadata.full_name);
@@ -93,7 +98,36 @@ const Settings = () => {
           if (data?.avatar_url) setAvatarUrl(data.avatar_url);
         });
     }
+    // Load email opt-out preference
+    if (user?.id) {
+      supabase
+        .from("profiles")
+        .select("email_opt_out")
+        .eq("id", user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) setEmailOptOut(data.email_opt_out ?? false);
+          setEmailOptOutLoaded(true);
+        });
+    }
   }, [user]);
+
+  const handleSaveEmailPrefs = async () => {
+    if (!user) return;
+    setSavingEmail(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ email_opt_out: emailOptOut } as any)
+        .eq("id", user.id);
+      if (error) throw error;
+      toast({ title: "Email preferences saved!", description: emailOptOut ? "You've unsubscribed from all emails." : "You'll receive study emails from us." });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setSavingEmail(false);
+    }
+  };
 
   // Load university/course from profile
   useEffect(() => {
@@ -523,6 +557,83 @@ const Settings = () => {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+        </div>
+
+        {/* Email Notifications Section */}
+        <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <Bell className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-semibold text-foreground">Email Notifications</h2>
+            </div>
+            <Button
+              size="sm"
+              onClick={handleSaveEmailPrefs}
+              disabled={savingEmail || !emailOptOutLoaded}
+            >
+              {savingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Save
+            </Button>
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Control the emails StudyFlow sends to <span className="font-medium text-foreground">{user?.email}</span>
+            </p>
+
+            {/* Master toggle */}
+            <div className="flex items-center justify-between rounded-lg border border-border p-4">
+              <div>
+                <p className="font-medium text-foreground text-sm">Receive all emails</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Welcome, reminders, weekly summaries &amp; study tips
+                </p>
+              </div>
+              <button
+                id="email-opt-out-toggle"
+                role="switch"
+                aria-checked={!emailOptOut}
+                onClick={() => setEmailOptOut((v) => !v)}
+                disabled={!emailOptOutLoaded}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-40 ${
+                  !emailOptOut ? "bg-primary" : "bg-muted"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                    !emailOptOut ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* What's included */}
+            {!emailOptOut && (
+              <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Included emails</p>
+                {[
+                  { icon: "🎉", label: "Welcome email", desc: "Sent once when you sign up" },
+                  { icon: "📅", label: "Study reminders", desc: "If you haven't studied in 3+ days" },
+                  { icon: "📊", label: "Weekly summary", desc: "Your study stats every Sunday" },
+                  { icon: "💡", label: "Daily study tips", desc: "For users without push notifications" },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-start gap-3">
+                    <span className="text-base">{item.icon}</span>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{item.label}</p>
+                      <p className="text-xs text-muted-foreground">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {emailOptOut && (
+              <p className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3">
+                ⚠️ You're unsubscribed from all StudyFlow emails.
+              </p>
+            )}
           </div>
         </div>
 

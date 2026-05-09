@@ -113,6 +113,16 @@ const Auth = () => {
           title: "Account created!",
           description: "Please check your email to verify your account.",
         });
+        // Fire welcome email — async, don't block UI
+        import("@/integrations/supabase/client").then(({ supabase }) => {
+          supabase.auth.getUser().then(({ data: { user } }) => {
+            if (user?.id) {
+              supabase.functions.invoke("send-email", {
+                body: { type: "welcome", userId: user.id },
+              }).catch(() => {/* silently ignore if Resend not yet configured */});
+            }
+          });
+        });
       }
     }
     setIsLoading(false);

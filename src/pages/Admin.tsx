@@ -260,24 +260,30 @@ const Admin = () => {
   };
 
   const handleSendNewsletter = async () => {
-    if (!nlSubject || !nlBody) {
-      toast({ title: "Missing fields", description: "Subject and body are required.", variant: "destructive" });
+    if (!nlSubject.trim() || !nlBody.trim()) {
+      toast({ title: "Missing fields", description: "Subject and message body are required.", variant: "destructive" });
       return;
     }
     setNlSending(true);
     try {
-      const htmlContent = buildEmail(nlSubject, "linear-gradient(135deg,#6c47ff 0%,#a78bfa 100%)", nlHeader, "", nlBody, nlCtaText, nlCtaUrl, nlFooter);
-      const session = await supabase.auth.getSession();
-      const token = session.data.session?.access_token;
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-newsletter`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ subject: nlSubject, htmlContent }),
+      const { data, error } = await supabase.functions.invoke("send-email", {
+        body: {
+          type: "broadcast",
+          data: {
+            subject: nlSubject.trim(),
+            message: `<p style="white-space:pre-wrap;">${nlBody.trim()}</p>`,
+            wrap: true,
+          },
+        },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to send");
-      toast({ title: "Newsletter Sent! 🎉", description: `Successfully delivered to ${data.recipientCount} users.` });
-      setNlSubject(""); setNlHeader(""); setNlBody(""); setNlCtaText(""); setNlCtaUrl(""); setNlFooter("");
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      const { sent = 0, failed = 0, total = 0 } = data ?? {};
+      toast({
+        title: "Broadcast sent! 🎉",
+        description: `Delivered to ${sent} of ${total} users${failed > 0 ? ` (${failed} failed)` : ""}.`,
+      });
+      setNlSubject(""); setNlBody(""); setNlPreview(false);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -395,17 +401,90 @@ const Admin = () => {
           </div>
         </motion.div>
 
-        {/* ── Newsletter Composer ─────────────────────────────────────────── */}
+        {/* ── Email Broadcast ──────────────────────────────────────────────── */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
           <div className="flex items-center gap-2 mb-3">
-            <Mail className="w-5 h-5 text-muted-foreground" />
-            <h2 className="text-lg font-semibold text-muted-foreground">Send Newsletter</h2>
-            <Badge variant="outline" className="ml-auto text-xs">Unavailable</Badge>
+            <Mail className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Email Broadcast</h2>
+            <Badge variant="outline" className="ml-auto text-xs text-emerald-600 border-emerald-300">Live</Badge>
           </div>
-          <Card className="bg-card/40 backdrop-blur-xl border-border/30 opacity-60">
-            <CardContent className="py-6 text-center space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">📧 Email service is temporarily suspended</p>
-              <p className="text-xs text-muted-foreground">Restore your Brevo account to re-enable this feature.</p>
+          <Card className="bg-card/60 backdrop-blur-xl border-border/50">
+            <CardContent className="pt-6 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="nl-subject">Subject Line</Label>
+                <Input
+                  id="nl-subject"
+                  placeholder="e.g. New features just dropped 🚀"
+                  value={nlSubject}
+                  onChange={(e) => setNlSubject(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="nl-body">
+                  Message Body
+                  <span className="text-xs text-muted-foreground ml-2 font-normal">
+                    Use <code className="bg-muted px-1 rounded">{"{{name}}"}</code> to personalise
+                  </span>
+                </Label>
+                <Textarea
+                  id="nl-body"
+                  placeholder={`Hi {{name}},\n\nWe just shipped something exciting for you...`}
+                  value={nlBody}
+                  onChange={(e) => setNlBody(e.target.value)}
+                  rows={6}
+                  className="font-mono text-sm"
+                />
+              </div>
+
+              {/* Preview toggle */}
+              {nlBody && (
+                <button
+                  type="button"
+                  onClick={() => setNlPreview((v) => !v)}
+                  className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
+                >
+                  {nlPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {nlPreview ? "Hide preview" : "Show preview"}
+                </button>
+              )}
+
+              {nlPreview && nlBody && (
+                <div className="rounded-xl border border-border overflow-hidden shadow-inner">
+                  <p className="text-xs text-muted-foreground px-3 py-2 border-b border-border bg-muted/40">
+                    Email Preview — sample recipient: <strong>Alex Johnson</strong>
+                  </p>
+                  <iframe
+                    title="email-preview"
+                    className="w-full"
+                    style={{ height: 420, border: "none" }}
+                    srcDoc={buildEmail(
+                      nlSubject || "(no subject)",
+                      "linear-gradient(135deg,#6c47ff 0%,#a78bfa 100%)",
+                      "StudyFlow",
+                      "",
+                      `<p style="white-space:pre-wrap;">${nlBody.replace(/{{name}}/g, "Alex Johnson")}</p>`,
+                    )}
+                  />
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 pt-2">
+                <Button
+                  id="send-broadcast-btn"
+                  onClick={handleSendNewsletter}
+                  disabled={nlSending || !nlSubject.trim() || !nlBody.trim()}
+                  className="gradient-primary text-primary-foreground"
+                >
+                  {nlSending ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</>
+                  ) : (
+                    <><Send className="mr-2 h-4 w-4" /> Send to All Users</>
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Skips users who have opted out of emails.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
