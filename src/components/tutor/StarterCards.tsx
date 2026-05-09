@@ -9,9 +9,10 @@ interface StarterCardsProps {
   onGenerateFlashcards?: () => void;
   documentContext?: string;
   documentName?: string;
+  onSelectDocument?: () => void;
 }
 
-export const StarterCards = ({ onSetInputText, onGenerateFlashcards, documentContext, documentName }: StarterCardsProps) => {
+export const StarterCards = ({ onSetInputText, onGenerateFlashcards, documentContext, documentName, onSelectDocument }: StarterCardsProps) => {
   const navigate = useNavigate();
 
   // Cards that populate the input (require document upload)
@@ -102,7 +103,18 @@ export const StarterCards = ({ onSetInputText, onGenerateFlashcards, documentCon
                 "hover:shadow-xl hover:scale-[1.02] hover:-translate-y-1",
                 card.hoverBorder
               )}
-              onClick={() => card.title === "Flashcards" && onGenerateFlashcards ? onGenerateFlashcards() : onSetInputText(card.prompt)}
+              onClick={() => {
+                if (card.title === "Flashcards") {
+                  if (!documentContext) {
+                    // No document loaded — open the library selector first
+                    onSelectDocument?.();
+                  } else {
+                    onGenerateFlashcards?.();
+                  }
+                } else {
+                  onSetInputText(card.prompt);
+                }
+              }}
               style={{ animationDelay: `${i * 100}ms` }}
             >
               {/* Gradient background on hover */}

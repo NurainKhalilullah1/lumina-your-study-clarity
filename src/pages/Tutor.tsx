@@ -73,8 +73,28 @@ export default function Tutor() {
   const handleSelectDocument = (documents: UserFile[]) => {
     if (documents.length > 0) {
       const doc = documents[0];
-      setActiveDocument(doc.text_content || "");
+
+      if (!doc.text_content) {
+        toast({
+          title: "Document unavailable",
+          description: "This document hasn't been processed yet. Please try uploading it again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setActiveDocument(doc.text_content);
       setActiveDocumentName(doc.file_name);
+
+      // Inject a visible AI confirmation message into the chat
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `📄 I've loaded **${doc.file_name}** into context. I can now answer questions about it, summarize it, generate flashcards, or help you study its content. What would you like to do?`,
+        },
+      ]);
+
       toast({
         title: "Document loaded",
         description: `"${doc.file_name}" is now your active context.`,
@@ -206,8 +226,9 @@ INSTRUCTIONS: Be helpful, use clear formatting with headers and bullet points wh
       let fullResponseText = "";
       setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
+      // Always pass promptText so the document context is included for all message types
       fullResponseText = await sendMessage(
-        imagePart ? promptText : inputMessage,
+        promptText,
         messages.slice(-6),
         imagePart ? { data: imagePart.inlineData.data, mimeType: imagePart.inlineData.mimeType } : undefined
       );
@@ -374,6 +395,7 @@ Reply with ONLY the title, no quotes, no punctuation at the end.`;
                 onGenerateFlashcards={() => setTriggerFlashcards(true)}
                 documentContext={activeDocument}
                 documentName={activeDocumentName}
+                onSelectDocument={() => setShowDocumentSelector(true)}
               />
             ) : (
               <ChatMessages messages={messages} isLoading={isLoading} />
