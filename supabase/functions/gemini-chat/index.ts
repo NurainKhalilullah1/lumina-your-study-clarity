@@ -5,9 +5,23 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Gemini API supports multimodal parts: text and/or inlineData (images)
+interface TextPart {
+  text: string;
+}
+
+interface InlineDataPart {
+  inlineData: {
+    mimeType: string;
+    data: string; // base64
+  };
+}
+
+type Part = TextPart | InlineDataPart;
+
 interface Message {
   role: "user" | "model";
-  parts: { text: string }[];
+  parts: Part[];
 }
 
 interface RequestBody {
@@ -23,18 +37,18 @@ Deno.serve(async (req: Request) => {
   try {
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) {
-      throw new Error("GEMINI_API_KEY is not configured");
+      throw new Error("GEMINI_API_KEY is not configured. Set it in Supabase Edge Function Secrets.");
     }
 
     const body: RequestBody = await req.json();
     const { contents } = body;
 
-    if (!contents || !Array.isArray(contents)) {
-      throw new Error("Invalid request: 'contents' array is required");
+    if (!contents || !Array.isArray(contents) || contents.length === 0) {
+      throw new Error("Invalid request: 'contents' array is required and cannot be empty");
     }
 
-    // Try gemini-2.5-flash first, fall back to gemini-1.5-flash if unavailable
-    const models = ["gemini-2.5-flash", "gemini-1.5-flash"];
+    // Try models in order of preference
+    const models = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash"];
     let response: Response | null = null;
     let lastError = "";
 

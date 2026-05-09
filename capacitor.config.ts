@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lumina.studyflow',
+  appId: 'com.lumina.studyflow',
   appName: 'StudyFlow',
   webDir: 'dist',
   plugins: {
@@ -23,6 +23,9 @@ const config: CapacitorConfig = {
       scopes: ["profile", "email"],
       serverClientId: "1048055478088-8rc0hh9t2ihbpdrmmcppe4hak2qrufn2.apps.googleusercontent.com",
       forceCodeForRefreshToken: true,
+    },
+    CapacitorHttp: {
+      enabled: true,
     },
   },
 };

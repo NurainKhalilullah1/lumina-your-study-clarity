@@ -37,6 +37,8 @@ import NotFound from "./pages/NotFound";
 import DownloadPage from "./pages/Download";
 import { AppUpdateGuard } from "@/components/AppUpdateGuard";
 import InitialRedirect from "@/components/InitialRedirect";
+import { NotificationPrompt } from "@/components/NotificationPrompt";
+import { useAuth } from "@/contexts/AuthContext";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +86,7 @@ const App = () => {
             <TooltipProvider>
               <Toaster />
               <Sonner />
+              <NotificationGate />
 
               {/* ── Strict Maintenance Gate ────────────────────── */}
               {MAINTENANCE_MODE ? (
@@ -216,6 +219,12 @@ const App = () => {
       </ThemeProvider>
     </QueryClientProvider>
   );
+};
+
+// Inner component: needs to live inside AuthProvider to access useAuth()
+const NotificationGate = () => {
+  const { user } = useAuth();
+  return <NotificationPrompt userId={user?.id} />;
 };
 
 export default App;

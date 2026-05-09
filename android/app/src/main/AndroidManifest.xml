@@ -22,7 +22,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="app.lumina.studyflow" />
+                <data android:scheme="com.lumina.studyflow" />
             </intent-filter>
         </activity>
 

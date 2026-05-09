@@ -1,89 +1,77 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { supabase } from "@/integrations/supabase/client";
 import { Message } from "./useConversations";
 
-// Initialize the Gemini SDK
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || "");
-
 export function useGoogleAI() {
-  const sendMessage = async (input: string, history: Message[], image?: { data: string; mimeType: string }) => {
+  /**
+   * Send a chat message with optional conversation history and image.
+   * Routes through the `gemini-chat` Supabase Edge Function so that:
+   *  - No CORS issues in Android WebView (server-to-server call)
+   *  - API key is stored securely as a Supabase secret, not in the APK
+   */
+  const sendMessage = async (
+    input: string,
+    history: Message[],
+    image?: { data: string; mimeType: string }
+  ): Promise<string> => {
     try {
-      if (!import.meta.env.VITE_GEMINI_API_KEY) {
-        throw new Error("Gemini API Key is missing. Please add VITE_GEMINI_API_KEY to your .env file.");
+      // Format previous messages into Gemini's contents format
+      const rawHistory = history.map((msg) => ({
+        role: msg.role === "user" ? ("user" as const) : ("model" as const),
+        parts: [{ text: msg.content }],
+      }));
+
+      // Gemini requires the history to start with a 'user' message.
+      // Strip any leading 'model' messages (e.g. system confirmation messages).
+      const firstUserIdx = rawHistory.findIndex((m) => m.role === "user");
+      const validHistory = firstUserIdx >= 0 ? rawHistory.slice(firstUserIdx) : [];
+
+      // Build the new user message — include inline image data if present
+      const userParts: any[] = [{ text: input }];
+      if (image) {
+        userParts.push({
+          inlineData: { data: image.data, mimeType: image.mimeType },
+        });
       }
 
-      // Try gemini-2.0-flash first, fall back to gemini-flash-latest and gemini-2.5-flash
-      const models = ["gemini-2.0-flash", "gemini-flash-latest", "gemini-2.5-flash"];
-      let lastError: any = null;
+      const contents = [
+        ...validHistory,
+        { role: "user", parts: userParts },
+      ];
 
-      for (const modelName of models) {
-        try {
-          const model = genAI.getGenerativeModel({ model: modelName });
+      const { data, error } = await supabase.functions.invoke("gemini-chat", {
+        body: { contents },
+      });
 
-          // Format history for Gemini
-          const rawHistory = history.map(msg => ({
-            role: msg.role === "user" ? "user" : "model",
-            parts: [{ text: msg.content }]
-          }));
+      if (error) throw new Error(error.message || "Edge Function call failed");
+      if (data?.error) throw new Error(data.error);
+      if (!data?.text) throw new Error("No response received from AI");
 
-          // Gemini requires the history to start with a 'user' message.
-          // Strip any leading 'model' messages (e.g. system confirmation messages).
-          const firstUserIdx = rawHistory.findIndex(m => m.role === "user");
-          const chatHistory = firstUserIdx >= 0 ? rawHistory.slice(firstUserIdx) : [];
-
-          const chat = model.startChat({
-            history: chatHistory,
-          });
-
-          const parts: any[] = [{ text: input }];
-          if (image) {
-            parts.push({
-              inlineData: {
-                data: image.data,
-                mimeType: image.mimeType
-              }
-            });
-          }
-
-          const result = await chat.sendMessage(parts);
-          const response = await result.response;
-          return response.text();
-        } catch (err) {
-          lastError = err;
-          console.warn(`Model ${modelName} failed, trying next...`, err);
-          continue;
-        }
-      }
-
-      throw lastError || new Error("Failed to get response from AI");
+      return data.text as string;
     } catch (error: any) {
-      console.error("Gemini SDK Error:", error);
+      console.error("AI Error:", error);
       throw new Error(error.message || "Failed to communicate with AI");
     }
   };
 
-  const generateContent = async (prompt: string) => {
+  /**
+   * Generate content from a single prompt (no history, no image).
+   * Used for flashcard generation, quiz generation, chat title rename, etc.
+   */
+  const generateContent = async (prompt: string): Promise<string> => {
     try {
-      if (!import.meta.env.VITE_GEMINI_API_KEY) {
-        throw new Error("Gemini API Key is missing. Please add VITE_GEMINI_API_KEY to your .env file.");
-      }
+      const contents = [{ role: "user", parts: [{ text: prompt }] }];
 
-      const models = ["gemini-2.0-flash", "gemini-flash-latest", "gemini-2.5-flash"];
-      let lastError: any = null;
+      const { data, error } = await supabase.functions.invoke("gemini-chat", {
+        body: { contents },
+      });
 
-      for (const modelName of models) {
-        try {
-          const model = genAI.getGenerativeModel({ model: modelName });
-          const result = await model.generateContent(prompt);
-          const response = await result.response;
-          return response.text();
-        } catch (err) {
-          lastError = err;
-          continue;
-        }
-      }
-      throw lastError || new Error("Failed to generate content");
+      if (error) throw new Error(error.message || "Edge Function call failed");
+      if (data?.error) throw new Error(data.error);
+      if (!data?.text) throw new Error("No response received from AI");
+
+      return data.text as string;
     } catch (error: any) {
-      console.error("Gemini SDK Error:", error);
+      console.error("AI Error:", error);
       throw new Error(error.message || "Failed to communicate with AI");
     }
   };

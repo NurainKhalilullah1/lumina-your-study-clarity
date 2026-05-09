@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email,
       password,
       options: {
-        emailRedirectTo: Capacitor.isNativePlatform() ? 'app.studyflow://onboarding' : `${window.location.origin}/onboarding`,
+        emailRedirectTo: Capacitor.isNativePlatform() ? 'com.lumina.studyflow://onboarding' : `${window.location.origin}/onboarding`,
       },
     });
     return { error };
@@ -134,7 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const resetPassword = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: Capacitor.isNativePlatform() ? 'app.studyflow://auth' : `${window.location.origin}/auth`,
+      redirectTo: Capacitor.isNativePlatform() ? 'com.lumina.studyflow://auth' : `${window.location.origin}/auth`,
     });
     return { error };
   };
