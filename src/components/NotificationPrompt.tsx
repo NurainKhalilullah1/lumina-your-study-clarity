@@ -55,27 +55,25 @@ export function NotificationPrompt({ userId }: NotificationPromptProps) {
   return (
     <AnimatePresence>
       {visible && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
-            onClick={handleSnooze}
-          />
-
-          {/* Card — centered on screen */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-6"
+          onClick={handleSnooze}
+        >
+          {/* Card — stop click propagation so tapping card doesn't snooze */}
           <motion.div
             initial={{ opacity: 0, scale: 0.88, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.88, y: 20 }}
             transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[88vw] max-w-sm"
+            className="w-full max-w-sm"
             role="dialog"
             aria-label="Enable study notifications"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative rounded-2xl border border-purple-200/40 bg-white/95 backdrop-blur-xl shadow-2xl shadow-purple-500/20 dark:bg-zinc-900/95 dark:border-purple-700/30 p-6">
+            <div className="relative rounded-2xl border border-purple-200/40 bg-white dark:bg-zinc-900 shadow-2xl shadow-purple-500/20 dark:border-purple-700/30 p-6">
               {/* Dismiss permanently */}
               <button
                 onClick={handleDismiss}
@@ -85,8 +83,8 @@ export function NotificationPrompt({ userId }: NotificationPromptProps) {
                 <X className="h-4 w-4" />
               </button>
 
-              {/* Icon */}
-              <div className="flex flex-col items-center text-center gap-3 mb-4">
+              {/* Icon + text */}
+              <div className="flex flex-col items-center text-center gap-3 mb-5">
                 <div className="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
                   <Bell className="h-7 w-7 text-purple-600 dark:text-purple-400" />
                 </div>
@@ -95,11 +93,12 @@ export function NotificationPrompt({ userId }: NotificationPromptProps) {
                     Get daily study tips 💡
                   </p>
                   <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                    Enable notifications to receive study strategies and app tips that help you learn better.
+                    Enable notifications to receive study strategies and tips that help you learn better.
                   </p>
                 </div>
               </div>
 
+              {/* Buttons */}
               <div className="flex flex-col gap-2">
                 <button
                   onClick={handleEnable}
@@ -124,8 +123,9 @@ export function NotificationPrompt({ userId }: NotificationPromptProps) {
               )}
             </div>
           </motion.div>
-        </>
+        </motion.div>
       )}
     </AnimatePresence>
   );
 }
+

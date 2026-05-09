@@ -9,7 +9,7 @@ const corsHeaders = {
 // ── Brand colours & shared styles ─────────────────────────────────────────
 const BRAND = "#7C3AED";
 const BRAND_LIGHT = "#EDE9FE";
-const APP_URL = "https://studyflow.app"; // update to your real domain when ready
+const APP_URL = "https://study-flow-app.vercel.app"; // update to your real domain when ready
 
 const emailBase = (preheader: string, body: string) => `
 <!DOCTYPE html>
@@ -46,6 +46,9 @@ const emailBase = (preheader: string, body: string) => `
               <a href="${APP_URL}/unsubscribe?token=__UNSUB_TOKEN__" style="color:${BRAND};text-decoration:underline;">Unsubscribe from these emails</a>
               &nbsp;·&nbsp;
               <a href="${APP_URL}" style="color:${BRAND};text-decoration:none;">Open StudyFlow</a>
+            </p>
+            <p style="color:#9CA3AF;font-size:11px;text-align:center;margin:8px 0 0;">
+              &copy; 2026 StudyFlow. All rights reserved. Helping students learn smarter
             </p>
           </td>
         </tr>
@@ -91,8 +94,8 @@ const templates = {
       <p style="color:#9CA3AF;font-size:13px;text-align:center;margin:0;">
         Happy studying! The StudyFlow team is rooting for you 💜
       </p>
-      `.replace("__UNSUB_TOKEN__", unsubToken)
-    ),
+      `
+    ).replace("__UNSUB_TOKEN__", unsubToken),
   }),
 
   reminder: (name: string, daysSince: number, unsubToken: string) => ({
@@ -123,8 +126,8 @@ const templates = {
           </a>
         </td></tr>
       </table>
-      `.replace("__UNSUB_TOKEN__", unsubToken)
-    ),
+      `
+    ).replace("__UNSUB_TOKEN__", unsubToken),
   }),
 
   weeklySummary: (
@@ -179,8 +182,8 @@ const templates = {
           </a>
         </td></tr>
       </table>
-      `.replace("__UNSUB_TOKEN__", unsubToken)
-    ),
+      `
+    ).replace("__UNSUB_TOKEN__", unsubToken),
   }),
 
   tipFallback: (name: string, tip: { title: string; body: string }, unsubToken: string) => ({
@@ -208,8 +211,8 @@ const templates = {
           </a>
         </td></tr>
       </table>
-      `.replace("__UNSUB_TOKEN__", unsubToken)
-    ),
+      `
+    ).replace("__UNSUB_TOKEN__", unsubToken),
   }),
 };
 
