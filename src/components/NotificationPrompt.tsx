@@ -26,9 +26,8 @@ export function NotificationPrompt({ userId }: NotificationPromptProps) {
     const snoozedUntil = localStorage.getItem(SNOOZED_KEY);
     if (snoozedUntil && new Date(snoozedUntil) > new Date()) return;
 
-    // Delay appearance by 30 seconds after login (not too aggressive)
-    const timer = setTimeout(() => setVisible(true), 30000);
-    return () => clearTimeout(timer);
+    // Show immediately after login
+    setVisible(true);
   }, [userId, permissionStatus]);
 
   // Auto-hide when permission is granted
