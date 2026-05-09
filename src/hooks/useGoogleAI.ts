@@ -20,10 +20,15 @@ export function useGoogleAI() {
           const model = genAI.getGenerativeModel({ model: modelName });
 
           // Format history for Gemini
-          const chatHistory = history.map(msg => ({
+          const rawHistory = history.map(msg => ({
             role: msg.role === "user" ? "user" : "model",
             parts: [{ text: msg.content }]
           }));
+
+          // Gemini requires the history to start with a 'user' message.
+          // Strip any leading 'model' messages (e.g. system confirmation messages).
+          const firstUserIdx = rawHistory.findIndex(m => m.role === "user");
+          const chatHistory = firstUserIdx >= 0 ? rawHistory.slice(firstUserIdx) : [];
 
           const chat = model.startChat({
             history: chatHistory,
