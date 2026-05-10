@@ -32,7 +32,7 @@ export const SocialProof = () => {
       </div>
 
       {/* Logo Marquee */}
-      <div className="relative flex overflow-hidden group">
+      <div className="relative flex overflow-hidden">
         <div className="flex w-max animate-marquee hover:[animation-play-state:paused] flex-nowrap">
           {/* First set of logos */}
           {[...logos, ...logos, ...logos, ...logos].map((logo, index) => (
@@ -43,7 +43,7 @@ export const SocialProof = () => {
               <img
                 src={logo.src}
                 alt={logo.alt}
-                className="h-16 sm:h-20 w-auto object-contain grayscale opacity-50 transition-all duration-300 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-110 dark:invert"
+                className="h-16 sm:h-20 w-auto object-contain grayscale opacity-50 transition-all duration-300 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105"
               />
             </div>
           ))}

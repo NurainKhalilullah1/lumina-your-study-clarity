@@ -78,16 +78,23 @@ const TIPS = [
 
 // ── FCM v1 helper ──────────────────────────────────────────────────────────
 // Gets a short-lived OAuth2 access token using the service account credentials
+
+/** Converts a standard base64 string to base64url (required for JWTs) */
+function toBase64Url(base64: string): string {
+  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 async function getFCMAccessToken(serviceAccount: any): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
-  const header = btoa(JSON.stringify({ alg: "RS256", typ: "JWT" }));
-  const payload = btoa(JSON.stringify({
+  // JWT parts must use base64url encoding, not standard base64
+  const header = toBase64Url(btoa(JSON.stringify({ alg: "RS256", typ: "JWT" })));
+  const payload = toBase64Url(btoa(JSON.stringify({
     iss: serviceAccount.client_email,
     scope: "https://www.googleapis.com/auth/firebase.messaging",
     aud: "https://oauth2.googleapis.com/token",
     exp: now + 3600,
     iat: now,
-  }));
+  })));
 
   // Import the private key
   const pemKey = serviceAccount.private_key;
@@ -112,7 +119,9 @@ async function getFCMAccessToken(serviceAccount: any): Promise<string> {
     new TextEncoder().encode(signingInput)
   );
 
-  const jwt = `${signingInput}.${btoa(String.fromCharCode(...new Uint8Array(signature)))}`;
+  // Signature must also be base64url encoded
+  const sigBase64Url = toBase64Url(btoa(String.fromCharCode(...new Uint8Array(signature))));
+  const jwt = `${signingInput}.${sigBase64Url}`;
 
   // Exchange JWT for access token
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
