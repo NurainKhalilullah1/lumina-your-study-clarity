@@ -114,7 +114,7 @@ export const QuizInterface = ({
   }
 
   return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto p-4">
+    <div className="flex flex-col h-full min-h-0 max-w-4xl mx-auto p-4">
       {/* Header with timer and progress */}
       <Card className="p-4 mb-4">
         <div className="flex items-center justify-between gap-4">

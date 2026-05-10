@@ -122,7 +122,7 @@ export default function QuizHistory() {
               Review your past quizzes and track your progress
             </p>
           </div>
-          <Button onClick={() => navigate("/tutor")}>
+          <Button onClick={() => navigate("/quiz")}>
             <BookOpen className="w-4 h-4 mr-2" />
             Take New Quiz
           </Button>
@@ -213,7 +213,7 @@ export default function QuizHistory() {
                   Take your first quiz to see your progress here
                 </p>
               </div>
-              <Button onClick={() => navigate("/tutor")}>
+              <Button onClick={() => navigate("/quiz")}>
                 Start a Quiz
               </Button>
             </CardContent>

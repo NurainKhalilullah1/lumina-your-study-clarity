@@ -180,54 +180,56 @@ export default function Quiz() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="h-[calc(100vh-2rem)] flex flex-col bg-background overflow-hidden">
-        {/* Header */}
-        {phase === "setup" && (
-          <header className="flex items-center gap-4 px-4 py-3 border-b">
+    <DashboardLayout hideMobileHeader={phase === "quiz"}>
+      {/* Setup phase */}
+      {phase === "setup" && (
+        <div className="flex flex-col min-h-full">
+          <header className="flex items-center gap-4 px-4 py-3 border-b shrink-0">
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/tutor')}
+              onClick={() => navigate('/quiz-history')}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Tutor
+              Quiz Hub
             </Button>
           </header>
-        )}
-
-        {/* Content */}
-        <div className="flex-1 overflow-auto">
-          {phase === "setup" && (
+          <div className="flex-1 overflow-auto">
             <QuizSetup
               initialDocumentName={state?.documentName}
               initialDocumentContent={state?.documentContent}
               onStartQuiz={handleStartQuiz}
               isLoading={createSession.isPending || generateQuestions.isPending}
             />
-          )}
-
-          {phase === "quiz" && localQuestions.length > 0 && (
-            <QuizInterface
-              questions={localQuestions}
-              timeLimitMinutes={quizTimeLimit}
-              onSaveAnswer={handleSaveAnswer}
-              onToggleFlag={handleToggleFlag}
-              onSubmit={handleSubmitQuiz}
-            />
-          )}
-
-          {phase === "results" && (
-            <QuizResults
-              score={quizScore.score}
-              totalQuestions={quizScore.total}
-              questions={localQuestions}
-              timeTaken={timeTaken}
-              onRetake={handleRetake}
-            />
-          )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Active quiz phase – fills the screen with no page scroll */}
+      {phase === "quiz" && localQuestions.length > 0 && (
+        <div className="flex-1 flex flex-col min-h-0 pb-16 md:pb-0">
+          <QuizInterface
+            questions={localQuestions}
+            timeLimitMinutes={quizTimeLimit}
+            onSaveAnswer={handleSaveAnswer}
+            onToggleFlag={handleToggleFlag}
+            onSubmit={handleSubmitQuiz}
+          />
+        </div>
+      )}
+
+      {/* Results phase */}
+      {phase === "results" && (
+        <div className="overflow-auto p-4 sm:p-6 pb-20 md:pb-6">
+          <QuizResults
+            score={quizScore.score}
+            totalQuestions={quizScore.total}
+            questions={localQuestions}
+            timeTaken={timeTaken}
+            onRetake={handleRetake}
+          />
+        </div>
+      )}
     </DashboardLayout>
   );
 }
