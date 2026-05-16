@@ -350,9 +350,7 @@ Reply with ONLY the title, no quotes, no punctuation at the end.`;
 
               {/* Branding */}
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-                  <StudyFlowLogo size="md" variant="purple" />
-                </div>
+                <img src="/studyflow-black.png" alt="StudyFlow Logo" className="h-8 w-auto object-contain" />
                 <span className="font-semibold text-lg hidden sm:inline">StudyFlow</span>
               </div>
             </div>

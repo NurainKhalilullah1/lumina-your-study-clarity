@@ -160,43 +160,45 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!isRunning) return;
 
     const interval = setInterval(() => {
-      setTimeRemaining(prev => {
-        if (prev <= 1) {
-          playNotification();
-
-          let newMode: TimerMode;
-          let newCompletedSessions = completedSessions;
-
-          if (mode === 'work') {
-            newCompletedSessions = completedSessions + 1;
-            setCompletedSessions(newCompletedSessions);
-
-            if (user) {
-              trackEvent.mutate({
-                userId: user.id,
-                eventType: 'pomodoro_completed',
-                metadata: { duration: workDuration }
-              });
-              toast.success("Pomodoro session completed! 🍅");
-            }
-
-            newMode = newCompletedSessions % DEFAULT_SETTINGS.sessionsBeforeLongBreak === 0
-              ? 'longBreak'
-              : 'shortBreak';
-          } else {
-            newMode = 'work';
-          }
-
-          setMode(newMode);
-          setIsRunning(false);
-          return getDurationForMode(newMode);
-        }
-        return prev - 1;
-      });
+      setTimeRemaining(prev => prev > 0 ? prev - 1 : 0);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isRunning, completedSessions, getDurationForMode, mode, playNotification, trackEvent, user, workDuration]);
+  }, [isRunning]);
+
+  // Handle timer completion
+  useEffect(() => {
+    if (isRunning && timeRemaining === 0) {
+      playNotification();
+
+      let newMode: TimerMode;
+      let newCompletedSessions = completedSessions;
+
+      if (mode === 'work') {
+        newCompletedSessions = completedSessions + 1;
+        setCompletedSessions(newCompletedSessions);
+
+        if (user) {
+          trackEvent.mutate({
+            userId: user.id,
+            eventType: 'pomodoro_completed',
+            metadata: { duration: workDuration }
+          });
+          toast.success("Pomodoro session completed! 🍅");
+        }
+
+        newMode = newCompletedSessions % DEFAULT_SETTINGS.sessionsBeforeLongBreak === 0
+          ? 'longBreak'
+          : 'shortBreak';
+      } else {
+        newMode = 'work';
+      }
+
+      setMode(newMode);
+      setIsRunning(false);
+      setTimeRemaining(getDurationForMode(newMode));
+    }
+  }, [timeRemaining, isRunning, mode, completedSessions, user, workDuration, trackEvent, getDurationForMode, playNotification]);
 
   // Reset on logout
   useEffect(() => {
