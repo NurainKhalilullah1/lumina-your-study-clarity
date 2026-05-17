@@ -102,11 +102,11 @@ const Settings = () => {
     if (user?.id) {
       supabase
         .from("profiles")
-        .select("email_opt_out")
+        .select("*")
         .eq("id", user.id)
         .maybeSingle()
         .then(({ data }) => {
-          if (data) setEmailOptOut(data.email_opt_out ?? false);
+          if (data) setEmailOptOut((data as any).email_opt_out ?? false);
           setEmailOptOutLoaded(true);
         });
     }
