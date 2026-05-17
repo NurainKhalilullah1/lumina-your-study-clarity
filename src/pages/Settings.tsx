@@ -133,11 +133,13 @@ const Settings = () => {
   useEffect(() => {
     if (profile) {
       if (profile.university) {
-        // We will just let the Select match it or set it to 'Other' if it doesn't match once universities are loaded
-        if (universities.length > 0) {
+        if (profile.university.startsWith("Custom: ")) {
+          setUniversity("Other");
+          setCustomUniversity(profile.university.replace("Custom: ", ""));
+        } else if (universities.length > 0) {
           const isPreset = universities.includes(profile.university);
-          setUniversity(isPreset ? profile.university : "Other");
-          if (!isPreset) setCustomUniversity(profile.university);
+          setUniversity(isPreset ? profile.university : "");
+          if (!isPreset) setCustomUniversity(""); 
         } else {
           setUniversity(profile.university);
         }
@@ -147,7 +149,7 @@ const Settings = () => {
     }
   }, [profile, universities]);
 
-  const selectedUniversity = university === "Other" ? customUniversity : university;
+  const selectedUniversity = university === "Other" ? `Custom: ${customUniversity}` : university;
 
   // Open upgrade dialog if navigated with state
   useEffect(() => {

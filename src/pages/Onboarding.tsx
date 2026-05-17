@@ -38,7 +38,7 @@ const Onboarding = () => {
     }
   }, [profileLoading, profile, navigate]);
 
-  const selectedUniversity = university === "Other" ? customUniversity : university;
+  const selectedUniversity = university === "Other" ? `Custom: ${customUniversity}` : university;
 
   const handleCompleteSignup = async () => {
     if (!user) return;

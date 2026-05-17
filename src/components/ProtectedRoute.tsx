@@ -4,6 +4,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
+import universitiesData from "@/lib/universities.json";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -50,17 +51,18 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <Navigate to="/onboarding" replace />;
   }
 
-  const isMissingInfo = !profile.university || !profile.course_of_study || !profile.level;
+  const isUniversityValid = universitiesData.some((u: any) => u.name === profile.university) || (profile.university && profile.university.startsWith("Custom: "));
+  const isMissingInfo = !profile.university || !profile.course_of_study || !profile.level || !isUniversityValid;
 
   if (isMissingInfo && location.pathname !== "/settings" && location.pathname !== "/onboarding") {
     // We use a timeout to avoid setting state during render
     setTimeout(() => {
       if (!hasShownToast) {
         toast({
-          title: "Profile Incomplete",
-          description: "Please update your University, Course, and Level to continue.",
+          title: "Update Required",
+          description: "Please verify and update your University, Course, and Level to continue using StudyFlow.",
           variant: "destructive",
-          duration: 5000,
+          duration: 6000,
         });
         setHasShownToast(true);
       }
