@@ -350,7 +350,7 @@ Reply with ONLY the title, no quotes, no punctuation at the end.`;
 
               {/* Branding */}
               <div className="flex items-center gap-2">
-                <img src="/studyflow-black.png" alt="StudyFlow Logo" className="h-8 w-auto object-contain" />
+                <img src="./studyflow-black.png" alt="StudyFlow Logo" className="h-8 w-auto object-contain" />
                 <span className="font-semibold text-lg hidden sm:inline">StudyFlow</span>
               </div>
             </div>

@@ -1084,19 +1084,19 @@
     "type": "Private"
   },
   {
-    "name": "University of Ibadan",
+    "name": "University of Ibadan (UI)",
     "type": "Federal"
   },
   {
-    "name": "University of Ilorin",
+    "name": "University of Ilorin (UNILORIN)",
     "type": "Federal"
   },
   {
-    "name": "University of Jos",
+    "name": "University of Jos (UNIJOS)",
     "type": "Federal"
   },
   {
-    "name": "University of Lagos",
+    "name": "University of Lagos (UNILAG)",
     "type": "Federal"
   },
   {
@@ -1133,10 +1133,6 @@
   },
   {
     "name": "Usmanu Danfodiyo University, Sokoto",
-    "type": "Federal"
-  },
-  {
-    "name": "Usumanu Danfodiyo University",
     "type": "Federal"
   },
   {

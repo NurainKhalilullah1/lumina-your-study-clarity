@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { User, Shield, Loader2, Save, LogOut, BookOpen, Database, Info, Trash2, Download, Camera, GraduationCap, Crown, Bell } from "lucide-react";
+import { User, Shield, Loader2, Save, LogOut, BookOpen, Database, Info, Trash2, Download, Camera, GraduationCap, Crown, Bell, Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { exportUserDataAsPDF } from "@/utils/exportUserData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,6 +84,8 @@ const Settings = () => {
   const [courseOfStudy, setCourseOfStudy] = useState("");
   const [level, setLevel] = useState("");
   const [savingUniCourse, setSavingUniCourse] = useState(false);
+  const [uniOpen, setUniOpen] = useState(false);
+  const [courseOpen, setCourseOpen] = useState(false);
 
   // Study preferences hook
   const {
@@ -511,17 +527,70 @@ const Settings = () => {
           <div className="space-y-4">
             <div className="grid gap-2">
               <Label>University</Label>
-              <Select value={university} onValueChange={(val) => { setUniversity(val); if (val !== "Other") setCustomUniversity(""); }}>
-                <SelectTrigger disabled={loadingUniversities}>
-                  <SelectValue placeholder={loadingUniversities ? "Loading universities..." : "Select your university"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {universities.map((u: string) => (
-                    <SelectItem key={u} value={u}>{u}</SelectItem>
-                  ))}
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+              <Popover open={uniOpen} onOpenChange={setUniOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={uniOpen}
+                    className="justify-between"
+                    disabled={loadingUniversities}
+                  >
+                    <span className="truncate flex-1 text-left">
+                      {university === "Other"
+                        ? "Other"
+                        : university
+                        ? universities.find((u: string) => u === university) || university
+                        : "Select your university"}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search universities..." />
+                    <CommandList>
+                      <CommandEmpty>No university found.</CommandEmpty>
+                      <CommandGroup>
+                        {universities.map((u: string) => (
+                          <CommandItem
+                            key={u}
+                            value={u}
+                            onSelect={() => {
+                              setUniversity(u);
+                              setCustomUniversity("");
+                              setUniOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                university === u ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {u}
+                          </CommandItem>
+                        ))}
+                        <CommandItem
+                          value="Other"
+                          onSelect={() => {
+                            setUniversity("Other");
+                            setUniOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              university === "Other" ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          Other
+                        </CommandItem>
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               {university === "Other" && (
                 <Input
                   className="mt-2"
@@ -534,16 +603,52 @@ const Settings = () => {
 
             <div className="grid gap-2 mt-4">
               <Label>Course of Study</Label>
-              <Select value={courseOfStudy} onValueChange={setCourseOfStudy}>
-                <SelectTrigger disabled={loadingCourses}>
-                  <SelectValue placeholder={loadingCourses ? "Loading courses..." : "Select your course"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {courses.map((c: string) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={courseOpen} onOpenChange={setCourseOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={courseOpen}
+                    className="justify-between"
+                    disabled={loadingCourses}
+                  >
+                    <span className="truncate flex-1 text-left">
+                      {courseOfStudy
+                        ? courses.find((c: string) => c === courseOfStudy) || courseOfStudy
+                        : "Select your course"}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search courses..." />
+                    <CommandList>
+                      <CommandEmpty>No course found.</CommandEmpty>
+                      <CommandGroup>
+                        {courses.map((c: string) => (
+                          <CommandItem
+                            key={c}
+                            value={c}
+                            onSelect={() => {
+                              setCourseOfStudy(c);
+                              setCourseOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                courseOfStudy === c ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {c}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="grid gap-2 mt-4">
