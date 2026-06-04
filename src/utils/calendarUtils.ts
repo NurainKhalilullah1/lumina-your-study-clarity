@@ -41,7 +41,7 @@ export const downloadCalendarInvite = (title: string, date: Date, courseName: st
 export const downloadBulkCalendarInvite = (tasks: any[]) => {
   const now = new Date().toISOString().replace(/-|:|\.\d\d\d/g, "");
   
-  let events = tasks.map(task => {
+  const events = tasks.map(task => {
     const dateStr = new Date(task.date).toISOString().replace(/-|:|\.\d\d\d/g, "").split("T")[0];
     return [
       "BEGIN:VEVENT",

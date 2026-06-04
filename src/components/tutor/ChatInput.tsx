@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Paperclip, X, FileText, Loader2, Image as ImageIcon } from "lucide-react";
+import { Send, Paperclip, X, FileText, Loader2, Image as ImageIcon, Mic, MicOff } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 
 interface ChatInputProps {
   onSendMessage: (message: string, file?: File) => void;
@@ -17,12 +18,17 @@ export const ChatInput = ({ onSendMessage, isLoading, value, onValueChange }: Ch
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { isListening, toggleListening, supported } = useSpeechRecognition((transcript) => {
+    setMessage(transcript);
+    onValueChange?.(transcript);
+  });
+
   // Sync with external value when it changes
   useEffect(() => {
-    if (value !== undefined && value !== message) {
+    if (value !== undefined && value !== message && !isListening) {
       setMessage(value);
     }
-  }, [value]);
+  }, [value, isListening, message]);
 
   const handleMessageChange = (newValue: string) => {
     setMessage(newValue);
@@ -36,6 +42,9 @@ export const ChatInput = ({ onSendMessage, isLoading, value, onValueChange }: Ch
       handleMessageChange("");
       setSelectedFile(null);
       setImagePreview(null);
+      if (isListening) {
+        toggleListening();
+      }
     }
   };
 
@@ -146,16 +155,33 @@ export const ChatInput = ({ onSendMessage, isLoading, value, onValueChange }: Ch
                 ? isImage 
                   ? "Ask about this image..." 
                   : "Ask about this document..."
-                : "Ask StudyFlow anything..."
+                : isListening ? "Listening..." : "Ask StudyFlow anything..."
             }
             disabled={isLoading}
             className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-base placeholder:text-muted-foreground/60"
           />
+
+          {/* Mic Button */}
+          {supported && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={toggleListening}
+              className={cn(
+                "shrink-0 h-10 w-10 rounded-xl transition-colors",
+                isListening ? "bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-600" : "hover:bg-primary/10 hover:text-primary"
+              )}
+              title={isListening ? "Stop listening" : "Start voice typing"}
+            >
+              {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+            </Button>
+          )}
           
           {/* Send button */}
           <Button 
             type="submit" 
-            disabled={!canSubmit}
+            disabled={!canSubmit && !isListening}
             size="icon"
             className={cn(
               "shrink-0 h-10 w-10 rounded-xl transition-all duration-300",
@@ -180,3 +206,4 @@ export const ChatInput = ({ onSendMessage, isLoading, value, onValueChange }: Ch
     </div>
   );
 };
+

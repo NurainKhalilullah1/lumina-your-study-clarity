@@ -166,45 +166,92 @@ export const QuizInterface = ({
           </div>
 
           {/* Options */}
-          <RadioGroup
-            value={answers[currentIndex] || ""}
-            onValueChange={handleAnswerSelect}
-            className="space-y-3"
-          >
-            {currentQuestion.options.map((option, idx) => {
-              const optionLetter = option.charAt(0);
-              const isSelected = answers[currentIndex] === optionLetter;
-              
-              return (
-                <Label
-                  key={idx}
-                  className={cn(
-                    "flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all",
-                    isSelected
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/40 hover:bg-muted/50"
-                  )}
-                >
-                  <RadioGroupItem
-                    value={optionLetter}
-                    className="sr-only"
-                  />
-                  <div className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center mr-4 font-semibold text-sm",
-                    isSelected
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground"
-                  )}>
-                    {optionLetter}
-                  </div>
-                  <span className="flex-1">{option.slice(3)}</span>
-                  {isSelected && (
-                    <CheckCircle className="w-5 h-5 text-primary" />
-                  )}
-                </Label>
-              );
-            })}
-          </RadioGroup>
+          {currentQuestion.options.length === 1 && currentQuestion.options[0] === "FILL_IN_THE_BLANK" ? (
+            <div className="pt-4">
+              <Label className="text-sm text-muted-foreground mb-2 block">Fill in the blank</Label>
+              <input
+                type="text"
+                className="w-full p-4 rounded-xl border-2 border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                placeholder="Type your answer here..."
+                value={answers[currentIndex] || ""}
+                onChange={(e) => handleAnswerSelect(e.target.value)}
+              />
+            </div>
+          ) : currentQuestion.options.length === 1 && currentQuestion.options[0] === "SHORT_ANSWER" ? (
+            <div className="pt-4">
+              <Label className="text-sm text-muted-foreground mb-2 block">Short Answer</Label>
+              <textarea
+                className="w-full p-4 rounded-xl border-2 border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all min-h-[120px] resize-y"
+                placeholder="Type your answer here..."
+                value={answers[currentIndex] || ""}
+                onChange={(e) => handleAnswerSelect(e.target.value)}
+              />
+            </div>
+          ) : currentQuestion.options.length === 2 && currentQuestion.options.includes("True") && currentQuestion.options.includes("False") ? (
+            <div className="grid grid-cols-2 gap-4 pt-4">
+              {["True", "False"].map((option) => {
+                const isSelected = answers[currentIndex] === option;
+                return (
+                  <button
+                    key={option}
+                    onClick={() => handleAnswerSelect(option)}
+                    className={cn(
+                      "p-6 rounded-xl border-2 font-semibold text-lg transition-all flex flex-col items-center justify-center gap-2",
+                      isSelected
+                        ? "border-primary bg-primary text-primary-foreground shadow-md"
+                        : "border-border hover:border-primary/40 hover:bg-muted/50 bg-card text-foreground"
+                    )}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <RadioGroup
+              value={answers[currentIndex] || ""}
+              onValueChange={handleAnswerSelect}
+              className="space-y-3"
+            >
+              {currentQuestion.options.map((option, idx) => {
+                // If the option has a prefix like "A) ", we can use the letter, otherwise use the whole option
+                const hasLetterPrefix = /^[A-Z]\)/.test(option);
+                const optionValue = hasLetterPrefix ? option.substring(0, option.indexOf(')')) : option;
+                const displayValue = hasLetterPrefix ? option.substring(option.indexOf(')') + 1).trim() : option;
+                
+                const isSelected = answers[currentIndex] === optionValue;
+                
+                return (
+                  <Label
+                    key={idx}
+                    className={cn(
+                      "flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all",
+                      isSelected
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/40 hover:bg-muted/50"
+                    )}
+                  >
+                    <RadioGroupItem
+                      value={optionValue}
+                      className="sr-only"
+                    />
+                    <div className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center mr-4 font-semibold text-sm",
+                      isSelected
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    )}>
+                      {hasLetterPrefix ? optionValue : idx + 1}
+                    </div>
+                    <span className="flex-1">{displayValue}</span>
+                    {isSelected && (
+                      <CheckCircle className="w-5 h-5 text-primary" />
+                    )}
+                  </Label>
+                );
+              })}
+            </RadioGroup>
+          )}
         </div>
       </Card>
 

@@ -45,7 +45,7 @@ export function detectHorizontalOverflow(options: DetectOverflowOptions = {}) {
   }
 
   // Always print a single-line summary (cheap), detailed list only if overflowing.
-  // eslint-disable-next-line no-console
+   
   console.debug(
     `[overflow-check] ${reason} — clientWidth=${clientW}, scrollWidth=${scrollW}, delta=${delta}`
   );
@@ -87,18 +87,18 @@ export function detectHorizontalOverflow(options: DetectOverflowOptions = {}) {
   // Print simplified top offender for quick identification
   if (offenders.length > 0) {
     const top = offenders[0];
-    // eslint-disable-next-line no-console
+     
     console.warn(
       `[overflow-check] TOP OFFENDER: ${top.path} (rectRight=${Math.round(top.rectRight)}, scrollWidth=${top.scrollWidth})`
     );
   }
 
-  // eslint-disable-next-line no-console
+   
   console.groupCollapsed(
     `[overflow-check] Found ${offenders.length} offender(s) — ${reason}`
   );
   offenders.forEach((o, idx) => {
-    // eslint-disable-next-line no-console
+     
     console.log(
       `#${idx + 1}`,
       {
@@ -111,7 +111,7 @@ export function detectHorizontalOverflow(options: DetectOverflowOptions = {}) {
       o.el
     );
   });
-  // eslint-disable-next-line no-console
+   
   console.groupEnd();
 
   // DEV: Highlight offenders with a red border for visual identification

@@ -120,21 +120,29 @@ export const useGenerateQuizQuestions = () => {
       // Allow up to 70 questions as per UI slider
       const questionsToGenerate = Math.min(numQuestions, 70);
 
-      const prompt = `You are an expert quiz generator. Generate exactly ${questionsToGenerate} multiple choice questions.
+      const prompt = `You are an expert quiz generator. Generate exactly ${questionsToGenerate} questions.
 
 CRITICAL MULTI-DOCUMENT INSTRUCTIONS:
 1. The content below may contain MULTIPLE DOCUMENTS separated by "--- Document: [name] ---"
-2. You MUST draw questions from ALL documents provided, distributing them as evenly as possible
-3. For example: with 3 documents and 30 questions, aim for ~10 questions from each document
-4. SHUFFLE the final question order so questions from different documents are mixed together
-5. Do NOT cluster all questions from one document together
+2. You MUST draw questions from ALL documents provided, distributing them as evenly as possible.
+3. SHUFFLE the final question order so questions from different documents and of different formats are mixed together.
 
 QUESTION FORMAT RULES:
-1. Each question must have exactly 4 options labeled A, B, C, D
-2. Questions should test understanding, not just memorization
-3. Mix difficulty levels (easy, medium, hard)
-4. Ensure only ONE correct answer per question
-5. Make wrong answers plausible but clearly incorrect
+Generate a mix of the following 4 question types (roughly equal amounts of each):
+1. Multiple Choice (MCQ):
+   - Exactly 4 options.
+   - Format: "options": ["A) ...", "B) ...", "C) ...", "D) ..."]
+2. True/False:
+   - Format: "options": ["True", "False"]
+   - The correct answer must be exactly "True" or "False".
+3. Fill-in-the-Blank:
+   - Question must contain "_________" (underscores) for the blank.
+   - Format: "options": ["FILL_IN_THE_BLANK"]
+   - The correct answer is the word/phrase that fills the blank.
+4. Short Answer:
+   - A direct question requiring a brief answer.
+   - Format: "options": ["SHORT_ANSWER"]
+   - The correct answer is a concise, accurate sentence or phrase.
 
 Document content:
 ${documentContent.slice(0, 50000)}
@@ -142,9 +150,24 @@ ${documentContent.slice(0, 50000)}
 Return your response as a valid JSON array with this exact format (no markdown, no code blocks, just pure JSON):
 [
   {
-    "question": "The question text here?",
-    "options": ["A) First option", "B) Second option", "C) Third option", "D) Fourth option"],
-    "correct": "A"
+    "question": "What is the capital of France?",
+    "options": ["A) London", "B) Paris", "C) Berlin", "D) Madrid"],
+    "correct": "B) Paris"
+  },
+  {
+    "question": "The sky is blue.",
+    "options": ["True", "False"],
+    "correct": "True"
+  },
+  {
+    "question": "Water boils at _________ degrees Celsius.",
+    "options": ["FILL_IN_THE_BLANK"],
+    "correct": "100"
+  },
+  {
+    "question": "What process do plants use to convert sunlight into food?",
+    "options": ["SHORT_ANSWER"],
+    "correct": "Photosynthesis"
   }
 ]
 
@@ -271,7 +294,8 @@ export const useSubmitQuiz = () => {
       // Calculate score
       let correct = 0;
       questions?.forEach((q) => {
-        if (q.user_answer === q.correct_answer) {
+        const isMatch = q.user_answer?.trim().toLowerCase() === q.correct_answer?.trim().toLowerCase();
+        if (isMatch) {
           correct++;
         }
       });

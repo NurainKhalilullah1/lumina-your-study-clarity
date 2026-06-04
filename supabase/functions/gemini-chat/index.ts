@@ -155,7 +155,6 @@ Deno.serve(async (req: Request) => {
 
     const geminiModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
 
-    keyLoop:
     for (const [ki, apiKey] of geminiKeys.entries()) {
       for (const model of geminiModels) {
         let resp: Response;

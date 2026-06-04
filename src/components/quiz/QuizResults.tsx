@@ -185,31 +185,77 @@ export const QuizResults = ({
                         <p className="pt-3 text-sm">{q.question}</p>
                         
                         <div className="space-y-2">
-                          {q.options.map((option, optIdx) => {
-                            const optionLetter = option.charAt(0);
-                            const isUserAnswer = q.user_answer === optionLetter;
-                            const isCorrectAnswer = q.correct_answer === optionLetter;
-
-                            return (
-                              <div
-                                key={optIdx}
-                                className={cn(
-                                  "p-2 rounded-lg text-sm flex items-center gap-2",
-                                  isCorrectAnswer && "bg-green-500/20 border border-green-500/40",
-                                  isUserAnswer && !isCorrectAnswer && "bg-destructive/20 border border-destructive/40",
-                                  !isCorrectAnswer && !isUserAnswer && "bg-muted"
-                                )}
-                              >
-                                <span className="font-medium">{option}</span>
-                                {isCorrectAnswer && (
-                                  <CheckCircle className="w-4 h-4 text-green-500 ml-auto" />
-                                )}
-                                {isUserAnswer && !isCorrectAnswer && (
-                                  <XCircle className="w-4 h-4 text-destructive ml-auto" />
-                                )}
+                          {q.options.length === 1 && (q.options[0] === "FILL_IN_THE_BLANK" || q.options[0] === "SHORT_ANSWER") ? (
+                            <div className="p-3 bg-muted rounded-lg text-sm space-y-2">
+                              <div>
+                                <span className="font-semibold text-muted-foreground">Your Answer: </span>
+                                <span className={cn(
+                                  isCorrect ? "text-green-500 font-medium" : "text-destructive font-medium"
+                                )}>
+                                  {q.user_answer || "(No answer provided)"}
+                                </span>
                               </div>
-                            );
-                          })}
+                              {!isCorrect && (
+                                <div>
+                                  <span className="font-semibold text-muted-foreground">Correct Answer: </span>
+                                  <span className="text-green-500 font-medium">{q.correct_answer}</span>
+                                </div>
+                              )}
+                            </div>
+                          ) : q.options.length === 2 && q.options.includes("True") && q.options.includes("False") ? (
+                            q.options.map((option, optIdx) => {
+                              const isUserAnswer = q.user_answer === option;
+                              const isCorrectAnswer = q.correct_answer === option;
+
+                              return (
+                                <div
+                                  key={optIdx}
+                                  className={cn(
+                                    "p-2 rounded-lg text-sm flex items-center gap-2",
+                                    isCorrectAnswer && "bg-green-500/20 border border-green-500/40",
+                                    isUserAnswer && !isCorrectAnswer && "bg-destructive/20 border border-destructive/40",
+                                    !isCorrectAnswer && !isUserAnswer && "bg-muted"
+                                  )}
+                                >
+                                  <span className="font-medium">{option}</span>
+                                  {isCorrectAnswer && (
+                                    <CheckCircle className="w-4 h-4 text-green-500 ml-auto" />
+                                  )}
+                                  {isUserAnswer && !isCorrectAnswer && (
+                                    <XCircle className="w-4 h-4 text-destructive ml-auto" />
+                                  )}
+                                </div>
+                              );
+                            })
+                          ) : (
+                            q.options.map((option, optIdx) => {
+                              const hasLetterPrefix = /^[A-Z]\)/.test(option);
+                              const optionValue = hasLetterPrefix ? option.substring(0, option.indexOf(')')) : option;
+                              
+                              const isUserAnswer = q.user_answer === optionValue;
+                              const isCorrectAnswer = q.correct_answer === optionValue;
+
+                              return (
+                                <div
+                                  key={optIdx}
+                                  className={cn(
+                                    "p-2 rounded-lg text-sm flex items-center gap-2",
+                                    isCorrectAnswer && "bg-green-500/20 border border-green-500/40",
+                                    isUserAnswer && !isCorrectAnswer && "bg-destructive/20 border border-destructive/40",
+                                    !isCorrectAnswer && !isUserAnswer && "bg-muted"
+                                  )}
+                                >
+                                  <span className="font-medium">{option}</span>
+                                  {isCorrectAnswer && (
+                                    <CheckCircle className="w-4 h-4 text-green-500 ml-auto" />
+                                  )}
+                                  {isUserAnswer && !isCorrectAnswer && (
+                                    <XCircle className="w-4 h-4 text-destructive ml-auto" />
+                                  )}
+                                </div>
+                              );
+                            })
+                          )}
                         </div>
 
                         {isUnanswered && (
