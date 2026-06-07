@@ -249,6 +249,11 @@ export default function Tutor() {
         }
       }
 
+      // Build the subject string for image-specific prompts
+      const imageSubject = buildImagePrompt(inputMessage)
+        .replace(/, educational diagram, clean illustration, labeled, white background$/, "")
+        .trim();
+
       const promptText = imagePart ? `You are an advanced, helpful, and highly capable AI assistant, functioning similarly to Google Gemini. You provide clear, well-structured, and exceptionally high-quality responses.
 A student has shared an image with you. Please analyze it carefully and help them understand it.
 ${inputMessage ? `Their question: "${inputMessage}"` : "Please describe and explain what you see in this image."}
@@ -257,7 +262,22 @@ CRITICAL INSTRUCTIONS ON HOW TO RESPOND:
 - TONE & STYLE: Be helpful, empathetic, objective, and highly articulate. Use clear, concise language but dive deep into details when necessary.
 - FORMATTING: Make heavy use of Markdown. Use headers (##, ###) to organize your response, bolding for key terms, and bullet points or numbered lists for steps and takeaways.
 - ACCURACY & DEPTH: Provide comprehensive and highly accurate explanations. If asked to explain something, break it down logically so it's easy to digest.
-- NO ROBOTIC CLICHES: Avoid starting with "As an AI..." or "I'd be happy to help...". Just dive straight into the valuable information.` : `
+- NO ROBOTIC CLICHES: Avoid starting with "As an AI..." or "I'd be happy to help...". Just dive straight into the valuable information.`
+      : wantsImage ? `You are an advanced, helpful, and highly capable AI study assistant.
+The student asked you to visualise or diagram: "${imageSubject}".
+A real rendered image is already being shown to them separately — you do NOT need to draw anything yourself.
+
+Your job is to write a clear, structured textual explanation of "${imageSubject}" to accompany the image.
+
+CRITICAL INSTRUCTIONS:
+- DO NOT produce any ASCII art, text-based diagrams, tables of dashes, or pseudo-drawings. None whatsoever.
+- DO NOT use box-drawing characters, pipes (|), dashes (---), or arrows made of characters to simulate a diagram.
+- INSTEAD, explain the concept using prose, bullet points, numbered lists, and Markdown headings.
+- Use ## and ### headers to organise sections (e.g. ## Overview, ## Key Components, ## How It Works).
+- Bold key terms and use bullet points for lists of components or steps.
+- Be thorough and educational — explain what each part is, what it does, and how the whole system works.
+- ACTIVE DOCUMENT CONTEXT: ${contextText ? contextText.slice(0, 25000) : "None"}`
+      : `
           You are an advanced, helpful, and highly capable AI assistant, functioning similarly to Google Gemini. You provide clear, well-structured, and exceptionally high-quality responses.
           ACTIVE DOCUMENT: ${contextText ? contextText.slice(0, 25000) : "None"}
           USER: "${inputMessage}"

@@ -85,20 +85,20 @@ const GeneratedImage = ({ url }: { url: string }) => {
   const [retryKey, setRetryKey] = useState(0);
 
   return (
-    <div className="mt-3 relative">
+    <div className="mb-3 relative">
       {/* Loading skeleton */}
       {status === 'loading' && (
-        <div className="w-full max-w-sm h-48 rounded-xl bg-muted/60 animate-pulse flex items-center justify-center">
+        <div className="w-full max-w-lg h-56 rounded-xl bg-muted/60 animate-pulse flex items-center justify-center">
           <div className="flex flex-col items-center gap-2 text-muted-foreground">
-            <Sparkles className="w-5 h-5 animate-spin" />
-            <span className="text-xs">Generating image…</span>
+            <Sparkles className="w-6 h-6 animate-spin" />
+            <span className="text-xs font-medium">Generating diagram…</span>
           </div>
         </div>
       )}
 
       {/* Error state */}
       {status === 'error' && (
-        <div className="w-full max-w-sm h-32 rounded-xl border border-dashed border-border flex items-center justify-center">
+        <div className="w-full max-w-lg h-32 rounded-xl border border-dashed border-border flex items-center justify-center">
           <div className="flex flex-col items-center gap-2 text-muted-foreground">
             <ImageOff className="w-5 h-5" />
             <span className="text-xs">Image failed to generate</span>
@@ -120,7 +120,7 @@ const GeneratedImage = ({ url }: { url: string }) => {
         onLoad={() => setStatus('loaded')}
         onError={() => setStatus('error')}
         className={cn(
-          "w-full max-w-sm rounded-xl border shadow-sm object-cover transition-opacity duration-500",
+          "w-full max-w-lg rounded-xl border shadow-md object-contain transition-opacity duration-500",
           status === 'loaded' ? "opacity-100" : "opacity-0 h-0 overflow-hidden"
         )}
       />
@@ -228,6 +228,11 @@ export const ChatMessages = ({ messages, isLoading, streamingIndex }: ChatMessag
               )}>
                 {msg.role === 'assistant' ? (
                   <div className="flex flex-col gap-2">
+                    {/* AI-generated image (Pollinations) — shown FIRST before text */}
+                    {msg.generated_image_url && (
+                      <GeneratedImage url={msg.generated_image_url} />
+                    )}
+
                     {/* Responding label during typewriter */}
                     {shouldAnimate && (
                       <div className="flex items-center gap-1.5 text-xs text-primary/70 mb-1 animate-pulse">
@@ -269,11 +274,6 @@ export const ChatMessages = ({ messages, isLoading, streamingIndex }: ChatMessag
                           Export
                         </button>
                       </div>
-                    )}
-
-                    {/* AI-generated image (Pollinations) */}
-                    {msg.generated_image_url && (
-                      <GeneratedImage url={msg.generated_image_url} />
                     )}
                   </div>
                 ) : (

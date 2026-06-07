@@ -153,7 +153,7 @@ Deno.serve(async (req: Request) => {
       throw new Error("No API keys configured. Add GROQ_API_KEY or GEMINI_API_KEY to Supabase secrets.");
     }
 
-    const geminiModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
+    const geminiModels = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-pro"];
 
     for (const [ki, apiKey] of geminiKeys.entries()) {
       for (const model of geminiModels) {
