@@ -27,6 +27,7 @@ export interface QuizSession {
   started_at: string | null;
   completed_at: string | null;
   created_at: string;
+  is_shared?: boolean;
 }
 
 // Fetch a quiz session by ID

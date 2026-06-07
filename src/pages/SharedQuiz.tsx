@@ -50,6 +50,12 @@ export default function SharedQuiz() {
         console.error("Error fetching session:", error);
         throw new Error("Quiz not found or has been deleted.");
       }
+
+      // Enforce share permissions: require is_shared to be true
+      if (!data.is_shared) {
+        throw new Error("Unauthorized: This quiz is private and has not been shared.");
+      }
+
       return data as QuizSession;
     },
     enabled: !!sessionId,
@@ -61,6 +67,12 @@ export default function SharedQuiz() {
     queryKey: ["shared-quiz-questions", sessionId],
     queryFn: async () => {
       if (!sessionId) return [];
+      
+      // Enforce share permissions inside the query function
+      if (!session || !session.is_shared) {
+        throw new Error("Unauthorized access to quiz questions.");
+      }
+
       const { data, error } = await supabase
         .from("quiz_questions")
         .select("*")
@@ -72,13 +84,14 @@ export default function SharedQuiz() {
         throw error;
       }
       
+      // Clear user answers only for authorized shared recipients
       return data.map((q) => ({
         ...q,
         options: q.options as string[],
-        user_answer: null, // Clear any stored user answers for the shared recipient
+        user_answer: null, 
       })) as QuizQuestion[];
     },
-    enabled: !!sessionId && !!session,
+    enabled: !!sessionId && !!session && session.is_shared === true,
     retry: false,
   });
 

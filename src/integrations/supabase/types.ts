@@ -526,6 +526,7 @@ export type Database = {
           document_content: string | null
           document_name: string | null
           id: string
+          is_shared: boolean | null
           num_questions: number
           score: number | null
           started_at: string | null
@@ -539,6 +540,7 @@ export type Database = {
           document_content?: string | null
           document_name?: string | null
           id?: string
+          is_shared?: boolean | null
           num_questions?: number
           score?: number | null
           started_at?: string | null
@@ -552,6 +554,7 @@ export type Database = {
           document_content?: string | null
           document_name?: string | null
           id?: string
+          is_shared?: boolean | null
           num_questions?: number
           score?: number | null
           started_at?: string | null
