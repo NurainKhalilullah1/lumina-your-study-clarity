@@ -183,32 +183,12 @@ export default function Tutor() {
       image_url: imageUrl,
     };
 
-    // Fire image generation in parallel with session creation + text generation.
-    // The edge function fetches from Pollinations server-side (avoids CORS / Android WebView issues)
-    // and returns base64 data so the browser never makes a cross-origin image request.
-    const imageFetchPromise: Promise<string | null> = wantsImage
-      ? supabase.functions
-          .invoke("generate-image", { body: { prompt: buildImagePrompt(inputMessage) } })
-          .then(({ data, error }) => {
-            if (error) {
-              console.error("generate-image invocation error:", error);
-              return null;
-            }
-            if (data?.error) {
-              console.error("generate-image function error:", data.error);
-              return null;
-            }
-            if (!data?.imageData) {
-              console.error("generate-image: no imageData in response", data);
-              return null;
-            }
-            return `data:${data.mimeType || "image/jpeg"};base64,${data.imageData}`;
-          })
-          .catch((e: unknown) => {
-            console.error("generate-image unexpected error:", e);
-            return null;
-          })
-      : Promise.resolve(null);
+    // Build the Pollinations URL client-side.
+    // Browser <img> requests are allowed free by Pollinations;
+    // server-side programmatic calls return 402 without a paid API key.
+    const generatedImageUrl = wantsImage
+      ? `https://image.pollinations.ai/prompt/${encodeURIComponent(buildImagePrompt(inputMessage))}?model=sana&width=512&height=512&nologo=true`
+      : undefined;
 
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
@@ -350,35 +330,17 @@ CRITICAL INSTRUCTIONS:
         imagePart ? { data: imagePart.inlineData.data, mimeType: imagePart.inlineData.mimeType } : undefined
       );
 
-      // Unique ID so the image update targets exactly this message,
-      // even if the user sends multiple image requests in quick succession.
-      const imgMsgId = wantsImage
-        ? `img-${Date.now()}-${Math.random().toString(36).slice(2)}`
-        : "";
-
-      // Show text immediately; image loading indicator shows until edge fn resolves.
+      // Add assistant message immediately with image URL attached.
+      // GeneratedImage handles the loading skeleton and timeout internally.
       setMessages((prev) => {
         const newMsgs = [...prev, {
           role: "assistant",
           content: fullResponseText,
-          ...(wantsImage ? { generated_image_loading: true, _img_id: imgMsgId } : {}),
+          ...(generatedImageUrl ? { generated_image_url: generatedImageUrl } : {}),
         }];
         setStreamingIndex(newMsgs.length - 1);
         return newMsgs;
       });
-
-      // Once the edge function resolves, graft the base64 image onto the message.
-      if (wantsImage) {
-        imageFetchPromise.then((imageDataUrl) => {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg._img_id === imgMsgId
-                ? { ...msg, generated_image_url: imageDataUrl ?? undefined, generated_image_loading: false }
-                : msg
-            )
-          );
-        });
-      }
 
       const responseText = fullResponseText;
 
