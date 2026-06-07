@@ -229,6 +229,7 @@ Deno.serve(async (req: Request) => {
         ? [
             "meta-llama/llama-3.2-11b-vision-instruct:free",
             "google/gemini-2.0-flash-exp:free",
+            "openrouter/auto", // auto-selects any available free model
           ]
         : [
             "meta-llama/llama-3.3-70b-instruct:free",
@@ -238,6 +239,7 @@ Deno.serve(async (req: Request) => {
             "mistralai/mistral-7b-instruct:free",
             "deepseek/deepseek-chat-v3-0324:free",
             "nousresearch/hermes-3-llama-3.1-405b:free",
+            "openrouter/auto", // catch-all: picks whichever free model has capacity
           ];
 
 
@@ -287,7 +289,13 @@ Deno.serve(async (req: Request) => {
       console.warn("OPENROUTER_API_KEY not set — skipping OpenRouter fallback");
     }
 
-    throw new Error(`All providers exhausted. Last error: ${lastError}`);
+    console.error(`All providers exhausted. Last error: ${lastError}`);
+    const isRateLimit = /429|rate.?limit|quota|too many requests/i.test(lastError);
+    throw new Error(
+      isRateLimit
+        ? "AI is temporarily busy — please wait a moment and try again."
+        : "AI service is temporarily unavailable. Please try again later."
+    );
 
   } catch (error) {
     return new Response(
