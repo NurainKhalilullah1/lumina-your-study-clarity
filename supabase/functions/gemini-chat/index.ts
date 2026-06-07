@@ -223,7 +223,8 @@ Deno.serve(async (req: Request) => {
     // ── 3. Fall back to OpenRouter (free-tier models) ──────────────────────
     const openRouterKey = Deno.env.get("OPENROUTER_API_KEY");
     if (openRouterKey) {
-      // Free models on OpenRouter (no credits required, :free suffix)
+      // Free models on OpenRouter (no credits required, :free suffix).
+      // Ordered by capability. deepseek-r1:free removed — 404 (no free endpoint).
       const openRouterModels = withImages
         ? [
             "meta-llama/llama-3.2-11b-vision-instruct:free",
@@ -232,9 +233,13 @@ Deno.serve(async (req: Request) => {
         : [
             "meta-llama/llama-3.3-70b-instruct:free",
             "google/gemini-2.0-flash-exp:free",
+            "qwen/qwen3-8b:free",
             "mistralai/mistral-7b-instruct:free",
-            "deepseek/deepseek-r1:free",
+            "deepseek/deepseek-chat-v3-0324:free",
+            "nousresearch/hermes-3-llama-3.1-405b:free",
+            "openchat/openchat-7b:free",
           ];
+
 
       for (const model of openRouterModels) {
         let resp: Response;
