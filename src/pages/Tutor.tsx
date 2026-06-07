@@ -182,6 +182,20 @@ export default function Tutor() {
       attachment_name: file?.name,
       image_url: imageUrl,
     };
+
+    // Fire image generation in parallel with session creation + text generation.
+    // The edge function fetches from Pollinations server-side (avoids CORS / Android WebView issues)
+    // and returns base64 data so the browser never makes a cross-origin image request.
+    const imageFetchPromise: Promise<string | null> = wantsImage
+      ? supabase.functions
+          .invoke("generate-image", { body: { prompt: buildImagePrompt(inputMessage) } })
+          .then(({ data, error }) => {
+            if (error || !data || data.error || !data.imageData) return null;
+            return `data:${data.mimeType || "image/jpeg"};base64,${data.imageData}`;
+          })
+          .catch(() => null)
+      : Promise.resolve(null);
+
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
 
@@ -328,15 +342,29 @@ CRITICAL INSTRUCTIONS:
         imagePart ? { data: imagePart.inlineData.data, mimeType: imagePart.inlineData.mimeType } : undefined
       );
 
+      // Show text immediately; image loading indicator shows until edge fn resolves.
       setMessages((prev) => {
         const newMsgs = [...prev, {
           role: "assistant",
           content: fullResponseText,
-          ...(generatedImageUrl ? { generated_image_url: generatedImageUrl } : {}),
+          ...(wantsImage ? { generated_image_loading: true } : {}),
         }];
         setStreamingIndex(newMsgs.length - 1);
         return newMsgs;
       });
+
+      // Once the edge function resolves, graft the base64 image onto the message.
+      if (wantsImage) {
+        imageFetchPromise.then((imageDataUrl) => {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.role === "assistant" && msg.generated_image_loading
+                ? { ...msg, generated_image_url: imageDataUrl ?? undefined, generated_image_loading: false }
+                : msg
+            )
+          );
+        });
+      }
 
       const responseText = fullResponseText;
 

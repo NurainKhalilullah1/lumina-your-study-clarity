@@ -10,8 +10,9 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   attachment_name?: string;
-  image_url?: string;           // user-uploaded image
-  generated_image_url?: string; // AI-generated via Pollinations
+  image_url?: string;             // user-uploaded image
+  generated_image_url?: string;  // base64 data URL from generate-image edge fn
+  generated_image_loading?: boolean; // true while edge fn is in-flight
 }
 
 interface ChatMessagesProps {
@@ -236,7 +237,23 @@ export const ChatMessages = ({ messages, isLoading, streamingIndex }: ChatMessag
               )}>
                 {msg.role === 'assistant' ? (
                   <div className="flex flex-col gap-2">
-                    {/* AI-generated image (Pollinations) — shown FIRST before text */}
+                    {/* AI-generated image — show loading skeleton, image, or error */}
+                    {msg.generated_image_loading && !msg.generated_image_url && (
+                      <div className="mb-3 w-full max-w-lg h-56 rounded-xl bg-muted/60 animate-pulse flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <Sparkles className="w-6 h-6 animate-spin" />
+                          <span className="text-xs font-medium">Generating diagram… (may take ~30s)</span>
+                        </div>
+                      </div>
+                    )}
+                    {msg.generated_image_loading === false && !msg.generated_image_url && (
+                      <div className="mb-3 w-full max-w-lg h-24 rounded-xl border border-dashed border-border flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                          <ImageOff className="w-4 h-4" />
+                          <span className="text-xs">Image generation timed out — try asking again</span>
+                        </div>
+                      </div>
+                    )}
                     {msg.generated_image_url && (
                       <GeneratedImage url={msg.generated_image_url} />
                     )}
