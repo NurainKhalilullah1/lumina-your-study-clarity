@@ -62,6 +62,31 @@ async function tryGroq(apiKey: string, model: string, contents: Message[]): Prom
   }
 }
 
+// ── OpenRouter request (OpenAI-compatible, free tier) ────────────────────────
+async function tryOpenRouter(apiKey: string, model: string, contents: Message[]): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 90000);
+  try {
+    return await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+        "HTTP-Referer": "https://studyflow.app",
+        "X-Title": "StudyFlow AI Tutor",
+      },
+      body: JSON.stringify({
+        model,
+        messages: toOpenAIMessages(contents),
+        max_tokens: 8192,
+      }),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 // ── Gemini request ────────────────────────────────────────────────────────────
 function getGeminiKeys(): string[] {
   const keys: string[] = [];
@@ -193,6 +218,61 @@ Deno.serve(async (req: Request) => {
         const errBody = await resp.text();
         throw new Error(`Gemini API error (${resp.status}): ${errBody}`);
       }
+    }
+
+    // ── 3. Fall back to OpenRouter (free-tier models) ──────────────────────
+    const openRouterKey = Deno.env.get("OPENROUTER_API_KEY");
+    if (openRouterKey) {
+      // Free models on OpenRouter (no credits required, :free suffix)
+      const openRouterModels = withImages
+        ? [
+            "meta-llama/llama-3.2-11b-vision-instruct:free",
+            "google/gemini-2.0-flash-exp:free",
+          ]
+        : [
+            "meta-llama/llama-3.3-70b-instruct:free",
+            "google/gemini-2.0-flash-exp:free",
+            "mistralai/mistral-7b-instruct:free",
+            "deepseek/deepseek-r1:free",
+          ];
+
+      for (const model of openRouterModels) {
+        let resp: Response;
+        try {
+          resp = await tryOpenRouter(openRouterKey, model, contents);
+        } catch (e: any) {
+          lastError = `OpenRouter/${model}: fetch error — ${e.message}`;
+          console.warn(lastError);
+          continue;
+        }
+
+        if (resp.ok) {
+          const data = await resp.json();
+          const text = data?.choices?.[0]?.message?.content;
+          if (!text) {
+            lastError = `OpenRouter/${model}: empty response`;
+            console.warn(lastError);
+            continue;
+          }
+          console.log(`✓ OpenRouter / ${model}`);
+          return new Response(JSON.stringify({ text }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        if (resp.status === 429 || resp.status === 503) {
+          lastError = `OpenRouter/${model}: rate limited (${resp.status}) — trying next model…`;
+          console.warn(lastError);
+          continue;
+        }
+
+        const errBody = await resp.text();
+        lastError = `OpenRouter/${model}: error ${resp.status} — ${errBody.slice(0, 200)}`;
+        console.warn(lastError);
+        continue; // try next model rather than giving up
+      }
+    } else {
+      console.warn("OPENROUTER_API_KEY not set — skipping OpenRouter fallback");
     }
 
     throw new Error(`All providers exhausted. Last error: ${lastError}`);

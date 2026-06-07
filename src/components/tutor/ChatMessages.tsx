@@ -79,10 +79,18 @@ const TypewriterText = ({
   );
 };
 
-/** Pollinations.ai image with skeleton loading + error fallback */
+/** Pollinations.ai image with skeleton loading + timeout + error fallback */
 const GeneratedImage = ({ url }: { url: string }) => {
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [retryKey, setRetryKey] = useState(0);
+
+  // Pollinations can take up to ~30s; add a 60s timeout so the browser
+  // doesn't silently kill the request before the image arrives.
+  useEffect(() => {
+    if (status !== 'loading') return;
+    const timer = setTimeout(() => setStatus('error'), 60_000);
+    return () => clearTimeout(timer);
+  }, [status, retryKey]);
 
   return (
     <div className="mb-3 relative">
@@ -91,7 +99,7 @@ const GeneratedImage = ({ url }: { url: string }) => {
         <div className="w-full max-w-lg h-56 rounded-xl bg-muted/60 animate-pulse flex items-center justify-center">
           <div className="flex flex-col items-center gap-2 text-muted-foreground">
             <Sparkles className="w-6 h-6 animate-spin" />
-            <span className="text-xs font-medium">Generating diagram…</span>
+            <span className="text-xs font-medium">Generating diagram… (may take ~20s)</span>
           </div>
         </div>
       )}

@@ -293,10 +293,13 @@ CRITICAL INSTRUCTIONS:
 
       let fullResponseText = "";
 
-      // Build Pollinations image URL upfront (no API call needed — it's just a URL)
+      // Build Pollinations image URL.
+      // seed must be a 32-bit int (max ~2.1B) — Date.now() is 13 digits
+      // and overflows the param, causing Pollinations to reject the request.
       const generatedImageUrl = wantsImage
-        ? `https://image.pollinations.ai/prompt/${encodeURIComponent(buildImagePrompt(inputMessage))}?width=800&height=600&nologo=true&seed=${Date.now()}`
+        ? `https://image.pollinations.ai/prompt/${encodeURIComponent(buildImagePrompt(inputMessage))}?model=flux&width=1024&height=768&nologo=true&enhance=true&seed=${Date.now() % 2_000_000_000}`
         : undefined;
+
 
       // Wait for the full response first — then add it and start the
       // typewriter in one render so there's no blank placeholder phase.
