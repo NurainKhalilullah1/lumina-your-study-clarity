@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { QuizSession } from "@/hooks/useQuiz";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface QuizHistoryCardProps {
   session: QuizSession;
@@ -42,14 +43,31 @@ export const QuizHistoryCard = ({
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
-  const handleShare = (e: React.MouseEvent) => {
+  const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const shareUrl = `${window.location.origin}/shared-quiz/${session.id}`;
-    navigator.clipboard.writeText(shareUrl);
-    toast({
-      title: "Link copied!",
-      description: "Quiz link copied to clipboard. Share it with your friends!",
-    });
+    try {
+      // Secure the shared access by setting is_shared to true
+      const { error } = await supabase
+        .from("quiz_sessions")
+        .update({ is_shared: true })
+        .eq("id", session.id);
+      
+      if (error) throw error;
+
+      await navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: "Link copied!",
+        description: "Quiz link copied to clipboard. Share it with your friends!",
+      });
+    } catch (err: any) {
+      console.error("Failed to copy link:", err);
+      toast({
+        title: "Failed to copy link",
+        description: `Could not copy link for session ${session.id}. Please copy manually.`,
+        variant: "destructive",
+      });
+    }
   };
 
   const timeTaken = getTimeTaken();
@@ -108,6 +126,7 @@ export const QuizHistoryCard = ({
                   onClick={handleShare}
                   className="px-2"
                   title="Share quiz link"
+                  aria-label="Share quiz link"
                 >
                   <Share2 className="w-4 h-4" />
                 </Button>

@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { QuizQuestion } from "@/hooks/useQuiz";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface QuizResultsProps {
   score: number;
@@ -50,14 +51,31 @@ export const QuizResults = ({
   const unanswered = questions.filter(q => !q.user_answer).length;
   const wrong = totalQuestions - score - unanswered;
 
-  const handleShare = () => {
+  const handleShare = async () => {
     if (!sessionId) return;
     const shareUrl = `${window.location.origin}/shared-quiz/${sessionId}`;
-    navigator.clipboard.writeText(shareUrl);
-    toast({
-      title: "Link copied!",
-      description: "Quiz link copied to clipboard. Share it with your friends!",
-    });
+    try {
+      // Secure the shared access by setting is_shared to true
+      const { error } = await supabase
+        .from("quiz_sessions")
+        .update({ is_shared: true })
+        .eq("id", sessionId);
+      
+      if (error) throw error;
+
+      await navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: "Link copied!",
+        description: "Quiz link copied to clipboard. Share it with your friends!",
+      });
+    } catch (err: any) {
+      console.error("Failed to copy link:", err);
+      toast({
+        title: "Failed to copy link",
+        description: "Could not copy link to clipboard. Please copy it manually.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Determine performance level
