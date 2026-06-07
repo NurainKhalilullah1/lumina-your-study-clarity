@@ -234,7 +234,7 @@ Deno.serve(async (req: Request) => {
         : [
             "meta-llama/llama-3.3-70b-instruct:free",
             "google/gemini-2.0-flash-exp:free",
-            "deepseek/deepseek-r1-distill-llama-70b:free",
+            "deepseek/deepseek-r1:free",
             "qwen/qwen3-8b:free",
             "mistralai/mistral-7b-instruct:free",
             "deepseek/deepseek-chat-v3-0324:free",

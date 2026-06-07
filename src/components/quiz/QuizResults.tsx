@@ -13,11 +13,14 @@ import {
   RotateCcw,
   ArrowLeft,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Share2,
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { QuizQuestion } from "@/hooks/useQuiz";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 interface QuizResultsProps {
   score: number;
@@ -25,6 +28,8 @@ interface QuizResultsProps {
   questions: QuizQuestion[];
   timeTaken?: string;
   onRetake: () => void;
+  sessionId?: string | null;
+  isSharedMode?: boolean;
 }
 
 export const QuizResults = ({
@@ -32,15 +37,28 @@ export const QuizResults = ({
   totalQuestions,
   questions,
   timeTaken,
-  onRetake
+  onRetake,
+  sessionId,
+  isSharedMode = false
 }: QuizResultsProps) => {
   const [showReview, setShowReview] = useState(false);
   const [expandedQuestion, setExpandedQuestion] = useState<number | null>(null);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const percentage = Math.round((score / totalQuestions) * 100);
   const unanswered = questions.filter(q => !q.user_answer).length;
   const wrong = totalQuestions - score - unanswered;
+
+  const handleShare = () => {
+    if (!sessionId) return;
+    const shareUrl = `${window.location.origin}/shared-quiz/${sessionId}`;
+    navigator.clipboard.writeText(shareUrl);
+    toast({
+      title: "Link copied!",
+      description: "Quiz link copied to clipboard. Share it with your friends!",
+    });
+  };
 
   // Determine performance level
   const getPerformanceLevel = () => {
@@ -122,13 +140,33 @@ export const QuizResults = ({
           <RotateCcw className="w-4 h-4 mr-2" />
           Retake Quiz
         </Button>
-        <Button
-          className="flex-1 gradient-primary text-primary-foreground"
-          onClick={() => navigate('/tutor')}
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Tutor
-        </Button>
+        {sessionId && !isSharedMode && (
+          <Button
+            variant="outline"
+            className="flex-1 border-primary/30 text-primary hover:bg-primary/5"
+            onClick={handleShare}
+          >
+            <Share2 className="w-4 h-4 mr-2" />
+            Share Quiz
+          </Button>
+        )}
+        {isSharedMode ? (
+          <Button
+            className="flex-1 gradient-primary text-primary-foreground"
+            onClick={() => navigate('/auth')}
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
+            Join StudyFlow
+          </Button>
+        ) : (
+          <Button
+            className="flex-1 gradient-primary text-primary-foreground"
+            onClick={() => navigate('/tutor')}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Tutor
+          </Button>
+        )}
       </div>
 
       {/* Review Section */}

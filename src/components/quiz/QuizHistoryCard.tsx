@@ -1,9 +1,10 @@
 import { format } from "date-fns";
-import { Clock, FileText, Trash2, Eye, RotateCcw } from "lucide-react";
+import { Clock, FileText, Trash2, Eye, RotateCcw, Share2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { QuizSession } from "@/hooks/useQuiz";
+import { useToast } from "@/hooks/use-toast";
 
 interface QuizHistoryCardProps {
   session: QuizSession;
@@ -18,6 +19,7 @@ export const QuizHistoryCard = ({
   onDelete,
   onResume,
 }: QuizHistoryCardProps) => {
+  const { toast } = useToast();
   const isCompleted = !!session.completed_at;
   const percentage = session.score && session.total_questions
     ? Math.round((session.score / session.total_questions) * 100)
@@ -38,6 +40,16 @@ export const QuizHistoryCard = ({
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  };
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const shareUrl = `${window.location.origin}/shared-quiz/${session.id}`;
+    navigator.clipboard.writeText(shareUrl);
+    toast({
+      title: "Link copied!",
+      description: "Quiz link copied to clipboard. Share it with your friends!",
+    });
   };
 
   const timeTaken = getTimeTaken();
@@ -80,15 +92,26 @@ export const QuizHistoryCard = ({
           {/* Actions */}
           <div className="flex items-center gap-2 pt-1">
             {isCompleted ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onReview(session.id)}
-                className="flex-1"
-              >
-                <Eye className="w-4 h-4 mr-1" />
-                Review
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onReview(session.id)}
+                  className="flex-1"
+                >
+                  <Eye className="w-4 h-4 mr-1" />
+                  Review
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleShare}
+                  className="px-2"
+                  title="Share quiz link"
+                >
+                  <Share2 className="w-4 h-4" />
+                </Button>
+              </>
             ) : (
               onResume && (
                 <Button
@@ -116,3 +139,4 @@ export const QuizHistoryCard = ({
     </Card>
   );
 };
+

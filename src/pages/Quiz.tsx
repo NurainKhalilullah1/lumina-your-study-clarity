@@ -229,6 +229,7 @@ export default function Quiz() {
             questions={localQuestions}
             timeTaken={timeTaken}
             onRetake={handleRetake}
+            sessionId={sessionId}
           />
         </div>
       )}
