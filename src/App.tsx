@@ -35,7 +35,7 @@ import Admin from "./pages/Admin";
 import Upgrade from "./pages/Upgrade";
 import NotFound from "./pages/NotFound";
 import DownloadPage from "./pages/Download";
-import SharedQuiz from "./pages/SharedQuiz";
+import SharedQuiz from "@/pages/SharedQuiz";
 import { AppUpdateGuard } from "@/components/AppUpdateGuard";
 import InitialRedirect from "@/components/InitialRedirect";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
