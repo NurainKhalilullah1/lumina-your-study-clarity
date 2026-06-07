@@ -224,7 +224,7 @@ Deno.serve(async (req: Request) => {
     const openRouterKey = Deno.env.get("OPENROUTER_API_KEY");
     if (openRouterKey) {
       // Free models on OpenRouter (no credits required, :free suffix).
-      // Ordered by capability. deepseek-r1:free removed — 404 (no free endpoint).
+      // Ordered by capability. 404 models are skipped automatically below.
       const openRouterModels = withImages
         ? [
             "meta-llama/llama-3.2-11b-vision-instruct:free",
@@ -233,11 +233,11 @@ Deno.serve(async (req: Request) => {
         : [
             "meta-llama/llama-3.3-70b-instruct:free",
             "google/gemini-2.0-flash-exp:free",
+            "deepseek/deepseek-r1-distill-llama-70b:free",
             "qwen/qwen3-8b:free",
             "mistralai/mistral-7b-instruct:free",
             "deepseek/deepseek-chat-v3-0324:free",
             "nousresearch/hermes-3-llama-3.1-405b:free",
-            "openchat/openchat-7b:free",
           ];
 
 
@@ -267,6 +267,13 @@ Deno.serve(async (req: Request) => {
 
         if (resp.status === 429 || resp.status === 503) {
           lastError = `OpenRouter/${model}: rate limited (${resp.status}) — trying next model…`;
+          console.warn(lastError);
+          continue;
+        }
+
+        // 404 = endpoint removed/unavailable — skip silently
+        if (resp.status === 404) {
+          lastError = `OpenRouter/${model}: endpoint not found (404) — skipping…`;
           console.warn(lastError);
           continue;
         }
