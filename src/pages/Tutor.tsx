@@ -138,6 +138,39 @@ export default function Tutor() {
       return;
     }
 
+    // ── Image generation detection ───────────────────────────────────────────
+    const imageIntentKeywords = [
+      "draw ", "sketch ", "illustrate ", "diagram of", "show me a diagram",
+      "generate image", "generate an image", "create image", "create an image",
+      "show me an image", "show me a picture", "picture of", "image of",
+      "visualize ", "visualise ", "make a diagram", "make an image",
+    ];
+    const lowerInput = inputMessage.toLowerCase();
+    const wantsImage = imageIntentKeywords.some((kw) => lowerInput.includes(kw));
+
+    // Build a clean image prompt by stripping intent verbs and keeping the subject
+    const buildImagePrompt = (text: string): string => {
+      const stripped = text
+        .replace(/draw\s+me\s+(a|an)?/gi, "")
+        .replace(/draw\s+(a|an)?/gi, "")
+        .replace(/sketch\s+(a|an)?/gi, "")
+        .replace(/illustrate\s+(a|an)?/gi, "")
+        .replace(/generate\s+(a|an)?\s+image\s+(of|showing)?/gi, "")
+        .replace(/create\s+(a|an)?\s+image\s+(of|showing)?/gi, "")
+        .replace(/show\s+me\s+(a|an)?\s+(image|picture|diagram)?\s*(of|showing)?/gi, "")
+        .replace(/visuali[sz]e\s+(a|an)?/gi, "")
+        .replace(/make\s+(a|an)?\s+(diagram|image)\s*(of|showing)?/gi, "")
+        .replace(/diagram\s+of/gi, "")
+        .replace(/picture\s+of/gi, "")
+        .replace(/image\s+of/gi, "")
+        .trim()
+        .replace(/^(a|an|the)\s+/i, "")
+        .replace(/[?.!,]+$/, "")
+        .trim();
+      // Append "educational diagram" for academic context
+      return `${stripped}, educational diagram, clean illustration, labeled, white background`;
+    };
+
     const isImage = file?.type.startsWith("image/");
     const imageUrl = file && isImage ? URL.createObjectURL(file) : undefined;
 
@@ -238,16 +271,42 @@ CRITICAL INSTRUCTIONS ON HOW TO RESPOND:
 
       let fullResponseText = "";
 
+      // Build Pollinations image URL upfront (no API call needed — it's just a URL)
+      const generatedImageUrl = wantsImage
+        ? `https://image.pollinations.ai/prompt/${encodeURIComponent(buildImagePrompt(inputMessage))}?width=800&height=600&nologo=true&seed=${Date.now()}`
+        : undefined;
+
       // Wait for the full response first — then add it and start the
       // typewriter in one render so there's no blank placeholder phase.
+      // Send up to 40 messages of history (20 exchanges). Older messages have
+      // their content capped at 4000 chars so the window is never exhausted by
+      // a single long AI response from earlier in the conversation.
+      const MAX_HISTORY = 40;
+      const HISTORY_CHAR_CAP = 4000;
+      const historySlice = messages
+        .slice(-MAX_HISTORY)
+        .map((m, i, arr) => {
+          const isRecent = i >= arr.length - 6; // keep last 3 exchanges verbatim
+          const content = isRecent
+            ? m.content
+            : m.content?.length > HISTORY_CHAR_CAP
+              ? m.content.slice(0, HISTORY_CHAR_CAP) + "… [truncated]"
+              : m.content;
+          return { ...m, content };
+        });
+
       fullResponseText = await sendMessage(
         promptText,
-        messages.slice(-6),
+        historySlice,
         imagePart ? { data: imagePart.inlineData.data, mimeType: imagePart.inlineData.mimeType } : undefined
       );
 
       setMessages((prev) => {
-        const newMsgs = [...prev, { role: "assistant", content: fullResponseText }];
+        const newMsgs = [...prev, {
+          role: "assistant",
+          content: fullResponseText,
+          ...(generatedImageUrl ? { generated_image_url: generatedImageUrl } : {}),
+        }];
         setStreamingIndex(newMsgs.length - 1);
         return newMsgs;
       });

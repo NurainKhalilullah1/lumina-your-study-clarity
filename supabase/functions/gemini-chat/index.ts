@@ -51,7 +51,7 @@ async function tryGroq(apiKey: string, model: string, contents: Message[]): Prom
       body: JSON.stringify({
         model,
         messages: toOpenAIMessages(contents),
-        max_tokens: 4096,
+        max_tokens: 8192,
       }),
       signal: controller.signal,
     });

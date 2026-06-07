@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { User, FileText, Copy, Check, Download, Sparkles } from "lucide-react";
+import { User, FileText, Copy, Check, Download, Sparkles, ImageOff, RefreshCw } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import { StudyFlowLogo } from "@/components/StudyFlowLogo";
 import { ImagePreview } from "./ImagePreview";
@@ -10,7 +10,8 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   attachment_name?: string;
-  image_url?: string;
+  image_url?: string;           // user-uploaded image
+  generated_image_url?: string; // AI-generated via Pollinations
 }
 
 interface ChatMessagesProps {
@@ -75,6 +76,61 @@ const TypewriterText = ({
         aria-hidden="true"
       />
     </span>
+  );
+};
+
+/** Pollinations.ai image with skeleton loading + error fallback */
+const GeneratedImage = ({ url }: { url: string }) => {
+  const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
+  const [retryKey, setRetryKey] = useState(0);
+
+  return (
+    <div className="mt-3 relative">
+      {/* Loading skeleton */}
+      {status === 'loading' && (
+        <div className="w-full max-w-sm h-48 rounded-xl bg-muted/60 animate-pulse flex items-center justify-center">
+          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+            <Sparkles className="w-5 h-5 animate-spin" />
+            <span className="text-xs">Generating image…</span>
+          </div>
+        </div>
+      )}
+
+      {/* Error state */}
+      {status === 'error' && (
+        <div className="w-full max-w-sm h-32 rounded-xl border border-dashed border-border flex items-center justify-center">
+          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+            <ImageOff className="w-5 h-5" />
+            <span className="text-xs">Image failed to generate</span>
+            <button
+              onClick={() => { setStatus('loading'); setRetryKey(k => k + 1); }}
+              className="flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              <RefreshCw className="w-3 h-3" /> Retry
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Actual image — hidden until loaded */}
+      <img
+        key={retryKey}
+        src={url}
+        alt="AI generated illustration"
+        onLoad={() => setStatus('loaded')}
+        onError={() => setStatus('error')}
+        className={cn(
+          "w-full max-w-sm rounded-xl border shadow-sm object-cover transition-opacity duration-500",
+          status === 'loaded' ? "opacity-100" : "opacity-0 h-0 overflow-hidden"
+        )}
+      />
+
+      {status === 'loaded' && (
+        <p className="text-[10px] text-muted-foreground/50 mt-1 flex items-center gap-1">
+          <Sparkles className="w-2.5 h-2.5" /> AI generated · Pollinations
+        </p>
+      )}
+    </div>
   );
 };
 
@@ -213,6 +269,11 @@ export const ChatMessages = ({ messages, isLoading, streamingIndex }: ChatMessag
                           Export
                         </button>
                       </div>
+                    )}
+
+                    {/* AI-generated image (Pollinations) */}
+                    {msg.generated_image_url && (
+                      <GeneratedImage url={msg.generated_image_url} />
                     )}
                   </div>
                 ) : (
