@@ -14,10 +14,9 @@ Deno.serve(async (req: Request) => {
       throw new Error("'prompt' string is required");
     }
 
-    const seed = Math.floor(Math.random() * 2_000_000_000);
     const pollinationsUrl =
       `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}` +
-      `?model=sana&width=1024&height=768&nologo=true&seed=${seed}`;
+      `?model=sana&width=1024&height=768&nologo=true`;
 
     console.log(`Fetching image for prompt: "${prompt.slice(0, 80)}…"`);
 
@@ -54,10 +53,19 @@ Deno.serve(async (req: Request) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
-    console.error("Image generation failed:", error.message);
+    const msg: string = error?.message || "Image generation failed";
+    let status = 500;
+    if (msg.includes("'prompt' string is required")) {
+      status = 400; // validation error
+    } else if (error?.name === "AbortError" || msg.toLowerCase().includes("aborted")) {
+      status = 504; // gateway timeout
+    } else if (msg.startsWith("Pollinations returned HTTP")) {
+      status = 502; // bad gateway — upstream error
+    }
+    console.error(`Image generation failed (${status}):`, msg);
     return new Response(
-      JSON.stringify({ error: error.message || "Image generation failed" }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: msg }),
+      { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

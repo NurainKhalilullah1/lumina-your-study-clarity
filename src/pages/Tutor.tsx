@@ -190,10 +190,24 @@ export default function Tutor() {
       ? supabase.functions
           .invoke("generate-image", { body: { prompt: buildImagePrompt(inputMessage) } })
           .then(({ data, error }) => {
-            if (error || !data || data.error || !data.imageData) return null;
+            if (error) {
+              console.error("generate-image invocation error:", error);
+              return null;
+            }
+            if (data?.error) {
+              console.error("generate-image function error:", data.error);
+              return null;
+            }
+            if (!data?.imageData) {
+              console.error("generate-image: no imageData in response", data);
+              return null;
+            }
             return `data:${data.mimeType || "image/jpeg"};base64,${data.imageData}`;
           })
-          .catch(() => null)
+          .catch((e: unknown) => {
+            console.error("generate-image unexpected error:", e);
+            return null;
+          })
       : Promise.resolve(null);
 
     setMessages((prev) => [...prev, userMsg]);
@@ -307,13 +321,7 @@ CRITICAL INSTRUCTIONS:
 
       let fullResponseText = "";
 
-      // Build Pollinations image URL.
-      // seed must be a 32-bit int (max ~2.1B) — Date.now() is 13 digits
-      // and overflows the param, causing Pollinations to reject the request.
-      // model=sana is confirmed via image.pollinations.ai/models (flux is not served here).
-      const generatedImageUrl = wantsImage
-        ? `https://image.pollinations.ai/prompt/${encodeURIComponent(buildImagePrompt(inputMessage))}?model=sana&width=1024&height=768&nologo=true&seed=${Date.now() % 2_000_000_000}`
-        : undefined;
+
 
 
 
@@ -342,12 +350,18 @@ CRITICAL INSTRUCTIONS:
         imagePart ? { data: imagePart.inlineData.data, mimeType: imagePart.inlineData.mimeType } : undefined
       );
 
+      // Unique ID so the image update targets exactly this message,
+      // even if the user sends multiple image requests in quick succession.
+      const imgMsgId = wantsImage
+        ? `img-${Date.now()}-${Math.random().toString(36).slice(2)}`
+        : "";
+
       // Show text immediately; image loading indicator shows until edge fn resolves.
       setMessages((prev) => {
         const newMsgs = [...prev, {
           role: "assistant",
           content: fullResponseText,
-          ...(wantsImage ? { generated_image_loading: true } : {}),
+          ...(wantsImage ? { generated_image_loading: true, _img_id: imgMsgId } : {}),
         }];
         setStreamingIndex(newMsgs.length - 1);
         return newMsgs;
@@ -358,7 +372,7 @@ CRITICAL INSTRUCTIONS:
         imageFetchPromise.then((imageDataUrl) => {
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.role === "assistant" && msg.generated_image_loading
+              msg._img_id === imgMsgId
                 ? { ...msg, generated_image_url: imageDataUrl ?? undefined, generated_image_loading: false }
                 : msg
             )
