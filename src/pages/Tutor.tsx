@@ -148,7 +148,8 @@ export default function Tutor() {
     const lowerInput = inputMessage.toLowerCase();
     const wantsImage = imageIntentKeywords.some((kw) => lowerInput.includes(kw));
 
-    // Build a clean image prompt by stripping intent verbs and keeping the subject
+    // Build a clean image prompt by stripping intent verbs and keeping the subject.
+    // Returns a non-empty string — falls back to a safe default if everything is stripped.
     const buildImagePrompt = (text: string): string => {
       const stripped = text
         .replace(/draw\s+me\s+(a|an)?/gi, "")
@@ -167,8 +168,9 @@ export default function Tutor() {
         .replace(/^(a|an|the)\s+/i, "")
         .replace(/[?.!,]+$/, "")
         .trim();
-      // Append "educational diagram" for academic context
-      return `${stripped}, educational diagram, clean illustration, labeled, white background`;
+      // Guard: if every word was a trigger verb and nothing remains, use a safe fallback
+      const subject = stripped || "abstract educational diagram";
+      return `${subject}, educational diagram, clean illustration, labeled, white background`;
     };
 
     const isImage = file?.type.startsWith("image/");

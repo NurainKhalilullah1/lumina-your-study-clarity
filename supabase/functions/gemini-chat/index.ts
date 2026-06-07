@@ -51,7 +51,9 @@ async function tryGroq(apiKey: string, model: string, contents: Message[]): Prom
       body: JSON.stringify({
         model,
         messages: toOpenAIMessages(contents),
-        max_tokens: 8192,
+        // Vision-preview models on Groq are capped at 4 096 output tokens;
+        // sending 8 192 causes a 400. All other Groq models support 8 192.
+        max_tokens: model.includes("vision-preview") ? 4096 : 8192,
       }),
       signal: controller.signal,
     });
