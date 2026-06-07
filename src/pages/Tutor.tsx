@@ -27,6 +27,7 @@ export default function Tutor() {
   const [messages, setMessages] = useState<any[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [streamingIndex, setStreamingIndex] = useState<number | undefined>(undefined);
   const [activeDocument, setActiveDocument] = useState<string>("");
   const [activeDocumentName, setActiveDocumentName] = useState<string>("");
   const [sidebarRefresh, setSidebarRefresh] = useState(0);
@@ -234,7 +235,12 @@ CRITICAL INSTRUCTIONS ON HOW TO RESPOND:
         `;
 
       let fullResponseText = "";
-      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+      // Add placeholder and mark it as the streaming message
+      setMessages((prev) => {
+        const newMsgs = [...prev, { role: "assistant", content: "" }];
+        setStreamingIndex(newMsgs.length - 1);
+        return newMsgs;
+      });
 
       // Always pass promptText so the document context is included for all message types
       fullResponseText = await sendMessage(
@@ -285,6 +291,7 @@ Reply with ONLY the title, no quotes, no punctuation at the end.`;
     } catch (error) {
       console.error(error);
       toast({ title: "Error", description: "Connection interrupted.", variant: "destructive" });
+      setStreamingIndex(undefined);
     } finally {
       setIsLoading(false);
     }
@@ -406,7 +413,11 @@ Reply with ONLY the title, no quotes, no punctuation at the end.`;
                 onSelectDocument={() => setShowDocumentSelector(true)}
               />
             ) : (
-              <ChatMessages messages={messages} isLoading={isLoading} />
+              <ChatMessages
+                messages={messages}
+                isLoading={isLoading}
+                streamingIndex={streamingIndex}
+              />
             )}
             <div ref={messagesEndRef} />
           </div>

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
+@import 'https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap';
 
 @tailwind base;
 @tailwind components;
@@ -138,7 +138,7 @@
   h4,
   h5,
   h6 {
-    font-family: 'Sora', sans-serif;
+    font-family: Sora, sans-serif;
     @apply font-semibold;
   }
 
