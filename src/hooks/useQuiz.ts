@@ -112,23 +112,19 @@ export const useGenerateQuizQuestions = () => {
       sessionId,
       documentContent,
       numQuestions,
+      questionType = "mixed",
     }: {
       sessionId: string;
       documentContent: string;
       numQuestions: number;
+      questionType?: string;
     }) => {
       // Allow up to 70 questions as per UI slider
       const questionsToGenerate = Math.min(numQuestions, 70);
 
-      const prompt = `You are an expert quiz generator. Generate exactly ${questionsToGenerate} questions.
-
-CRITICAL MULTI-DOCUMENT INSTRUCTIONS:
-1. The content below may contain MULTIPLE DOCUMENTS separated by "--- Document: [name] ---"
-2. You MUST draw questions from ALL documents provided, distributing them as evenly as possible.
-3. SHUFFLE the final question order so questions from different documents and of different formats are mixed together.
-
-QUESTION FORMAT RULES:
-Generate a mix of the following 4 question types (roughly equal amounts of each):
+      // Build question-format instructions based on selected type
+      const typeInstructions: Record<string, string> = {
+        mixed: `Generate a mix of the following 4 question types (roughly equal amounts of each):
 1. Multiple Choice (MCQ):
    - Exactly 4 options.
    - Format: "options": ["A) ...", "B) ...", "C) ...", "D) ..."]
@@ -142,7 +138,39 @@ Generate a mix of the following 4 question types (roughly equal amounts of each)
 4. Short Answer:
    - A direct question requiring a brief answer.
    - Format: "options": ["SHORT_ANSWER"]
-   - The correct answer is a concise, accurate sentence or phrase.
+   - The correct answer is a concise, accurate sentence, close to the original text answer or phrase.`,
+
+        mcq: `Generate ONLY Multiple Choice questions:
+- Exactly 4 options per question.
+- Format: "options": ["A) ...", "B) ...", "C) ...", "D) ..."]
+- Correct answer must be the full option string, e.g. "A) Paris".`,
+
+        truefalse: `Generate ONLY True/False questions:
+- Format: "options": ["True", "False"]
+- The correct answer must be exactly "True" or "False".`,
+
+        fill: `Generate ONLY Fill-in-the-Blank questions:
+- Each question must contain "_________" (underscores) for the blank.
+- Format: "options": ["FILL_IN_THE_BLANK"]
+- The correct answer is the word/phrase that completes the blank.`,
+
+        short: `Generate ONLY Short Answer questions:
+- A direct question requiring a brief written answer.
+- Format: "options": ["SHORT_ANSWER"]
+- The correct answer is a concise, accurate sentence or phrase.`,
+      };
+
+      const formatInstructions = typeInstructions[questionType] ?? typeInstructions["mixed"];
+
+      const prompt = `You are an expert quiz generator. Generate exactly ${questionsToGenerate} questions.
+
+CRITICAL MULTI-DOCUMENT INSTRUCTIONS:
+1. The content below may contain MULTIPLE DOCUMENTS separated by "--- Document: [name] ---"
+2. You MUST draw questions from ALL documents provided, distributing them as evenly as possible.
+3. SHUFFLE the final question order so questions from different documents are mixed together.
+
+QUESTION FORMAT RULES:
+${formatInstructions}
 
 Document content:
 ${documentContent.slice(0, 50000)}
@@ -171,7 +199,7 @@ Return your response as a valid JSON array with this exact format (no markdown, 
   }
 ]
 
-Generate exactly ${questionsToGenerate} questions distributed across ALL documents. SHUFFLE the order. Return ONLY the JSON array, nothing else.`;
+Generate exactly ${questionsToGenerate} questions. Return ONLY the JSON array, nothing else.`;
 
       console.log("Starting quiz generation for", questionsToGenerate, "questions");
 

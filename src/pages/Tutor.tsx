@@ -52,8 +52,10 @@ export default function Tutor() {
   useEffect(() => {
     if (!sessionId) {
       setMessages([]);
+      setStreamingIndex(undefined);
       return;
     }
+    setStreamingIndex(undefined); // clear so history never re-animates
     const loadHistory = async () => {
       const { data } = await supabase
         .from("chat_messages")
@@ -235,14 +237,9 @@ CRITICAL INSTRUCTIONS ON HOW TO RESPOND:
         `;
 
       let fullResponseText = "";
-      // Add placeholder and mark it as the streaming message
-      setMessages((prev) => {
-        const newMsgs = [...prev, { role: "assistant", content: "" }];
-        setStreamingIndex(newMsgs.length - 1);
-        return newMsgs;
-      });
 
-      // Always pass promptText so the document context is included for all message types
+      // Wait for the full response first — then add it and start the
+      // typewriter in one render so there's no blank placeholder phase.
       fullResponseText = await sendMessage(
         promptText,
         messages.slice(-6),
@@ -250,8 +247,8 @@ CRITICAL INSTRUCTIONS ON HOW TO RESPOND:
       );
 
       setMessages((prev) => {
-        const newMsgs = [...prev];
-        newMsgs[newMsgs.length - 1] = { ...newMsgs[newMsgs.length - 1], content: fullResponseText };
+        const newMsgs = [...prev, { role: "assistant", content: fullResponseText }];
+        setStreamingIndex(newMsgs.length - 1);
         return newMsgs;
       });
 

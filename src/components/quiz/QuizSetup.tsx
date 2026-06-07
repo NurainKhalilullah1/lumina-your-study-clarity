@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
-import { FileText, Upload, Loader2, Clock, HelpCircle, Sparkles, X, AlertCircle, FolderOpen } from "lucide-react";
+import { FileText, Upload, Loader2, Clock, HelpCircle, Sparkles, X, AlertCircle, FolderOpen, ListChecks, ToggleLeft, PenLine, MessageSquare, Shuffle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { extractTextFromPDF } from "@/utils/pdfUtils";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +24,7 @@ interface QuizSetupProps {
     documentContent: string;
     numQuestions: number;
     timeLimitMinutes: number;
+    questionType: string;
   }) => void;
   isLoading: boolean;
 }
@@ -46,6 +47,7 @@ export const QuizSetup = ({
   });
   const [numQuestions, setNumQuestions] = useState(35);
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(25);
+  const [questionType, setQuestionType] = useState<string>("mixed");
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [showDocumentSelector, setShowDocumentSelector] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -193,7 +195,8 @@ export const QuizSetup = ({
       documentName: combinedName,
       documentContent: combinedContent,
       numQuestions,
-      timeLimitMinutes
+      timeLimitMinutes,
+      questionType,
     });
   };
 
@@ -365,6 +368,46 @@ export const QuizSetup = ({
             <span>5 min</span>
             <span>120 min (max)</span>
           </div>
+        </div>
+      </Card>
+
+      {/* Question Type */}
+      <Card className="p-6 space-y-4">
+        <h3 className="font-semibold flex items-center gap-2">
+          <ListChecks className="w-5 h-5 text-primary" />
+          Question Type
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {([
+            { id: "mixed",     label: "Mixed",            desc: "All types combined",        Icon: Shuffle },
+            { id: "mcq",       label: "Multiple Choice",   desc: "4-option questions",         Icon: ListChecks },
+            { id: "truefalse", label: "True / False",      desc: "Binary answer questions",   Icon: ToggleLeft },
+            { id: "fill",      label: "Fill-in-the-Blank",  desc: "Complete the sentence",    Icon: PenLine },
+            { id: "short",     label: "Short Answer",       desc: "Brief written responses",  Icon: MessageSquare },
+          ] as const).map(({ id, label, desc, Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setQuestionType(id)}
+              className={cn(
+                "flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all",
+                questionType === id
+                  ? "border-primary bg-primary/5 shadow-sm"
+                  : "border-border hover:border-primary/40 hover:bg-muted/40"
+              )}
+            >
+              <div className={cn(
+                "mt-0.5 p-1.5 rounded-lg shrink-0",
+                questionType === id ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+              )}>
+                <Icon className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className={cn("text-sm font-semibold", questionType === id ? "text-primary" : "")}>{label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
+              </div>
+            </button>
+          ))}
         </div>
       </Card>
 

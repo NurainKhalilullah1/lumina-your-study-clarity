@@ -16,28 +16,42 @@ interface Message {
 interface ChatMessagesProps {
   messages: Message[];
   isLoading?: boolean;
-  streamingIndex?: number; // index of the message currently being "streamed"
+  /** Index of the NEW message that should be typewriter-animated. */
+  streamingIndex?: number;
 }
 
-/** Typewriter animation component — reveals text char-by-char */
-const StreamingMessage = ({ content, onComplete }: { content: string; onComplete?: () => void }) => {
+/**
+ * Typewriter component — renders plain text char-by-char to avoid
+ * partial-markdown glitches, then notifies parent when done so the
+ * parent can switch to fully-rendered ReactMarkdown.
+ */
+const TypewriterText = ({
+  content,
+  onComplete,
+}: {
+  content: string;
+  onComplete: () => void;
+}) => {
   const [displayed, setDisplayed] = useState("");
-  const [done, setDone] = useState(false);
   const indexRef = useRef(0);
   const rafRef = useRef<number | null>(null);
+  const doneRef = useRef(false);
 
   useEffect(() => {
-    // Reset whenever content changes
+    // Start fresh whenever `content` changes
     indexRef.current = 0;
+    doneRef.current = false;
     setDisplayed("");
-    setDone(false);
 
-    const CHARS_PER_FRAME = 3; // speed — increase to go faster
+    if (!content) return;
+
+    const CHARS_PER_FRAME = 4; // tweak for speed
 
     const tick = () => {
+      if (doneRef.current) return;
       if (indexRef.current >= content.length) {
-        setDone(true);
-        onComplete?.();
+        doneRef.current = true;
+        onComplete();
         return;
       }
       indexRef.current = Math.min(indexRef.current + CHARS_PER_FRAME, content.length);
@@ -49,26 +63,32 @@ const StreamingMessage = ({ content, onComplete }: { content: string; onComplete
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [content]);
 
   return (
-    <div className="relative">
-      <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-ul:my-2 prose-li:my-0.5 break-words overflow-wrap-anywhere">
-        <ReactMarkdown>{displayed}</ReactMarkdown>
-      </div>
-      {!done && (
-        <span
-          className="inline-block w-0.5 h-4 bg-primary ml-0.5 align-middle animate-[blink_0.8s_step-end_infinite]"
-          aria-hidden="true"
-        />
-      )}
-    </div>
+    <span className="whitespace-pre-wrap break-words">
+      {displayed}
+      {/* blinking cursor */}
+      <span
+        className="inline-block w-0.5 h-[1em] bg-primary ml-[1px] align-text-bottom animate-[blink_0.7s_step-end_infinite]"
+        aria-hidden="true"
+      />
+    </span>
   );
 };
 
 export const ChatMessages = ({ messages, isLoading, streamingIndex }: ChatMessagesProps) => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-  const [streamingDone, setStreamingDone] = useState<Record<number, boolean>>({});
+  /**
+   * Tracks which messages have finished their typewriter animation.
+   * Key = `${idx}:${content.length}` so that re-loaded history (same
+   * index but content already set) is treated as already-done and
+   * never re-animated.
+   */
+  const [animDone, setAnimDone] = useState<Set<string>>(new Set());
+
+  const doneKey = (idx: number, content: string) => `${idx}:${content.length}`;
 
   const handleCopy = (text: string, idx: number) => {
     navigator.clipboard.writeText(text);
@@ -89,8 +109,11 @@ export const ChatMessages = ({ messages, isLoading, streamingIndex }: ChatMessag
   return (
     <div className="space-y-6 pb-4 max-w-4xl mx-auto w-full overflow-hidden">
       {messages.map((msg, idx) => {
-        const isStreaming = streamingIndex === idx && msg.role === 'assistant' && !!msg.content;
-        const isDone = streamingDone[idx] ?? false;
+        const key = doneKey(idx, msg.content);
+        const isTargetMsg = streamingIndex === idx && msg.role === 'assistant';
+        // Only animate if: this is the streaming target AND content has arrived AND animation hasn't finished yet
+        const shouldAnimate = isTargetMsg && !!msg.content && !animDone.has(key);
+        const showFormatted = msg.role === 'assistant' && (!!msg.content && !shouldAnimate);
 
         return (
           <div
@@ -99,7 +122,7 @@ export const ChatMessages = ({ messages, isLoading, streamingIndex }: ChatMessag
               "flex gap-2 sm:gap-4 animate-fade-in w-full min-w-0",
               msg.role === 'user' ? "flex-row-reverse" : "flex-row"
             )}
-            style={{ animationDelay: `${idx * 50}ms` }}
+            style={{ animationDelay: `${Math.min(idx, 5) * 40}ms` }}
           >
             {/* Avatar */}
             <Avatar className={cn(
@@ -108,9 +131,7 @@ export const ChatMessages = ({ messages, isLoading, streamingIndex }: ChatMessag
                 ? "border-primary/20 bg-gradient-to-br from-primary/10 to-accent/10"
                 : "border-border"
             )}>
-              <AvatarFallback className={cn(
-                msg.role === 'assistant' && "bg-transparent"
-              )}>
+              <AvatarFallback className={cn(msg.role === 'assistant' && "bg-transparent")}>
                 {msg.role === 'assistant'
                   ? <StudyFlowLogo size="sm" variant="purple" />
                   : <User className="w-4 h-4 text-muted-foreground" />
@@ -134,7 +155,7 @@ export const ChatMessages = ({ messages, isLoading, streamingIndex }: ChatMessag
                 </div>
               )}
 
-              {/* Attachment badge (for non-image files) */}
+              {/* Attachment badge (non-image) */}
               {msg.attachment_name && !msg.image_url && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2 bg-muted/50 px-3 py-1.5 rounded-full border">
                   <FileText className="w-3.5 h-3.5" />
@@ -151,18 +172,18 @@ export const ChatMessages = ({ messages, isLoading, streamingIndex }: ChatMessag
               )}>
                 {msg.role === 'assistant' ? (
                   <div className="flex flex-col gap-2">
-                    {/* Streaming label while animating */}
-                    {isStreaming && !isDone && (
+                    {/* Responding label during typewriter */}
+                    {shouldAnimate && (
                       <div className="flex items-center gap-1.5 text-xs text-primary/70 mb-1 animate-pulse">
                         <Sparkles className="w-3 h-3" />
                         <span>StudyFlow is responding…</span>
                       </div>
                     )}
 
-                    {isStreaming ? (
-                      <StreamingMessage
+                    {shouldAnimate ? (
+                      <TypewriterText
                         content={msg.content}
-                        onComplete={() => setStreamingDone(prev => ({ ...prev, [idx]: true }))}
+                        onComplete={() => setAnimDone(prev => new Set(prev).add(key))}
                       />
                     ) : (
                       <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-ul:my-2 prose-li:my-0.5 break-words overflow-wrap-anywhere">
@@ -170,15 +191,17 @@ export const ChatMessages = ({ messages, isLoading, streamingIndex }: ChatMessag
                       </div>
                     )}
 
-                    {/* Copy / Export — shown when content exists and not still streaming */}
-                    {msg.content && (!isStreaming || isDone) && (
+                    {/* Copy / Export — only once content is present and animation done (or never animated) */}
+                    {msg.content && !shouldAnimate && (
                       <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/50">
                         <button
                           onClick={() => handleCopy(msg.content, idx)}
                           className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors p-1"
                           title="Copy Response"
                         >
-                          {copiedIndex === idx ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                          {copiedIndex === idx
+                            ? <Check className="w-3.5 h-3.5 text-green-500" />
+                            : <Copy className="w-3.5 h-3.5" />}
                           {copiedIndex === idx ? "Copied" : "Copy"}
                         </button>
                         <button
@@ -201,22 +224,21 @@ export const ChatMessages = ({ messages, isLoading, streamingIndex }: ChatMessag
         );
       })}
 
-      {/* Thinking indicator — shown when isLoading but no streaming message yet */}
-      {isLoading && streamingIndex === undefined && (
+      {/* Thinking dots — visible while API call is in-flight (no content yet) */}
+      {isLoading && (
         <div className="flex gap-4 flex-row animate-fade-in">
           <Avatar className="w-9 h-9 shrink-0 border-2 border-primary/20 bg-gradient-to-br from-primary/10 to-accent/10">
             <AvatarFallback className="bg-transparent">
               <StudyFlowLogo size="sm" variant="purple" className="animate-pulse" />
             </AvatarFallback>
           </Avatar>
-
           <div className="flex flex-col items-start">
             <div className="flex items-center gap-2 px-4 py-3 bg-muted/50 rounded-2xl rounded-bl-md border border-border/50">
               <span className="text-sm text-muted-foreground">StudyFlow is thinking</span>
               <div className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"></span>
+                <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce" />
               </div>
             </div>
           </div>

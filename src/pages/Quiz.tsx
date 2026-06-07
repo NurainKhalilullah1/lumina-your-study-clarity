@@ -58,6 +58,7 @@ export default function Quiz() {
     documentContent: string;
     numQuestions: number;
     timeLimitMinutes: number;
+    questionType: string;
   }) => {
     if (!user) {
       toast({
@@ -90,7 +91,8 @@ export default function Quiz() {
       await generateQuestions.mutateAsync({
         sessionId: session.id,
         documentContent: settings.documentContent,
-        numQuestions: settings.numQuestions
+        numQuestions: settings.numQuestions,
+        questionType: settings.questionType,
       });
 
       // Refetch questions and start quiz
