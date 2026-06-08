@@ -31,6 +31,12 @@ interface QuizInterfaceProps {
   onSaveAnswer: (questionId: string, answer: string) => void;
   onToggleFlag: (questionId: string, isFlagged: boolean) => void;
   onSubmit: () => void;
+  /** If provided, seeds the timer with this value (seconds) instead of computing from timeLimitMinutes */
+  initialTimeRemaining?: number;
+  /** If provided, starts on this question index (used when recovering a session) */
+  initialQuestionIndex?: number;
+  /** Called whenever the user navigates to a different question (used for session persistence) */
+  onQuestionChange?: (index: number) => void;
 }
 
 export const QuizInterface = ({
@@ -38,12 +44,31 @@ export const QuizInterface = ({
   timeLimitMinutes,
   onSaveAnswer,
   onToggleFlag,
-  onSubmit
+  onSubmit,
+  initialTimeRemaining,
+  initialQuestionIndex = 0,
+  onQuestionChange,
 }: QuizInterfaceProps) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [flagged, setFlagged] = useState<Set<number>>(new Set());
-  const [timeRemaining, setTimeRemaining] = useState(timeLimitMinutes * 60);
+  const [currentIndex, setCurrentIndex] = useState(initialQuestionIndex);
+  // Pre-populate answers from DB data (covers recovered sessions)
+  const [answers, setAnswers] = useState<Record<number, string>>(() => {
+    const initial: Record<number, string> = {};
+    questions.forEach((q, idx) => {
+      if (q.user_answer) initial[idx] = q.user_answer;
+    });
+    return initial;
+  });
+  // Pre-populate flagged from DB data
+  const [flagged, setFlagged] = useState<Set<number>>(() => {
+    const initial = new Set<number>();
+    questions.forEach((q, idx) => {
+      if (q.is_flagged) initial.add(idx);
+    });
+    return initial;
+  });
+  const [timeRemaining, setTimeRemaining] = useState(
+    initialTimeRemaining !== undefined ? initialTimeRemaining : timeLimitMinutes * 60
+  );
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [showTimeUpDialog, setShowTimeUpDialog] = useState(false);
 
@@ -93,7 +118,9 @@ export const QuizInterface = ({
   };
 
   const goToQuestion = (index: number) => {
-    setCurrentIndex(Math.max(0, Math.min(index, questions.length - 1)));
+    const next = Math.max(0, Math.min(index, questions.length - 1));
+    setCurrentIndex(next);
+    onQuestionChange?.(next);
   };
 
   const handleSubmit = useCallback(() => {

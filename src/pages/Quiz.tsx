@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { QuizSetup } from "@/components/quiz/QuizSetup";
@@ -24,6 +24,16 @@ interface LocationState {
   documentName?: string;
 }
 
+const QUIZ_SESSION_KEY = "quiz_active_session";
+
+interface PersistedQuizSession {
+  sessionId: string;
+  phase: "quiz";
+  quizTimeLimit: number;
+  startTime: string; // ISO timestamp when quiz started
+  currentQuestionIndex: number;
+}
+
 export default function Quiz() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -39,6 +49,9 @@ export default function Quiz() {
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [timeTaken, setTimeTaken] = useState<string>("");
   const [quizTimeLimit, setQuizTimeLimit] = useState<number>(25);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  // Stores the calculated remaining time when recovering a session (seconds)
+  const [recoveredTimeRemaining, setRecoveredTimeRemaining] = useState<number | undefined>(undefined);
 
   const createSession = useCreateQuizSession();
   const generateQuestions = useGenerateQuizQuestions();
@@ -46,13 +59,80 @@ export default function Quiz() {
   const saveAnswer = useSaveQuizAnswer();
   const submitQuiz = useSubmitQuiz();
 
-  // Update local questions when fetched from DB
+  // ─── Restore persisted session on mount ────────────────────────────────────
+  const recoveryAttempted = useRef(false);
+  useEffect(() => {
+    if (recoveryAttempted.current) return;
+    recoveryAttempted.current = true;
+
+    try {
+      const raw = localStorage.getItem(QUIZ_SESSION_KEY);
+      if (!raw) return;
+
+      const saved: PersistedQuizSession = JSON.parse(raw);
+      if (!saved.sessionId) return;
+
+      // Compute remaining seconds based on elapsed wall-clock time
+      const elapsedSeconds = Math.floor(
+        (Date.now() - new Date(saved.startTime).getTime()) / 1000
+      );
+      const totalSeconds = saved.quizTimeLimit * 60;
+      const remaining = Math.max(0, totalSeconds - elapsedSeconds);
+
+      if (remaining === 0) {
+        // Time already ran out while app was closed – clear and stay on setup
+        localStorage.removeItem(QUIZ_SESSION_KEY);
+        toast({
+          title: "Quiz time expired",
+          description: "Your previous quiz session timed out while the app was closed.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Restore state
+      setSessionId(saved.sessionId);
+      setQuizTimeLimit(saved.quizTimeLimit);
+      setStartTime(new Date(saved.startTime));
+      setCurrentQuestionIndex(saved.currentQuestionIndex);
+      setRecoveredTimeRemaining(remaining);
+      setPhase("quiz");
+
+      toast({
+        title: "Quiz resumed ✅",
+        description: `Picking up where you left off — ${Math.floor(remaining / 60)}m ${remaining % 60}s remaining.`,
+      });
+    } catch {
+      // Corrupt data – silently remove it
+      localStorage.removeItem(QUIZ_SESSION_KEY);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ─── Update local questions when fetched from DB ────────────────────────────
   useEffect(() => {
     if (questions && questions.length > 0) {
       setLocalQuestions(questions);
     }
   }, [questions]);
 
+  // ─── Persist session snapshot while quiz is active ─────────────────────────
+  useEffect(() => {
+    if (phase === "quiz" && sessionId && startTime) {
+      const snapshot: PersistedQuizSession = {
+        sessionId,
+        phase: "quiz",
+        quizTimeLimit,
+        startTime: startTime.toISOString(),
+        currentQuestionIndex,
+      };
+      localStorage.setItem(QUIZ_SESSION_KEY, JSON.stringify(snapshot));
+    } else if (phase !== "quiz") {
+      localStorage.removeItem(QUIZ_SESSION_KEY);
+    }
+  }, [phase, sessionId, startTime, quizTimeLimit, currentQuestionIndex]);
+
+  // ─── Handlers ───────────────────────────────────────────────────────────────
   const handleStartQuiz = async (settings: {
     documentName: string;
     documentContent: string;
@@ -97,7 +177,10 @@ export default function Quiz() {
 
       // Refetch questions and start quiz
       await refetchQuestions();
-      setStartTime(new Date());
+      const now = new Date();
+      setStartTime(now);
+      setCurrentQuestionIndex(0);
+      setRecoveredTimeRemaining(undefined); // fresh quiz, no recovery
       setPhase("quiz");
 
       toast({
@@ -154,6 +237,7 @@ export default function Quiz() {
       }
 
       setQuizScore(result);
+      // Clearing localStorage happens via the phase useEffect below
       setPhase("results");
 
       toast({
@@ -179,10 +263,12 @@ export default function Quiz() {
     setStartTime(null);
     setTimeTaken("");
     setQuizTimeLimit(25);
+    setCurrentQuestionIndex(0);
+    setRecoveredTimeRemaining(undefined);
   };
 
   return (
-    <DashboardLayout hideMobileHeader={phase === "quiz"}>
+    <DashboardLayout hideMobileHeader={phase === "quiz"} hideNav={phase === "quiz"}>
       {/* Setup phase */}
       {phase === "setup" && (
         <div className="flex flex-col min-h-full">
@@ -209,13 +295,16 @@ export default function Quiz() {
 
       {/* Active quiz phase – fills the screen with no page scroll */}
       {phase === "quiz" && localQuestions.length > 0 && (
-        <div className="flex-1 flex flex-col min-h-0 pb-16 md:pb-0">
+        <div className="flex-1 flex flex-col min-h-0">
           <QuizInterface
             questions={localQuestions}
             timeLimitMinutes={quizTimeLimit}
             onSaveAnswer={handleSaveAnswer}
             onToggleFlag={handleToggleFlag}
             onSubmit={handleSubmitQuiz}
+            initialTimeRemaining={recoveredTimeRemaining}
+            initialQuestionIndex={currentQuestionIndex}
+            onQuestionChange={setCurrentQuestionIndex}
           />
         </div>
       )}

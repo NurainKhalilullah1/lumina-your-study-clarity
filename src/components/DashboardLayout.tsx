@@ -14,9 +14,11 @@ import { useTrackStudyEvent, useStudyEvents } from "@/hooks/useStudyStats";
 interface DashboardLayoutProps {
   children: React.ReactNode;
   hideMobileHeader?: boolean;
+  /** When true, hides bottom nav (mobile) and sidebar (desktop) for distraction-free quiz mode */
+  hideNav?: boolean;
 }
 
-const DashboardLayout = ({ children, hideMobileHeader }: DashboardLayoutProps) => {
+const DashboardLayout = ({ children, hideMobileHeader, hideNav }: DashboardLayoutProps) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -53,7 +55,7 @@ const DashboardLayout = ({ children, hideMobileHeader }: DashboardLayoutProps) =
   return (
     <SidebarProvider>
       <div className={`flex w-full bg-background ${hideMobileHeader ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
-        <div className="hidden md:block">
+        <div className={hideNav ? 'hidden' : 'hidden md:block'}>
           <DashboardSidebar />
         </div>
         <SidebarInset className="flex flex-col min-w-0 min-h-0">
@@ -88,12 +90,12 @@ const DashboardLayout = ({ children, hideMobileHeader }: DashboardLayoutProps) =
               {children}
             </main>
           ) : (
-            <main className="flex-1 overflow-y-auto overflow-x-hidden pb-16 md:pb-0">
+            <main className={`flex-1 overflow-y-auto overflow-x-hidden ${hideNav ? 'pb-0' : 'pb-16 md:pb-0'}`}>
               {children}
             </main>
           )}
         </SidebarInset>
-        <BottomNav />
+        {!hideNav && <BottomNav />}
       </div>
     </SidebarProvider>
   );
