@@ -22,6 +22,7 @@ import { QuizQuestion } from "@/hooks/useQuiz";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ShareModal } from "./ShareModal";
 
 interface QuizResultsProps {
   score: number;
@@ -44,6 +45,8 @@ export const QuizResults = ({
 }: QuizResultsProps) => {
   const [showReview, setShowReview] = useState(false);
   const [expandedQuestion, setExpandedQuestion] = useState<number | null>(null);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -51,28 +54,24 @@ export const QuizResults = ({
   const unanswered = questions.filter(q => !q.user_answer).length;
   const wrong = totalQuestions - score - unanswered;
 
+  const appBaseUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+
   const handleShare = async () => {
     if (!sessionId) return;
-    const shareUrl = `${window.location.origin}/shared-quiz/${sessionId}`;
+    const url = `${appBaseUrl}/shared-quiz/${sessionId}`;
     try {
-      // Secure the shared access by setting is_shared to true
       const { error } = await supabase
         .from("quiz_sessions")
         .update({ is_shared: true })
         .eq("id", sessionId);
-      
       if (error) throw error;
-
-      await navigator.clipboard.writeText(shareUrl);
-      toast({
-        title: "Link copied!",
-        description: "Quiz link copied to clipboard. Share it with your friends!",
-      });
+      setShareUrl(url);
+      setShareModalOpen(true);
     } catch (err: any) {
-      console.error("Failed to copy link:", err);
+      console.error("Failed to share:", err);
       toast({
-        title: "Failed to copy link",
-        description: "Could not copy link to clipboard. Please copy it manually.",
+        title: "Failed to share",
+        description: "Something went wrong. Please try again.",
         variant: "destructive",
       });
     }
@@ -328,6 +327,12 @@ export const QuizResults = ({
           </ScrollArea>
         </Card>
       )}
+      <ShareModal
+        open={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        shareUrl={shareUrl}
+        text="I just completed a quiz on StudyFlow! Try it out:"
+      />
     </div>
   );
 };

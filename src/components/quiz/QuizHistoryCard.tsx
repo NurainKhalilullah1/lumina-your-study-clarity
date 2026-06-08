@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import type { QuizSession } from "@/hooks/useQuiz";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { ShareModal } from "./ShareModal";
 
 interface QuizHistoryCardProps {
   session: QuizSession;
@@ -21,6 +23,8 @@ export const QuizHistoryCard = ({
   onResume,
 }: QuizHistoryCardProps) => {
   const { toast } = useToast();
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
   const isCompleted = !!session.completed_at;
   const percentage = session.score && session.total_questions
     ? Math.round((session.score / session.total_questions) * 100)
@@ -45,26 +49,21 @@ export const QuizHistoryCard = ({
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const shareUrl = `${window.location.origin}/shared-quiz/${session.id}`;
+    const appBaseUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+    const url = `${appBaseUrl}/shared-quiz/${session.id}`;
     try {
-      // Secure the shared access by setting is_shared to true
       const { error } = await supabase
         .from("quiz_sessions")
         .update({ is_shared: true })
         .eq("id", session.id);
-      
       if (error) throw error;
-
-      await navigator.clipboard.writeText(shareUrl);
-      toast({
-        title: "Link copied!",
-        description: "Quiz link copied to clipboard. Share it with your friends!",
-      });
+      setShareUrl(url);
+      setShareModalOpen(true);
     } catch (err: any) {
-      console.error("Failed to copy link:", err);
+      console.error("Failed to share:", err);
       toast({
-        title: "Failed to copy link",
-        description: `Could not copy link for session ${session.id}. Please copy manually.`,
+        title: "Failed to share",
+        description: "Something went wrong. Please try again.",
         variant: "destructive",
       });
     }
@@ -155,7 +154,12 @@ export const QuizHistoryCard = ({
           </div>
         </div>
       </CardContent>
+      <ShareModal
+        open={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        shareUrl={shareUrl}
+        text="I just completed a quiz on StudyFlow! Try it out:"
+      />
     </Card>
   );
 };
-

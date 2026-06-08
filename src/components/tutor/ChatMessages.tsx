@@ -46,7 +46,7 @@ const TypewriterText = ({
 
     if (!content) return;
 
-    const CHARS_PER_FRAME = 4; // tweak for speed
+    const CHARS_PER_FRAME = 1; // tweak for speed
 
     const tick = () => {
       if (doneRef.current) return;
