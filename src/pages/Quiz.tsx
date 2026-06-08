@@ -73,10 +73,11 @@ export default function Quiz() {
       if (!saved.sessionId) return;
 
       // Compute remaining seconds based on elapsed wall-clock time
-      const elapsedSeconds = Math.floor(
-        (Date.now() - new Date(saved.startTime).getTime()) / 1000
-      );
       const totalSeconds = saved.quizTimeLimit * 60;
+      const parsedTimestamp = new Date(saved.startTime).getTime();
+      const elapsedSeconds = isFinite(parsedTimestamp)
+        ? Math.floor((Date.now() - parsedTimestamp) / 1000)
+        : 0;
       const remaining = Math.max(0, totalSeconds - elapsedSeconds);
 
       if (remaining === 0) {
