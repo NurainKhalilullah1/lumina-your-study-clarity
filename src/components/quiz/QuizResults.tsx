@@ -258,30 +258,39 @@ export const QuizResults = ({
                               )}
                             </div>
                           ) : q.options.length === 2 && q.options.includes("True") && q.options.includes("False") ? (
-                            q.options.map((option, optIdx) => {
-                              const isUserAnswer = q.user_answer === option;
-                              const isCorrectAnswer = q.correct_answer === option;
+                            <>
+                              {q.options.map((option, optIdx) => {
+                                const norm = (x: string | null | undefined) => (x ?? "").trim().toLowerCase();
+                                const isUserAnswer = norm(q.user_answer) === norm(option);
+                                const isCorrectAnswer = norm(q.correct_answer) === norm(option);
 
-                              return (
-                                <div
-                                  key={optIdx}
-                                  className={cn(
-                                    "p-2 rounded-lg text-sm flex items-center gap-2",
-                                    isCorrectAnswer && "bg-green-500/20 border border-green-500/40",
-                                    isUserAnswer && !isCorrectAnswer && "bg-destructive/20 border border-destructive/40",
-                                    !isCorrectAnswer && !isUserAnswer && "bg-muted"
-                                  )}
-                                >
-                                  <span className="font-medium">{option}</span>
-                                  {isCorrectAnswer && (
-                                    <CheckCircle className="w-4 h-4 text-green-500 ml-auto" />
-                                  )}
-                                  {isUserAnswer && !isCorrectAnswer && (
-                                    <XCircle className="w-4 h-4 text-destructive ml-auto" />
-                                  )}
+                                return (
+                                  <div
+                                    key={optIdx}
+                                    className={cn(
+                                      "p-2 rounded-lg text-sm flex items-center gap-2",
+                                      isCorrectAnswer && "bg-green-500/20 border border-green-500/40",
+                                      isUserAnswer && !isCorrectAnswer && "bg-destructive/20 border border-destructive/40",
+                                      !isCorrectAnswer && !isUserAnswer && "bg-muted"
+                                    )}
+                                  >
+                                    <span className="font-medium">{option}</span>
+                                    {isCorrectAnswer && (
+                                      <CheckCircle className="w-4 h-4 text-green-500 ml-auto" />
+                                    )}
+                                    {isUserAnswer && !isCorrectAnswer && (
+                                      <XCircle className="w-4 h-4 text-destructive ml-auto" />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              {!isCorrect && !isUnanswered && (
+                                <div className="mt-2 p-2 rounded-lg bg-green-500/10 border border-green-500/30 text-sm">
+                                  <span className="font-semibold text-green-600 dark:text-green-400">✅ Correct Answer: </span>
+                                  <span className="text-green-700 dark:text-green-300">{q.correct_answer}</span>
                                 </div>
-                              );
-                            })
+                              )}
+                            </>
                           ) : (
                             <>
                               {q.options.map((option, optIdx) => {
