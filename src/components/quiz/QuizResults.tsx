@@ -193,7 +193,7 @@ export const QuizResults = ({
           <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-3">
               {questions.map((q, idx) => {
-                const isCorrect = q.user_answer === q.correct_answer;
+                const isCorrect = q.user_answer?.trim().toLowerCase() === q.correct_answer?.trim().toLowerCase();
                 const isUnanswered = !q.user_answer;
                 const isExpanded = expandedQuestion === idx;
 
@@ -283,40 +283,55 @@ export const QuizResults = ({
                               );
                             })
                           ) : (
-                            q.options.map((option, optIdx) => {
-                              const hasLetterPrefix = /^[A-Z]\)/.test(option);
-                              const optionValue = hasLetterPrefix ? option.substring(0, option.indexOf(')')) : option;
-                              
-                              const isUserAnswer = q.user_answer === optionValue;
-                              const isCorrectAnswer = q.correct_answer === optionValue;
+                            <>
+                              {q.options.map((option, optIdx) => {
+                                // Use full option string for comparison (matches what was saved as user_answer)
+                                const isUserAnswer = q.user_answer === option;
+                                const isCorrectAnswer = q.correct_answer === option;
 
-                              return (
-                                <div
-                                  key={optIdx}
-                                  className={cn(
-                                    "p-2 rounded-lg text-sm flex items-center gap-2",
-                                    isCorrectAnswer && "bg-green-500/20 border border-green-500/40",
-                                    isUserAnswer && !isCorrectAnswer && "bg-destructive/20 border border-destructive/40",
-                                    !isCorrectAnswer && !isUserAnswer && "bg-muted"
-                                  )}
-                                >
-                                  <span className="font-medium">{option}</span>
-                                  {isCorrectAnswer && (
-                                    <CheckCircle className="w-4 h-4 text-green-500 ml-auto" />
-                                  )}
-                                  {isUserAnswer && !isCorrectAnswer && (
-                                    <XCircle className="w-4 h-4 text-destructive ml-auto" />
-                                  )}
+                                return (
+                                  <div
+                                    key={optIdx}
+                                    className={cn(
+                                      "p-2 rounded-lg text-sm flex items-center gap-2",
+                                      isCorrectAnswer && "bg-green-500/20 border border-green-500/40",
+                                      isUserAnswer && !isCorrectAnswer && "bg-destructive/20 border border-destructive/40",
+                                      !isCorrectAnswer && !isUserAnswer && "bg-muted"
+                                    )}
+                                  >
+                                    <span className="font-medium">{option}</span>
+                                    {isCorrectAnswer && (
+                                      <CheckCircle className="w-4 h-4 text-green-500 ml-auto" />
+                                    )}
+                                    {isUserAnswer && !isCorrectAnswer && (
+                                      <XCircle className="w-4 h-4 text-destructive ml-auto" />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              {/* Correct answer callout for wrong MCQ answers */}
+                              {!isCorrect && !isUnanswered && (
+                                <div className="mt-2 p-2 rounded-lg bg-green-500/10 border border-green-500/30 text-sm">
+                                  <span className="font-semibold text-green-600 dark:text-green-400">✅ Correct Answer: </span>
+                                  <span className="text-green-700 dark:text-green-300">{q.correct_answer}</span>
                                 </div>
-                              );
-                            })
+                              )}
+                            </>
                           )}
                         </div>
+
 
                         {isUnanswered && (
                           <p className="text-sm text-muted-foreground italic">
                             You did not answer this question
                           </p>
+                        )}
+                        {/* Explanation */}
+                        {q.explanation && (
+                          <div className="mt-1 p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm">
+                            <span className="font-semibold text-primary">💡 Explanation: </span>
+                            <span className="text-foreground/80">{q.explanation}</span>
+                          </div>
                         )}
                       </div>
                     )}

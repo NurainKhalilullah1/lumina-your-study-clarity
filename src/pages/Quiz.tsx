@@ -50,6 +50,7 @@ export default function Quiz() {
   const [timeTaken, setTimeTaken] = useState<string>("");
   const [quizTimeLimit, setQuizTimeLimit] = useState<number>(25);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   // Stores the calculated remaining time when recovering a session (seconds)
   const [recoveredTimeRemaining, setRecoveredTimeRemaining] = useState<number | undefined>(undefined);
 
@@ -226,6 +227,7 @@ export default function Quiz() {
   const handleSubmitQuiz = async () => {
     if (!sessionId) return;
 
+    setIsSubmitting(true);
     try {
       const result = await submitQuiz.mutateAsync(sessionId);
       
@@ -253,6 +255,8 @@ export default function Quiz() {
         description: "There was an error submitting your quiz.",
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -303,6 +307,7 @@ export default function Quiz() {
             onSaveAnswer={handleSaveAnswer}
             onToggleFlag={handleToggleFlag}
             onSubmit={handleSubmitQuiz}
+            isSubmitting={isSubmitting}
             initialTimeRemaining={recoveredTimeRemaining}
             initialQuestionIndex={currentQuestionIndex}
             onQuestionChange={setCurrentQuestionIndex}

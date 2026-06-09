@@ -1,12 +1,11 @@
 import { format } from "date-fns";
-import { X, CheckCircle2, XCircle, MinusCircle, Clock, FileText } from "lucide-react";
+import { X, CheckCircle2, XCircle, MinusCircle, Clock, FileText, Lightbulb } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -49,12 +48,19 @@ export const QuizReviewModal = ({
 
   const getQuestionStatus = (question: QuizQuestion) => {
     if (!question.user_answer) return "skipped";
-    return question.user_answer === question.correct_answer ? "correct" : "wrong";
+    // Case-insensitive comparison to handle fill-in-the-blank / short answer
+    return question.user_answer.trim().toLowerCase() === question.correct_answer.trim().toLowerCase()
+      ? "correct"
+      : "wrong";
   };
 
-  const correctCount = questions.filter(q => q.user_answer === q.correct_answer).length;
-  const wrongCount = questions.filter(q => q.user_answer && q.user_answer !== q.correct_answer).length;
-  const skippedCount = questions.filter(q => !q.user_answer).length;
+  const correctCount = questions.filter(
+    (q) => q.user_answer && q.user_answer.trim().toLowerCase() === q.correct_answer.trim().toLowerCase()
+  ).length;
+  const wrongCount = questions.filter(
+    (q) => q.user_answer && q.user_answer.trim().toLowerCase() !== q.correct_answer.trim().toLowerCase()
+  ).length;
+  const skippedCount = questions.filter((q) => !q.user_answer).length;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -110,7 +116,8 @@ export const QuizReviewModal = ({
           <Progress value={percentage} className="mt-3 h-2" />
         </DialogHeader>
 
-        <ScrollArea className="flex-1 p-6">
+        {/* Scrollable question list — use a plain div so flex-1 + overflow-y-auto works reliably */}
+        <div className="flex-1 overflow-y-auto min-h-0 p-6">
           <div className="space-y-6">
             {questions.map((question, index) => {
               const status = getQuestionStatus(question);
@@ -149,41 +156,78 @@ export const QuizReviewModal = ({
 
                   {/* Options */}
                   <div className="space-y-2 ml-8">
-                    {question.options.map((option, optIndex) => {
-                      const optionLetter = option.charAt(0);
-                      const isCorrect = optionLetter === question.correct_answer;
-                      const isUserAnswer = optionLetter === question.user_answer;
-                      const isWrongUserAnswer = isUserAnswer && !isCorrect;
-
-                      let optionClass = "p-3 rounded-md border text-sm";
-                      if (isCorrect) {
-                        optionClass += " bg-green-500/10 border-green-500/50 text-green-700 dark:text-green-300";
-                      } else if (isWrongUserAnswer) {
-                        optionClass += " bg-red-500/10 border-red-500/50 text-red-700 dark:text-red-300";
-                      } else {
-                        optionClass += " bg-muted/30 border-border";
-                      }
-
-                      return (
-                        <div key={optIndex} className={optionClass}>
-                          <div className="flex items-center gap-2">
-                            {isCorrect && (
-                              <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
-                            )}
-                            {isWrongUserAnswer && (
-                              <XCircle className="w-4 h-4 text-red-500 shrink-0" />
-                            )}
-                            <span>{option}</span>
-                          </div>
+                    {question.options.length === 1 &&
+                    (question.options[0] === "FILL_IN_THE_BLANK" || question.options[0] === "SHORT_ANSWER") ? (
+                      <div className="space-y-2">
+                        <div className="p-3 rounded-md border text-sm bg-muted/30 border-border">
+                          <span className="text-muted-foreground font-medium">Your Answer: </span>
+                          <span className={status === "correct" ? "text-green-600 dark:text-green-400 font-medium" : "text-red-600 dark:text-red-400 font-medium"}>
+                            {question.user_answer || "(No answer)"}
+                          </span>
                         </div>
-                      );
-                    })}
+                        {status !== "correct" && (
+                          <div className="p-3 rounded-md border text-sm bg-green-500/10 border-green-500/50">
+                            <span className="font-medium text-green-700 dark:text-green-300">✅ Correct Answer: </span>
+                            <span className="text-green-700 dark:text-green-300">{question.correct_answer}</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        {question.options.map((option, optIndex) => {
+                          // Use full option string for comparison (matches what was saved as user_answer)
+                          const isCorrect = option === question.correct_answer;
+                          const isUserAnswer = option === question.user_answer;
+                          const isWrongUserAnswer = isUserAnswer && !isCorrect;
+
+                          let optionClass = "p-3 rounded-md border text-sm";
+                          if (isCorrect) {
+                            optionClass += " bg-green-500/10 border-green-500/50 text-green-700 dark:text-green-300";
+                          } else if (isWrongUserAnswer) {
+                            optionClass += " bg-red-500/10 border-red-500/50 text-red-700 dark:text-red-300";
+                          } else {
+                            optionClass += " bg-muted/30 border-border";
+                          }
+
+                          return (
+                            <div key={optIndex} className={optionClass}>
+                              <div className="flex items-center gap-2">
+                                {isCorrect && (
+                                  <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                                )}
+                                {isWrongUserAnswer && (
+                                  <XCircle className="w-4 h-4 text-red-500 shrink-0" />
+                                )}
+                                <span>{option}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {/* Correct answer callout for wrong MCQ answers */}
+                        {status === "wrong" && (
+                          <div className="p-3 rounded-md border text-sm bg-green-500/10 border-green-500/50">
+                            <span className="font-medium text-green-700 dark:text-green-300">✅ Correct Answer: </span>
+                            <span className="text-green-700 dark:text-green-300">{question.correct_answer}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* Explanation */}
+                    {question.explanation && (
+                      <div className="p-3 rounded-md border text-sm bg-primary/5 border-primary/20">
+                        <div className="flex items-start gap-2">
+                          <Lightbulb className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                          <span className="text-foreground/80">{question.explanation}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
             })}
           </div>
-        </ScrollArea>
+        </div>
 
         <div className="p-4 border-t">
           <Button onClick={onClose} className="w-full">

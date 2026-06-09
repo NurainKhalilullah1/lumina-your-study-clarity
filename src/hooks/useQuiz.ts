@@ -11,6 +11,7 @@ export interface QuizQuestion {
   question: string;
   options: string[];
   correct_answer: string;
+  explanation?: string | null;
   user_answer?: string | null;
   is_flagged: boolean;
 }
@@ -59,6 +60,7 @@ export const useQuizQuestions = (sessionId: string | null) => {
       return data.map((q) => ({
         ...q,
         options: q.options as string[],
+        explanation: (q as any).explanation ?? null,
       })) as QuizQuestion[];
     },
     enabled: !!sessionId,
@@ -169,38 +171,43 @@ CRITICAL MULTI-DOCUMENT INSTRUCTIONS:
 1. The content below may contain MULTIPLE DOCUMENTS separated by "--- Document: [name] ---"
 2. You MUST draw questions from ALL documents provided, distributing them as evenly as possible.
 3. SHUFFLE the final question order so questions from different documents are mixed together.
+4. Read and analyse the ENTIRE document content provided before generating questions — do not stop early.
 
 QUESTION FORMAT RULES:
 ${formatInstructions}
 
 Document content:
-${documentContent.slice(0, 50000)}
+${documentContent}
 
 Return your response as a valid JSON array with this exact format (no markdown, no code blocks, just pure JSON):
 [
   {
     "question": "What is the capital of France?",
     "options": ["A) London", "B) Paris", "C) Berlin", "D) Madrid"],
-    "correct": "B) Paris"
+    "correct": "B) Paris",
+    "explanation": "Paris is the capital and largest city of France, serving as the country's political, economic, and cultural centre."
   },
   {
     "question": "The sky is blue.",
     "options": ["True", "False"],
-    "correct": "True"
+    "correct": "True",
+    "explanation": "The sky appears blue due to Rayleigh scattering, where shorter blue wavelengths of sunlight are scattered more than other colours."
   },
   {
     "question": "Water boils at _________ degrees Celsius.",
     "options": ["FILL_IN_THE_BLANK"],
-    "correct": "100"
+    "correct": "100",
+    "explanation": "At standard atmospheric pressure (1 atm), water reaches its boiling point at 100°C (212°F)."
   },
   {
     "question": "What process do plants use to convert sunlight into food?",
     "options": ["SHORT_ANSWER"],
-    "correct": "Photosynthesis"
+    "correct": "Photosynthesis",
+    "explanation": "Photosynthesis is the biological process by which plants use sunlight, water, and carbon dioxide to produce glucose and oxygen."
   }
 ]
 
-Generate exactly ${questionsToGenerate} questions. Return ONLY the JSON array, nothing else.`;
+Generate exactly ${questionsToGenerate} questions. Every question MUST include an \"explanation\" field (1-2 sentences explaining the correct answer). Return ONLY the JSON array, nothing else.`;
 
       console.log("Starting quiz generation for", questionsToGenerate, "questions");
 
@@ -246,6 +253,7 @@ Generate exactly ${questionsToGenerate} questions. Return ONLY the JSON array, n
         question: q.question,
         options: q.options,
         correct_answer: q.correct,
+        explanation: q.explanation || null,
         is_flagged: false,
       }));
 

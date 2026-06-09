@@ -20,7 +20,8 @@ import {
   Flag, 
   Clock, 
   CheckCircle,
-  Send
+  Send,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { QuizQuestion } from "@/hooks/useQuiz";
@@ -31,6 +32,7 @@ interface QuizInterfaceProps {
   onSaveAnswer: (questionId: string, answer: string) => void;
   onToggleFlag: (questionId: string, isFlagged: boolean) => void;
   onSubmit: () => void;
+  isSubmitting?: boolean;
   /** If provided, seeds the timer with this value (seconds) instead of computing from timeLimitMinutes */
   initialTimeRemaining?: number;
   /** If provided, starts on this question index (used when recovering a session) */
@@ -45,6 +47,7 @@ export const QuizInterface = ({
   onSaveAnswer,
   onToggleFlag,
   onSubmit,
+  isSubmitting = false,
   initialTimeRemaining,
   initialQuestionIndex = 0,
   onQuestionChange,
@@ -103,6 +106,10 @@ export const QuizInterface = ({
       onSaveAnswer(currentQuestion.id, answer);
     }
   };
+
+  // For MCQ: the full option string (e.g. "A) Paris") is used as the answer value
+  // so it matches the correct_answer stored by the AI
+  const getMCQOptionValue = (option: string) => option;
 
   const handleToggleFlag = () => {
     const newFlagged = new Set(flagged);
@@ -241,9 +248,11 @@ export const QuizInterface = ({
               className="space-y-3"
             >
               {currentQuestion.options.map((option, idx) => {
-                // If the option has a prefix like "A) ", we can use the letter, otherwise use the whole option
+                // Display the letter prefix if it exists ("A) Paris" → badge shows "A", label shows "Paris")
+                // But the VALUE stored is the FULL string "A) Paris" to match correct_answer
                 const hasLetterPrefix = /^[A-Z]\)/.test(option);
-                const optionValue = hasLetterPrefix ? option.substring(0, option.indexOf(')')) : option;
+                const optionValue = getMCQOptionValue(option); // always full string
+                const displayLetter = hasLetterPrefix ? option.substring(0, option.indexOf(')')) : String(idx + 1);
                 const displayValue = hasLetterPrefix ? option.substring(option.indexOf(')') + 1).trim() : option;
                 
                 const isSelected = answers[currentIndex] === optionValue;
@@ -268,7 +277,7 @@ export const QuizInterface = ({
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-muted-foreground"
                     )}>
-                      {hasLetterPrefix ? optionValue : idx + 1}
+                      {displayLetter}
                     </div>
                     <span className="flex-1">{displayValue}</span>
                     {isSelected && (
@@ -319,9 +328,14 @@ export const QuizInterface = ({
           <Button
             className="gradient-primary text-primary-foreground"
             onClick={() => setShowSubmitDialog(true)}
+            disabled={isSubmitting}
           >
-            <Send className="w-4 h-4 mr-2" />
-            Submit Quiz
+            {isSubmitting ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4 mr-2" />
+            )}
+            {isSubmitting ? "Submitting..." : "Submit Quiz"}
           </Button>
         ) : (
           <Button
@@ -353,9 +367,10 @@ export const QuizInterface = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Continue Quiz</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSubmit}>
-              Submit Quiz
+            <AlertDialogCancel disabled={isSubmitting}>Continue Quiz</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              {isSubmitting ? "Submitting..." : "Submit Quiz"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
