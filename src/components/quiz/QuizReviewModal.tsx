@@ -175,9 +175,10 @@ export const QuizReviewModal = ({
                     ) : (
                       <>
                         {question.options.map((option, optIndex) => {
-                          // Use full option string for comparison (matches what was saved as user_answer)
-                          const isCorrect = option === question.correct_answer;
-                          const isUserAnswer = option === question.user_answer;
+                          // Normalize for consistent comparison (matches getQuestionStatus)
+                          const norm = (x: string | null | undefined) => (x ?? "").trim().toLowerCase();
+                          const isCorrect = norm(option) === norm(question.correct_answer);
+                          const isUserAnswer = norm(option) === norm(question.user_answer);
                           const isWrongUserAnswer = isUserAnswer && !isCorrect;
 
                           let optionClass = "p-3 rounded-md border text-sm";

@@ -285,9 +285,10 @@ export const QuizResults = ({
                           ) : (
                             <>
                               {q.options.map((option, optIdx) => {
-                                // Use full option string for comparison (matches what was saved as user_answer)
-                                const isUserAnswer = q.user_answer === option;
-                                const isCorrectAnswer = q.correct_answer === option;
+                                // Normalize for consistent comparison (matches outer isCorrect check)
+                                const norm = (x: string | null | undefined) => (x ?? "").trim().toLowerCase();
+                                const isUserAnswer = norm(q.user_answer) === norm(option);
+                                const isCorrectAnswer = norm(q.correct_answer) === norm(option);
 
                                 return (
                                   <div

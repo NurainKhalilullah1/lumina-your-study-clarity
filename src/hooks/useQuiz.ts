@@ -60,7 +60,6 @@ export const useQuizQuestions = (sessionId: string | null) => {
       return data.map((q) => ({
         ...q,
         options: q.options as string[],
-        explanation: (q as any).explanation ?? null,
       })) as QuizQuestion[];
     },
     enabled: !!sessionId,
