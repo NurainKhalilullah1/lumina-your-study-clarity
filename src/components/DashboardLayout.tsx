@@ -54,7 +54,7 @@ const DashboardLayout = ({ children, hideMobileHeader, hideNav }: DashboardLayou
 
   return (
     <SidebarProvider>
-      <div className={`flex w-full bg-background ${hideMobileHeader ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
+      <div className={`flex w-full bg-background ${hideMobileHeader || hideNav ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
         <div className={hideNav ? 'hidden' : 'hidden md:block'}>
           <DashboardSidebar />
         </div>
@@ -78,19 +78,21 @@ const DashboardLayout = ({ children, hideMobileHeader, hideNav }: DashboardLayou
             </header>
           )}
           
-          {/* Desktop Header */}
-          <div className="hidden md:flex items-center justify-between h-14 px-4 border-b border-border bg-card/80 backdrop-blur-md shrink-0 sticky top-0 z-10">
-            <SidebarTrigger />
-            <ThemeToggle />
-          </div>
+          {/* Desktop Header — hidden in distraction-free (hideNav) mode */}
+          {!hideNav && (
+            <div className="hidden md:flex items-center justify-between h-14 px-4 border-b border-border bg-card/80 backdrop-blur-md shrink-0 sticky top-0 z-10">
+              <SidebarTrigger />
+              <ThemeToggle />
+            </div>
+          )}
 
           {/* Main Content */}
-          {hideMobileHeader ? (
+          {hideMobileHeader || hideNav ? (
             <main className="flex-1 overflow-hidden flex flex-col min-h-0">
               {children}
             </main>
           ) : (
-            <main className={`flex-1 overflow-y-auto overflow-x-hidden ${hideNav ? 'pb-0' : 'pb-16 md:pb-0'}`}>
+            <main className="flex-1 overflow-y-auto overflow-x-hidden pb-16 md:pb-0">
               {children}
             </main>
           )}

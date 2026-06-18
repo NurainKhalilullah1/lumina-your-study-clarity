@@ -88,8 +88,28 @@ export function DocumentSelector({
     onOpenChange(false);
   };
 
-  const getFileIcon = (mimeType: string | null) => {
-    if (mimeType?.includes("pdf")) {
+  const getFileIcon = (mimeType: string | null, fileName?: string) => {
+    const name = (fileName ?? "").toLowerCase();
+    // PowerPoint (modern + legacy)
+    if (
+      mimeType?.includes("presentationml") ||
+      mimeType?.includes("ms-powerpoint") ||
+      name.endsWith(".pptx") ||
+      name.endsWith(".ppt")
+    ) {
+      return <FileType className="h-5 w-5 text-orange-500" />;
+    }
+    // Word (modern + legacy)
+    if (
+      mimeType?.includes("wordprocessingml") ||
+      mimeType?.includes("msword") ||
+      name.endsWith(".docx") ||
+      name.endsWith(".doc")
+    ) {
+      return <FileText className="h-5 w-5 text-blue-500" />;
+    }
+    // PDF
+    if (mimeType?.includes("pdf") || name.endsWith(".pdf")) {
       return <FileType className="h-5 w-5 text-red-500" />;
     }
     return <FileText className="h-5 w-5 text-primary" />;
@@ -160,7 +180,7 @@ export function DocumentSelector({
                     )}
                     
                     <div className="shrink-0">
-                      {getFileIcon(file.mime_type)}
+                      {getFileIcon(file.mime_type, file.file_name)}
                     </div>
                     
                     <div className="flex-1 min-w-0">

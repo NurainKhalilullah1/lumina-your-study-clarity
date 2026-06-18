@@ -124,7 +124,7 @@ export const ChatInput = ({ onSendMessage, isLoading, value, onValueChange }: Ch
           {/* Hidden file input */}
           <Input
             type="file"
-            accept=".pdf,.txt,.png,.jpg,.jpeg,.webp"
+            accept=".pdf,.txt,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg,.webp"
             className="hidden"
             ref={fileInputRef}
             onChange={handleFileSelect}
@@ -200,7 +200,7 @@ export const ChatInput = ({ onSendMessage, isLoading, value, onValueChange }: Ch
 
         {/* Helper text */}
         <p className="text-[11px] text-muted-foreground/50 text-center mt-2">
-          StudyFlow can analyze images, PDFs, and text files. It may make mistakes.
+          StudyFlow can analyze images, PDFs, Word, PowerPoint, and text files. It may make mistakes.
         </p>
       </form>
     </div>

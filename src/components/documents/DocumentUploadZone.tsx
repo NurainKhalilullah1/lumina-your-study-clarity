@@ -11,8 +11,16 @@ const ACCEPTED_TYPES = [
   "application/pdf",
   "text/plain",
   "text/markdown",
+  // Modern Word
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  // Modern PowerPoint
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  // Legacy Word
+  "application/msword",
+  // Legacy PowerPoint
+  "application/vnd.ms-powerpoint",
 ];
-const ACCEPTED_EXTENSIONS = [".pdf", ".txt", ".md"];
+const ACCEPTED_EXTENSIONS = [".pdf", ".txt", ".md", ".doc", ".docx", ".ppt", ".pptx"];
 
 interface UploadingFile {
   name: string;
@@ -33,7 +41,7 @@ export function DocumentUploadZone() {
     const isValidType = ACCEPTED_TYPES.includes(file.type) || ACCEPTED_EXTENSIONS.includes(extension);
     
     if (!isValidType) {
-      return `${file.name}: Only PDF, TXT, and MD files are supported`;
+      return `${file.name}: Only PDF, Word (.doc/.docx), PowerPoint (.ppt/.pptx), TXT, and MD files are supported`;
     }
     
     if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
@@ -184,7 +192,7 @@ export function DocumentUploadZone() {
         {!isStorageFull && (
           <input
             type="file"
-            accept=".pdf,.txt,.md"
+          accept=".pdf,.txt,.md,.doc,.docx,.ppt,.pptx"
             multiple
             onChange={handleFileInput}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -200,7 +208,7 @@ export function DocumentUploadZone() {
               {isStorageFull ? "Storage full" : "Drop files here or click to upload"}
             </p>
             <p className="text-sm text-muted-foreground mt-1">
-              PDF, TXT, MD files up to {MAX_FILE_SIZE_MB}MB each
+              PDF, Word, PowerPoint, TXT, MD files up to {MAX_FILE_SIZE_MB}MB each
             </p>
             {quota && !isStorageFull && (
               <p className="text-xs text-muted-foreground mt-2">

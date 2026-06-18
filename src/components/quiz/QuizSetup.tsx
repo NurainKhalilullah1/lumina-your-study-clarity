@@ -5,7 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { FileText, Upload, Loader2, Clock, HelpCircle, Sparkles, X, AlertCircle, FolderOpen, ListChecks, ToggleLeft, PenLine, MessageSquare, Shuffle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { extractTextFromPDF } from "@/utils/pdfUtils";
+import { extractTextFromFile } from "@/utils/documentParser";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentSelector, type UserFile } from "@/components/documents/DocumentSelector";
 
@@ -29,7 +29,7 @@ interface QuizSetupProps {
   isLoading: boolean;
 }
 
-const MAX_DOCUMENTS = 3;
+const MAX_DOCUMENTS = 5;
 const MAX_FILE_SIZE_MB = 5;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
@@ -99,14 +99,10 @@ export const QuizSetup = ({
 
         let content = "";
         
-        if (file.type === "application/pdf") {
-          content = await extractTextFromPDF(file);
-        } else if (file.type.startsWith("text/") || file.name.endsWith(".txt")) {
-          content = await file.text();
-        } else if (file.type.startsWith("image/")) {
+        if (file.type.startsWith("image/")) {
           content = `[Image file: ${file.name}]`;
         } else {
-          content = await file.text();
+          content = await extractTextFromFile(file);
         }
 
         newDocuments.push({
@@ -283,7 +279,7 @@ export const QuizSetup = ({
             >
               <Input
                 type="file"
-                accept=".pdf,.txt,.md,.doc,.docx"
+                accept=".pdf,.txt,.md,.doc,.docx,.ppt,.pptx"
                 className="hidden"
                 ref={fileInputRef}
                 onChange={handleFileUpload}
@@ -303,7 +299,7 @@ export const QuizSetup = ({
                       {documents.length === 0 ? "Drop files here or click to browse" : "Add more documents"}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      PDF, TXT, text files • Max {MAX_FILE_SIZE_MB}MB each
+                      PDF, Word, PowerPoint, TXT • Max {MAX_FILE_SIZE_MB}MB each
                     </p>
                   </div>
                 </div>

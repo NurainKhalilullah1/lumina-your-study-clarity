@@ -10,7 +10,7 @@ import { PomodoroTimer } from "@/components/tutor/PomodoroTimer";
 import { FlashcardGenerator } from "@/components/tutor/FlashcardGenerator";
 import { DocumentSelector, type UserFile } from "@/components/documents/DocumentSelector";
 import { useToast } from "@/hooks/use-toast";
-import { extractTextFromPDF } from "@/utils/pdfUtils";
+import { extractTextFromFile } from "@/utils/documentParser";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTrackStudyEvent } from "@/hooks/useStudyStats";
@@ -246,8 +246,11 @@ export default function Tutor() {
             },
           };
           setActiveDocumentName(file.name);
-        } else if (file.type === "application/pdf") {
-          const extracted = await extractTextFromPDF(file);
+        } else if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf") ||
+          file.name.toLowerCase().endsWith(".docx") || file.name.toLowerCase().endsWith(".doc") ||
+          file.name.toLowerCase().endsWith(".pptx") || file.name.toLowerCase().endsWith(".ppt") ||
+          file.type.startsWith("application/vnd") || file.type === "application/msword") {
+          const extracted = await extractTextFromFile(file);
           contextText = extracted;
           setActiveDocument(extracted);
           setActiveDocumentName(file.name);

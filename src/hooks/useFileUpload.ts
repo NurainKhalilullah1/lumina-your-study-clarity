@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { extractTextFromPDF } from "@/utils/pdfUtils";
+import { extractTextFromFile } from "@/utils/documentParser";
 import { useStorageQuota } from "./useStorageQuota";
 
 export interface UserFile {
@@ -53,18 +53,9 @@ export const useUploadFile = () => {
       let extractionStatus = "pending";
       
       try {
-        if (file.type === "application/pdf") {
-          textContent = await extractTextFromPDF(file);
-        } else if (
-          file.type === "text/plain" ||
-          file.type === "text/markdown" ||
-          file.name.endsWith(".txt") ||
-          file.name.endsWith(".md")
-        ) {
-          textContent = await file.text();
-        }
+        textContent = await extractTextFromFile(file);
         
-        if (textContent) {
+        if (textContent && textContent.trim().length > 0) {
           extractionStatus = "completed";
         } else {
           extractionStatus = "failed";
