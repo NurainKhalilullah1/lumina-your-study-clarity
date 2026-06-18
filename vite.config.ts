@@ -15,4 +15,11 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Inject VITE_APP_URL into index.html at build time so OG/favicon tags
+  // always reference the correct deployed domain rather than a hardcoded one.
+  define: {
+    "import.meta.env.VITE_APP_URL": JSON.stringify(
+      process.env.VITE_APP_URL || "http://localhost:8080"
+    ),
+  },
 }));
