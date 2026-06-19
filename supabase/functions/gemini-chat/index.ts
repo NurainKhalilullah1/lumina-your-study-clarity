@@ -9,7 +9,14 @@ interface TextPart { text: string; }
 interface InlineDataPart { inlineData: { mimeType: string; data: string }; }
 type Part = TextPart | InlineDataPart;
 interface Message { role: "user" | "model"; parts: Part[]; }
+
+// Single-call request body
 interface RequestBody { contents: Message[]; }
+
+// Parallel batch request body
+interface ParallelRequestBody {
+  batches: Array<{ contents: Message[] }>;
+}
 
 // ── Convert Gemini contents → OpenAI messages ────────────────────────────────
 function toOpenAIMessages(contents: Message[]) {
@@ -51,8 +58,6 @@ async function tryGroq(apiKey: string, model: string, contents: Message[]): Prom
       body: JSON.stringify({
         model,
         messages: toOpenAIMessages(contents),
-        // Vision-preview models on Groq are capped at 4 096 output tokens;
-        // sending 8 192 causes a 400. All other Groq models support 8 192.
         max_tokens: model.includes("vision-preview") ? 4096 : 8192,
       }),
       signal: controller.signal,
@@ -117,185 +122,248 @@ async function tryGemini(apiKey: string, model: string, contents: Message[]): Pr
   }
 }
 
-// ── Main handler ──────────────────────────────────────────────────────────────
+// ── Core AI call — tries all providers in waterfall order ─────────────────────
+async function callAI(contents: Message[]): Promise<string> {
+  const withImages = hasImages(contents);
+  let lastError = "";
+
+  // 1. Try Groq first (free, 14,400 req/day)
+  const groqKey = Deno.env.get("GROQ_API_KEY");
+  if (groqKey) {
+    const groqModels = withImages
+      ? ["llama-3.2-11b-vision-preview", "llama-3.2-90b-vision-preview"]
+      : ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "gemma2-9b-it"];
+
+    for (const model of groqModels) {
+      let resp: Response;
+      try {
+        resp = await tryGroq(groqKey, model, contents);
+      } catch (e: any) {
+        lastError = `Groq/${model}: fetch error — ${e.message}`;
+        console.warn(lastError);
+        continue;
+      }
+
+      if (resp.ok) {
+        const data = await resp.json();
+        const text = data?.choices?.[0]?.message?.content;
+        if (!text) throw new Error("No response text from Groq");
+        console.log(`✓ Groq / ${model}`);
+        return text;
+      }
+
+      if (resp.status === 429 || resp.status === 503) {
+        lastError = `Groq/${model}: rate limited (${resp.status}) — trying next model…`;
+        console.warn(lastError);
+        continue;
+      }
+
+      const errBody = await resp.text();
+      lastError = `Groq/${model}: error ${resp.status} — ${errBody.slice(0, 200)}`;
+      console.warn(lastError);
+      break;
+    }
+  } else {
+    console.warn("GROQ_API_KEY not set — skipping Groq, falling back to Gemini");
+  }
+
+  // 2. Fall back to Gemini keys
+  const geminiKeys = getGeminiKeys();
+  if (geminiKeys.length === 0 && !groqKey) {
+    throw new Error("No API keys configured. Add GROQ_API_KEY or GEMINI_API_KEY to Supabase secrets.");
+  }
+
+  const geminiModels = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-pro"];
+
+  for (const [ki, apiKey] of geminiKeys.entries()) {
+    for (const model of geminiModels) {
+      let resp: Response;
+      try {
+        resp = await tryGemini(apiKey, model, contents);
+      } catch (fetchErr: any) {
+        lastError = `Gemini key ${ki + 1}/${model}: fetch error — ${fetchErr.message}`;
+        console.warn(lastError);
+        continue;
+      }
+
+      if (resp.ok) {
+        console.log(`✓ Gemini key ${ki + 1} / ${model}`);
+        const data = await resp.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) throw new Error("No response text from Gemini");
+        return text;
+      }
+
+      if (resp.status === 404 || resp.status === 400) {
+        lastError = `Gemini key ${ki + 1}/${model}: not available (${resp.status})`;
+        console.warn(lastError);
+        continue;
+      }
+
+      if (resp.status === 429) {
+        lastError = `Gemini key ${ki + 1} quota exhausted (429) — trying next key…`;
+        console.warn(lastError);
+        break;
+      }
+
+      const errBody = await resp.text();
+      throw new Error(`Gemini API error (${resp.status}): ${errBody}`);
+    }
+  }
+
+  // 3. Fall back to OpenRouter (free-tier models)
+  const openRouterKey = Deno.env.get("OPENROUTER_API_KEY");
+  if (openRouterKey) {
+    const openRouterModels = withImages
+      ? [
+          "meta-llama/llama-3.2-11b-vision-instruct:free",
+          "google/gemini-2.0-flash-exp:free",
+          "openrouter/auto",
+        ]
+      : [
+          "meta-llama/llama-3.3-70b-instruct:free",
+          "google/gemini-2.0-flash-exp:free",
+          "deepseek/deepseek-r1:free",
+          "qwen/qwen3-8b:free",
+          "mistralai/mistral-7b-instruct:free",
+          "deepseek/deepseek-chat-v3-0324:free",
+          "nousresearch/hermes-3-llama-3.1-405b:free",
+          "openrouter/auto",
+        ];
+
+    for (const model of openRouterModels) {
+      let resp: Response;
+      try {
+        resp = await tryOpenRouter(openRouterKey, model, contents);
+      } catch (e: any) {
+        lastError = `OpenRouter/${model}: fetch error — ${e.message}`;
+        console.warn(lastError);
+        continue;
+      }
+
+      if (resp.ok) {
+        const data = await resp.json();
+        const text = data?.choices?.[0]?.message?.content;
+        if (!text) {
+          lastError = `OpenRouter/${model}: empty response`;
+          console.warn(lastError);
+          continue;
+        }
+        console.log(`✓ OpenRouter / ${model}`);
+        return text;
+      }
+
+      if (resp.status === 429 || resp.status === 503) {
+        lastError = `OpenRouter/${model}: rate limited (${resp.status}) — trying next model…`;
+        console.warn(lastError);
+        continue;
+      }
+
+      if (resp.status === 404) {
+        lastError = `OpenRouter/${model}: endpoint not found (404) — skipping…`;
+        console.warn(lastError);
+        continue;
+      }
+
+      const errBody = await resp.text();
+      lastError = `OpenRouter/${model}: error ${resp.status} — ${errBody.slice(0, 200)}`;
+      console.warn(lastError);
+      continue;
+    }
+  } else {
+    console.warn("OPENROUTER_API_KEY not set — skipping OpenRouter fallback");
+  }
+
+  console.error(`All providers exhausted. Last error: ${lastError}`);
+  const isRateLimit = /429|rate.?limit|quota|too many requests/i.test(lastError);
+  throw new Error(
+    isRateLimit
+      ? "AI is temporarily busy — please wait a moment and try again."
+      : "AI service is temporarily unavailable. Please try again later."
+  );
+}
+
+// ── Concurrency limiter ───────────────────────────────────────────────────────
+// Runs an array of async task-factories with at most `limit` in flight at once.
+// Returns results in the same order as the input, matching Promise.allSettled shape.
+async function runWithConcurrency<T>(
+  tasks: Array<() => Promise<T>>,
+  limit: number
+): Promise<Array<PromiseSettledResult<T>>> {
+  const results: Array<PromiseSettledResult<T>> = new Array(tasks.length);
+  let nextIdx = 0;
+
+  async function worker() {
+    while (nextIdx < tasks.length) {
+      const idx = nextIdx++;
+      try {
+        results[idx] = { status: "fulfilled", value: await tasks[idx]() };
+      } catch (err) {
+        results[idx] = { status: "rejected", reason: err };
+      }
+    }
+  }
+
+  // Spin up `limit` workers that each pull from the shared queue
+  const workers = Array.from({ length: Math.min(limit, tasks.length) }, worker);
+  await Promise.all(workers);
+  return results;
+}
+
+// ── Main handler ───────────────────────────────────────────────────────────────────────────
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { contents }: RequestBody = await req.json();
+    const body = await req.json();
+
+    // ── Parallel batch mode (quiz generation & large-doc tutor) ───────────────
+    if (body.batches && Array.isArray(body.batches) && body.batches.length > 0) {
+      const batchCount = body.batches.length;
+      console.log(`Parallel batch mode: processing ${batchCount} batches (concurrency limit: 5)`);
+
+      // Wrap each batch in a task-factory so the concurrency limiter controls
+      // how many callAI() calls are in flight at once (max 5).
+      const tasks = body.batches.map(
+        (batch: { contents: Message[] }, idx: number) =>
+          (): Promise<string> => {
+            if (!batch.contents || !Array.isArray(batch.contents) || batch.contents.length === 0) {
+              return Promise.reject(new Error(`Batch ${idx}: invalid contents`));
+            }
+            return callAI(batch.contents);
+          }
+      );
+
+      const settled = await runWithConcurrency(tasks, 5);
+
+      const results = settled.map((r, idx) => {
+        if (r.status === "fulfilled") {
+          console.log(`✓ Batch ${idx + 1} succeeded`);
+          return { text: r.value, error: null };
+        } else {
+          console.warn(`✗ Batch ${idx + 1} failed: ${r.reason?.message}`);
+          return { text: null, error: r.reason?.message || "Batch failed" };
+        }
+      });
+
+      const successCount = results.filter(r => r.text).length;
+      console.log(`Parallel batches complete: ${successCount}/${body.batches.length} succeeded`);
+
+      return new Response(JSON.stringify({ results }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Single-call mode (existing behaviour) ──────────────────────────────────
+    const { contents }: RequestBody = body;
     if (!contents || !Array.isArray(contents) || contents.length === 0) {
       throw new Error("Invalid request: 'contents' array is required and cannot be empty");
     }
 
-    const withImages = hasImages(contents);
-    let lastError = "";
-
-    // ── 1. Try Groq first (free, 14,400 req/day) ──────────────────────────
-    const groqKey = Deno.env.get("GROQ_API_KEY");
-    if (groqKey) {
-      const groqModels = withImages
-        ? ["llama-3.2-11b-vision-preview", "llama-3.2-90b-vision-preview"]
-        : ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "gemma2-9b-it"];
-
-      for (const model of groqModels) {
-        let resp: Response;
-        try {
-          resp = await tryGroq(groqKey, model, contents);
-        } catch (e: any) {
-          lastError = `Groq/${model}: fetch error — ${e.message}`;
-          console.warn(lastError);
-          continue;
-        }
-
-        if (resp.ok) {
-          const data = await resp.json();
-          const text = data?.choices?.[0]?.message?.content;
-          if (!text) throw new Error("No response text from Groq");
-          console.log(`✓ Groq / ${model}`);
-          return new Response(JSON.stringify({ text }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        // Rate limited → try next Groq model
-        if (resp.status === 429 || resp.status === 503) {
-          lastError = `Groq/${model}: rate limited (${resp.status}) — trying next model…`;
-          console.warn(lastError);
-          continue;
-        }
-
-        // Other error → skip to Gemini fallback
-        const errBody = await resp.text();
-        lastError = `Groq/${model}: error ${resp.status} — ${errBody.slice(0, 200)}`;
-        console.warn(lastError);
-        break;
-      }
-    } else {
-      console.warn("GROQ_API_KEY not set — skipping Groq, falling back to Gemini");
-    }
-
-    // ── 2. Fall back to Gemini keys ────────────────────────────────────────
-    const geminiKeys = getGeminiKeys();
-    if (geminiKeys.length === 0 && !groqKey) {
-      throw new Error("No API keys configured. Add GROQ_API_KEY or GEMINI_API_KEY to Supabase secrets.");
-    }
-
-    const geminiModels = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-pro"];
-
-    for (const [ki, apiKey] of geminiKeys.entries()) {
-      for (const model of geminiModels) {
-        let resp: Response;
-        try {
-          resp = await tryGemini(apiKey, model, contents);
-        } catch (fetchErr: any) {
-          lastError = `Gemini key ${ki + 1}/${model}: fetch error — ${fetchErr.message}`;
-          console.warn(lastError);
-          continue;
-        }
-
-        if (resp.ok) {
-          console.log(`✓ Gemini key ${ki + 1} / ${model}`);
-          const data = await resp.json();
-          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (!text) throw new Error("No response text from Gemini");
-          return new Response(JSON.stringify({ text }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        if (resp.status === 404 || resp.status === 400) {
-          lastError = `Gemini key ${ki + 1}/${model}: not available (${resp.status})`;
-          console.warn(lastError);
-          continue;
-        }
-
-        if (resp.status === 429) {
-          lastError = `Gemini key ${ki + 1} quota exhausted (429) — trying next key…`;
-          console.warn(lastError);
-          break; // try next Gemini key
-        }
-
-        const errBody = await resp.text();
-        throw new Error(`Gemini API error (${resp.status}): ${errBody}`);
-      }
-    }
-
-    // ── 3. Fall back to OpenRouter (free-tier models) ──────────────────────
-    const openRouterKey = Deno.env.get("OPENROUTER_API_KEY");
-    if (openRouterKey) {
-      // Free models on OpenRouter (no credits required, :free suffix).
-      // Ordered by capability. 404 models are skipped automatically below.
-      const openRouterModels = withImages
-        ? [
-            "meta-llama/llama-3.2-11b-vision-instruct:free",
-            "google/gemini-2.0-flash-exp:free",
-            "openrouter/auto", // auto-selects any available free model
-          ]
-        : [
-            "meta-llama/llama-3.3-70b-instruct:free",
-            "google/gemini-2.0-flash-exp:free",
-            "deepseek/deepseek-r1:free",
-            "qwen/qwen3-8b:free",
-            "mistralai/mistral-7b-instruct:free",
-            "deepseek/deepseek-chat-v3-0324:free",
-            "nousresearch/hermes-3-llama-3.1-405b:free",
-            "openrouter/auto", // catch-all: picks whichever free model has capacity
-          ];
-
-
-      for (const model of openRouterModels) {
-        let resp: Response;
-        try {
-          resp = await tryOpenRouter(openRouterKey, model, contents);
-        } catch (e: any) {
-          lastError = `OpenRouter/${model}: fetch error — ${e.message}`;
-          console.warn(lastError);
-          continue;
-        }
-
-        if (resp.ok) {
-          const data = await resp.json();
-          const text = data?.choices?.[0]?.message?.content;
-          if (!text) {
-            lastError = `OpenRouter/${model}: empty response`;
-            console.warn(lastError);
-            continue;
-          }
-          console.log(`✓ OpenRouter / ${model}`);
-          return new Response(JSON.stringify({ text }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        if (resp.status === 429 || resp.status === 503) {
-          lastError = `OpenRouter/${model}: rate limited (${resp.status}) — trying next model…`;
-          console.warn(lastError);
-          continue;
-        }
-
-        // 404 = endpoint removed/unavailable — skip silently
-        if (resp.status === 404) {
-          lastError = `OpenRouter/${model}: endpoint not found (404) — skipping…`;
-          console.warn(lastError);
-          continue;
-        }
-
-        const errBody = await resp.text();
-        lastError = `OpenRouter/${model}: error ${resp.status} — ${errBody.slice(0, 200)}`;
-        console.warn(lastError);
-        continue; // try next model rather than giving up
-      }
-    } else {
-      console.warn("OPENROUTER_API_KEY not set — skipping OpenRouter fallback");
-    }
-
-    console.error(`All providers exhausted. Last error: ${lastError}`);
-    const isRateLimit = /429|rate.?limit|quota|too many requests/i.test(lastError);
-    throw new Error(
-      isRateLimit
-        ? "AI is temporarily busy — please wait a moment and try again."
-        : "AI service is temporarily unavailable. Please try again later."
-    );
+    const text = await callAI(contents);
+    return new Response(JSON.stringify({ text }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
 
   } catch (error) {
     return new Response(

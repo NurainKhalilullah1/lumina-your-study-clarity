@@ -38,7 +38,7 @@ export default function Tutor() {
 
   const { toast } = useToast();
   const { user } = useAuth();
-  const { sendMessage, generateContent } = useGoogleAI();
+  const { sendMessage, generateContent, sendMessageWithLargeDoc } = useGoogleAI();
   const trackEvent = useTrackStudyEvent();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -290,17 +290,9 @@ CRITICAL INSTRUCTIONS:
 - Bold key terms and use bullet points for lists of components or steps.
 - Be thorough and educational — explain what each part is, what it does, and how the whole system works.
 - ACTIVE DOCUMENT CONTEXT: ${contextText ? contextText.slice(0, 25000) : "None"}`
-      : `
-          You are an advanced, helpful, and highly capable AI assistant, functioning similarly to Google Gemini. You provide clear, well-structured, and exceptionally high-quality responses.
-          ACTIVE DOCUMENT: ${contextText ? contextText.slice(0, 25000) : "None"}
-          USER: "${inputMessage}"
-          
-          CRITICAL INSTRUCTIONS ON HOW TO RESPOND:
-          - TONE & STYLE: Be helpful, empathetic, objective, and highly articulate. Use clear, concise language but dive deep into details when necessary.
-          - FORMATTING: Make heavy use of Markdown. Use headers (##, ###) to organize your response, bolding for key terms, and bullet points or numbered lists for steps and takeaways.
-          - ACCURACY & DEPTH: Provide comprehensive and highly accurate explanations. If the user asks about the document, synthesize the information perfectly.
-          - NO ROBOTIC CLICHES: Avoid starting with "As an AI..." or "I'd be happy to help...". Just dive straight into the valuable information.
-        `;
+      // Regular chat: do NOT embed contextText here — sendMessageWithLargeDoc handles
+      // document injection (chunked for large docs, inline for short ones).
+      : `${inputMessage}`;
 
       let fullResponseText = "";
 
@@ -327,9 +319,10 @@ CRITICAL INSTRUCTIONS:
           return { ...m, content };
         });
 
-      fullResponseText = await sendMessage(
+      fullResponseText = await sendMessageWithLargeDoc(
         promptText,
         historySlice,
+        contextText,
         imagePart ? { data: imagePart.inlineData.data, mimeType: imagePart.inlineData.mimeType } : undefined
       );
 

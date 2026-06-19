@@ -333,13 +333,13 @@ export const QuizSetup = ({
             value={[numQuestions]}
             onValueChange={([val]) => setNumQuestions(val)}
             min={10}
-            max={70}
+            max={75}
             step={5}
             className="w-full"
           />
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>10</span>
-            <span>70 (max)</span>
+            <span>75 (max)</span>
           </div>
         </div>
 

@@ -104,7 +104,68 @@ export const useCreateQuizSession = () => {
   });
 };
 
-// Generate quiz questions using AI
+// ── Quiz generation constants ─────────────────────────────────────────────────
+// Maximum questions per parallel agent. Keeping this at 25 ensures each agent
+// stays well within token output limits even for complex question types.
+const QUIZ_BATCH_SIZE = 25;
+
+// Documents shorter than this are sent in full to every batch agent.
+// Longer documents are chunked proportionally — one chunk per agent.
+const QUIZ_CHUNK_THRESHOLD = 15_000; // chars
+
+/** Parse a raw AI response string into an array of question objects. */
+function parseQuizJSON(raw: string): any[] {
+  let jsonStr = raw.trim();
+  // Strip optional markdown code fences
+  if (jsonStr.startsWith("```json")) jsonStr = jsonStr.slice(7);
+  if (jsonStr.startsWith("```")) jsonStr = jsonStr.slice(3);
+  if (jsonStr.endsWith("```")) jsonStr = jsonStr.slice(0, -3);
+  jsonStr = jsonStr.trim();
+
+  // Sometimes the model wraps the array in an object
+  if (jsonStr.startsWith("{")) {
+    const obj = JSON.parse(jsonStr);
+    const arr = obj.questions ?? obj.quiz ?? Object.values(obj)[0];
+    if (Array.isArray(arr)) return arr;
+  }
+  return JSON.parse(jsonStr);
+}
+
+/** Build the AI prompt for a single quiz batch. */
+function buildBatchPrompt(
+  batchCount: number,
+  batchIndex: number,
+  totalBatches: number,
+  docChunk: string,
+  formatInstructions: string
+): string {
+  return `You are an expert quiz generator. Generate exactly ${batchCount} questions.
+
+DOCUMENT SECTION ${batchIndex + 1} OF ${totalBatches}:
+${docChunk}
+
+QUESTION FORMAT RULES:
+${formatInstructions}
+
+IMPORTANT:
+- Draw ALL questions from the document section above.
+- Every question MUST include an "explanation" field (1-2 sentences).
+- Return ONLY a valid JSON array — no markdown, no code blocks, no extra text.
+
+JSON format:
+[
+  {
+    "question": "What is the capital of France?",
+    "options": ["A) London", "B) Paris", "C) Berlin", "D) Madrid"],
+    "correct": "B) Paris",
+    "explanation": "Paris is the capital and largest city of France."
+  }
+]
+
+Generate exactly ${batchCount} questions. Return ONLY the JSON array.`;
+}
+
+// Generate quiz questions using AI (parallel batch mode)
 export const useGenerateQuizQuestions = () => {
   const { generateContent } = useGoogleAI();
   const { toast } = useToast();
@@ -121,10 +182,10 @@ export const useGenerateQuizQuestions = () => {
       numQuestions: number;
       questionType?: string;
     }) => {
-      // Allow up to 70 questions as per UI slider
-      const questionsToGenerate = Math.min(numQuestions, 70);
+      // Cap at 75 questions as per UI slider
+      const questionsToGenerate = Math.min(numQuestions, 75);
 
-      // Build question-format instructions based on selected type
+      // ── Question format instructions ─────────────────────────────────────────
       const typeInstructions: Record<string, string> = {
         mixed: `Generate a mix of the following 4 question types (roughly equal amounts of each):
 1. Multiple Choice (MCQ):
@@ -140,7 +201,7 @@ export const useGenerateQuizQuestions = () => {
 4. Short Answer:
    - A direct question requiring a brief answer.
    - Format: "options": ["SHORT_ANSWER"]
-   - The correct answer is a concise, accurate sentence, close to the original text answer or phrase.`,
+   - The correct answer is a concise, accurate sentence or phrase.`,
 
         mcq: `Generate ONLY Multiple Choice questions:
 - Exactly 4 options per question.
@@ -164,89 +225,124 @@ export const useGenerateQuizQuestions = () => {
 
       const formatInstructions = typeInstructions[questionType] ?? typeInstructions["mixed"];
 
-      const prompt = `You are an expert quiz generator. Generate exactly ${questionsToGenerate} questions.
+      // ── Decide: single call or parallel batches? ───────────────────────────
+      const numBatches = Math.ceil(questionsToGenerate / QUIZ_BATCH_SIZE);
+      const useParallel = numBatches > 1;
 
-CRITICAL MULTI-DOCUMENT INSTRUCTIONS:
-1. The content below may contain MULTIPLE DOCUMENTS separated by "--- Document: [name] ---"
-2. You MUST draw questions from ALL documents provided, distributing them as evenly as possible.
-3. SHUFFLE the final question order so questions from different documents are mixed together.
-4. Read and analyse the ENTIRE document content provided before generating questions — do not stop early.
+      console.log(
+        `Quiz generation: ${questionsToGenerate} questions in ${numBatches} batch(es) — ` +
+          (useParallel ? "parallel mode" : "single-call mode")
+      );
 
-QUESTION FORMAT RULES:
-${formatInstructions}
+      let allQuestions: any[] = [];
 
-Document content:
-${documentContent}
+      if (!useParallel) {
+        // ── Single-call path (≤25 questions) ────────────────────────────────
+        const docChunk =
+          documentContent.length > QUIZ_CHUNK_THRESHOLD
+            ? documentContent.slice(0, QUIZ_CHUNK_THRESHOLD)
+            : documentContent;
 
-Return your response as a valid JSON array with this exact format (no markdown, no code blocks, just pure JSON):
-[
-  {
-    "question": "What is the capital of France?",
-    "options": ["A) London", "B) Paris", "C) Berlin", "D) Madrid"],
-    "correct": "B) Paris",
-    "explanation": "Paris is the capital and largest city of France, serving as the country's political, economic, and cultural centre."
-  },
-  {
-    "question": "The sky is blue.",
-    "options": ["True", "False"],
-    "correct": "True",
-    "explanation": "The sky appears blue due to Rayleigh scattering, where shorter blue wavelengths of sunlight are scattered more than other colours."
-  },
-  {
-    "question": "Water boils at _________ degrees Celsius.",
-    "options": ["FILL_IN_THE_BLANK"],
-    "correct": "100",
-    "explanation": "At standard atmospheric pressure (1 atm), water reaches its boiling point at 100°C (212°F)."
-  },
-  {
-    "question": "What process do plants use to convert sunlight into food?",
-    "options": ["SHORT_ANSWER"],
-    "correct": "Photosynthesis",
-    "explanation": "Photosynthesis is the biological process by which plants use sunlight, water, and carbon dioxide to produce glucose and oxygen."
-  }
-]
+        const prompt = buildBatchPrompt(questionsToGenerate, 0, 1, docChunk, formatInstructions);
+        const responseText = await generateContent(prompt);
+        allQuestions = parseQuizJSON(responseText);
+      } else {
+        // ── Parallel batch path (>25 questions) ──────────────────────────────
+        // Distribute questions per batch (last batch may be smaller)
+        const batchCounts = Array.from({ length: numBatches }, (_, i) => {
+          const assigned = i < numBatches - 1
+            ? QUIZ_BATCH_SIZE
+            : questionsToGenerate - QUIZ_BATCH_SIZE * (numBatches - 1);
+          return Math.max(assigned, 1);
+        });
 
-Generate exactly ${questionsToGenerate} questions. Every question MUST include an \"explanation\" field (1-2 sentences explaining the correct answer). Return ONLY the JSON array, nothing else.`;
+        // Split the document into chunks — one per batch
+        // For short docs every batch sees the full content; for large docs each
+        // batch gets its own slice so coverage is guaranteed.
+        const docChunks: string[] = (() => {
+          const doc = documentContent;
+          if (doc.length <= QUIZ_CHUNK_THRESHOLD) {
+            // Short doc: all batches see the full text
+            return Array(numBatches).fill(doc);
+          }
+          // Large doc: split proportionally with 300-char overlap
+          const chunkSize = Math.ceil(doc.length / numBatches);
+          const overlap = 300;
+          return Array.from({ length: numBatches }, (_, i) =>
+            doc.slice(
+              Math.max(0, i * chunkSize - overlap),
+              Math.min(doc.length, (i + 1) * chunkSize + overlap)
+            )
+          );
+        })();
 
-      console.log("Starting quiz generation for", questionsToGenerate, "questions");
+        // Build one batch payload per agent
+        const batches = batchCounts.map((count, i) => ({
+          contents: [
+            {
+              role: "user" as const,
+              parts: [
+                {
+                  text: buildBatchPrompt(
+                    count,
+                    i,
+                    numBatches,
+                    docChunks[i],
+                    formatInstructions
+                  ),
+                },
+              ],
+            },
+          ],
+        }));
 
-      // Call via Gemini SDK (Vercel environment)
-      const responseText = await generateContent(prompt);
-      console.log("Received response, length:", responseText.length);
+        toast({
+          title: `Generating quiz in parallel…`,
+          description: `${numBatches} AI agents are working simultaneously on your ${questionsToGenerate}-question quiz.`,
+        });
 
-      // Extract JSON from response (handle potential markdown code blocks)
-      let jsonStr = responseText.trim();
-      if (jsonStr.startsWith("```json")) {
-        jsonStr = jsonStr.slice(7);
+        // Fire all batches simultaneously
+        const { data, error } = await supabase.functions.invoke("gemini-chat", {
+          body: { batches },
+        });
+
+        if (error) throw new Error(error.message || "Parallel quiz generation failed");
+        if (!data?.results) throw new Error("No results from parallel agents");
+
+        // Parse and merge successful batch results
+        const results = data.results as Array<{ text: string | null; error: string | null }>;
+        for (const [idx, result] of results.entries()) {
+          if (!result.text) {
+            console.warn(`Batch ${idx + 1} failed: ${result.error}`);
+            continue;
+          }
+          try {
+            const parsed = parseQuizJSON(result.text);
+            console.log(`Batch ${idx + 1}: parsed ${parsed.length} questions`);
+            allQuestions.push(...parsed);
+          } catch (e) {
+            console.warn(`Batch ${idx + 1}: JSON parse failed`, e);
+          }
+        }
+
+        // Shuffle merged questions so questions from different chunks are mixed
+        for (let i = allQuestions.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [allQuestions[i], allQuestions[j]] = [allQuestions[j], allQuestions[i]];
+        }
       }
-      if (jsonStr.startsWith("```")) {
-        jsonStr = jsonStr.slice(3);
-      }
-      if (jsonStr.endsWith("```")) {
-        jsonStr = jsonStr.slice(0, -3);
-      }
-      jsonStr = jsonStr.trim();
 
-      let questions;
-      try {
-        questions = JSON.parse(jsonStr);
-      } catch (parseError) {
-        console.error("JSON parse error. Response was:", jsonStr.slice(0, 500));
-        throw new Error("Failed to parse quiz questions. The AI returned an invalid format.");
-      }
-
-      if (!Array.isArray(questions) || questions.length === 0) {
+      if (!Array.isArray(allQuestions) || allQuestions.length === 0) {
         throw new Error("No questions were generated. Please try with different content.");
       }
 
-      // Validate question count and warn if different from requested
-      if (questions.length < numQuestions) {
-        console.warn(`Requested ${numQuestions} questions but AI generated ${questions.length}`);
+      if (allQuestions.length < questionsToGenerate) {
+        console.warn(`Requested ${questionsToGenerate} questions but got ${allQuestions.length}`);
       }
-      console.log(`Generated ${questions.length} questions (requested: ${numQuestions})`);
+      console.log(`Total questions generated: ${allQuestions.length} (requested: ${questionsToGenerate})`);
 
-      // Insert questions into database
-      const questionsToInsert = questions.slice(0, numQuestions).map((q: any, idx: number) => ({
+      // ── Persist to database ───────────────────────────────────────────────
+      const questionsToInsert = allQuestions.slice(0, questionsToGenerate).map((q: any, idx: number) => ({
         quiz_session_id: sessionId,
         question_number: idx + 1,
         question: q.question,
@@ -256,10 +352,9 @@ Generate exactly ${questionsToGenerate} questions. Every question MUST include a
         is_flagged: false,
       }));
 
-      const { error } = await supabase.from("quiz_questions").insert(questionsToInsert);
-
-      if (error) {
-        console.error("Database insert error:", error);
+      const { error: dbError } = await supabase.from("quiz_questions").insert(questionsToInsert);
+      if (dbError) {
+        console.error("Database insert error:", dbError);
         throw new Error("Failed to save questions to database.");
       }
 
