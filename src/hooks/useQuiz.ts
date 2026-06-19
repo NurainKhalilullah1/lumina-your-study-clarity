@@ -107,7 +107,7 @@ export const useCreateQuizSession = () => {
 // ── Quiz generation constants ─────────────────────────────────────────────────
 // Maximum questions per parallel agent. Keeping this at 25 ensures each agent
 // stays well within token output limits even for complex question types.
-const QUIZ_BATCH_SIZE = 25;
+const QUIZ_BATCH_SIZE = 10;
 
 // Documents shorter than this are sent in full to every batch agent.
 // Longer documents are chunked proportionally — one chunk per agent.
@@ -301,7 +301,8 @@ export const useGenerateQuizQuestions = () => {
           description: `${numBatches} AI agents are working simultaneously on your ${questionsToGenerate}-question quiz.`,
         });
 
-        // Fire all batches simultaneously
+        // Fire all batches simultaneously via the server-side batches endpoint
+        // (runs up to 5 concurrent AI calls inside the edge function)
         const { data, error } = await supabase.functions.invoke("gemini-chat", {
           body: { batches },
         });
@@ -371,11 +372,6 @@ export const useGenerateQuizQuestions = () => {
     },
     onError: (error: Error) => {
       console.error("Quiz generation error:", error);
-      toast({
-        title: "Failed to generate quiz",
-        description: error.message || "There was an error generating the quiz questions. Please try again.",
-        variant: "destructive",
-      });
     },
   });
 };
